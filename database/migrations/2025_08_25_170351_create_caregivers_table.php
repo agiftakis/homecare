@@ -11,17 +11,16 @@ return new class extends Migration
      */
    public function up(): void
 {
-    Schema::create('clients', function (Blueprint $table) {
+    Schema::create('caregivers', function (Blueprint $table) {
         $table->id();
         $table->string('first_name');
         $table->string('last_name');
         $table->string('email')->unique();
         $table->string('phone_number');
-        $table->text('address');
         $table->date('date_of_birth');
-        $table->text('care_plan')->nullable();
+        $table->text('certifications')->nullable();
         $table->string('profile_picture_url')->nullable();
-        $table->timestamps(); // Adds created_at and updated_at columns
+        $table->timestamps();
     });
 }
 
@@ -30,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('clients');
+        Schema::dropIfExists('caregivers');
     }
 };
