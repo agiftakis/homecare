@@ -41,7 +41,8 @@ class ClientController extends Controller
             'email' => 'required|email|unique:clients,email',
             'phone_number' => 'required|string|max:20',
             'address' => 'required|string',
-            'date_of_birth' => 'required|date',
+            // **FIXED CODE:** Added a specific date format validation rule
+            'date_of_birth' => 'required|date|date_format:Y-m-d',
             'care_plan' => 'nullable|string',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
