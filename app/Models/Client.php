@@ -22,5 +22,6 @@ class Client extends Model
         'address',
         'date_of_birth',
         'care_plan',
+        'profile_picture_url',
     ];
 }
