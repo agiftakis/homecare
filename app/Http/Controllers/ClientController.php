@@ -1,10 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\Client;
 
+use App\Models\Client;
 use Illuminate\Http\Request;
-use Kreait\Firebase\Factory; 
+use Kreait\Firebase\Factory;
+use Intervention\Image\Facades\Image; // <-- This is the corrected line for version 3
 
 class ClientController extends Controller
 {
@@ -13,7 +14,7 @@ class ClientController extends Controller
      */
     public function index()
     {
-         // Fetch all clients from the database, ordered by the newest first
+        // Fetch all clients from the database, ordered by the newest first
         $clients = Client::latest()->get();
 
         // Return the 'index' view and pass the clients data to it
@@ -32,12 +33,9 @@ class ClientController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
-   {
-        // 1. Validate the incoming data, including the new image file
+    {
+        // 1. Validate the incoming data
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -46,36 +44,38 @@ class ClientController extends Controller
             'address' => 'required|string',
             'date_of_birth' => 'required|date',
             'care_plan' => 'nullable|string',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Validation for image
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $profilePictureUrl = null;
 
         // 2. Handle the file upload to Firebase
         if ($request->hasFile('profile_picture')) {
-
-              $serviceAccount = storage_path('app/firebase/firebase_credentials.json');
+            $serviceAccount = storage_path('app/firebase/firebase_credentials.json');
             $firebase = (new Factory)->withServiceAccount($serviceAccount);
             
             $storage = $firebase->createStorage();
-            // **FIXED CODE:** Get the bucket name from the .env file
-            $bucket = $storage->getBucket(env('FIREBASE_STORAGE_BUCKET'));
+            $bucketName = env('FIREBASE_STORAGE_BUCKET');
+            $bucket = $storage->getBucket($bucketName);
 
             $image = $request->file('profile_picture');
-            $fileName = 'profile_pictures/' . time() . '.' . $image->getClientOriginalExtension();
+            // Change the file extension to .jpg since we are encoding it as a JPEG
+            $fileName = 'profile_pictures/' . time() . '.jpg';
+
+            // **OPTIMIZATION:** Resize and compress the image
+            // **FIXED CODE:** Call the make() method on the imported Image facade
+            $resizedImage = Image::make($image)
+                ->fit(500, 500, function ($constraint) {
+                    $constraint->upsize(); // Prevents small images from being enlarged
+                })
+                ->encode('jpg', 80); // Encode as JPG with 80% quality
 
             $bucket->upload(
-                file_get_contents($image->getRealPath()),
+                $resizedImage, // <-- Upload the resized image data
                 ['name' => $fileName]
             );
-
-            // Get the public URL
-            $object = $bucket->object($fileName);
-
-           // **FIXED CODE:** Make the object public directly
-            $object->update(['acl' => []], ['predefinedAcl' => 'publicRead']);
-
-            $profilePictureUrl = $object->info()['mediaLink'];
+            
+            $profilePictureUrl = "https://storage.googleapis.com/{$bucketName}/{$fileName}";
         }
 
         // 3. Add the URL to the validated data
@@ -88,6 +88,7 @@ class ClientController extends Controller
         return redirect()->route('clients.index')
                          ->with('success', 'Client added successfully!');
     }
+
     /**
      * Display the specified resource.
      */
@@ -120,5 +121,3 @@ class ClientController extends Controller
         //
     }
 }
-
-
