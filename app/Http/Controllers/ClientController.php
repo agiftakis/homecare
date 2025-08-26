@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Kreait\Firebase\Factory;
-use Intervention\Image\Facades\Image; // <-- This is the corrected line for version 3
+use Spatie\Image\Image;
+use Spatie\Image\Enums\Fit; // <-- Add this line for the Fit enum
 
 class ClientController extends Controller
 {
@@ -59,21 +60,25 @@ class ClientController extends Controller
             $bucket = $storage->getBucket($bucketName);
 
             $image = $request->file('profile_picture');
-            // Change the file extension to .jpg since we are encoding it as a JPEG
-            $fileName = 'profile_pictures/' . time() . '.jpg';
+            $fileName = 'profile_pictures/' . time() . '.jpg'; // Always save as jpg for consistency
 
-            // **OPTIMIZATION:** Resize and compress the image
-            // **FIXED CODE:** Call the make() method on the imported Image facade
-            $resizedImage = Image::make($image)
-                ->fit(500, 500, function ($constraint) {
-                    $constraint->upsize(); // Prevents small images from being enlarged
-                })
-                ->encode('jpg', 80); // Encode as JPG with 80% quality
+            // Create a temporary file path to store the resized image
+            $tempPath = tempnam(sys_get_temp_dir(), 'optimized-image');
 
+            // **OPTIMIZATION WITH NEW PACKAGE:** Resize and save to temp path
+            Image::load($image->getRealPath())
+                ->fit(Fit::Crop, 500, 500) // <-- Use the Fit::Crop enum
+                ->optimize() // Optimize the image
+                ->save($tempPath);
+
+            // Upload the contents of the temporary file
             $bucket->upload(
-                $resizedImage, // <-- Upload the resized image data
+                file_get_contents($tempPath),
                 ['name' => $fileName]
             );
+
+            // Clean up the temporary file
+            unlink($tempPath);
             
             $profilePictureUrl = "https://storage.googleapis.com/{$bucketName}/{$fileName}";
         }
