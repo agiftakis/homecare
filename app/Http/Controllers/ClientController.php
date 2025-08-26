@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 
 use Illuminate\Http\Request;
+use Kreait\Firebase\Factory; 
 
 class ClientController extends Controller
 {
@@ -35,8 +36,8 @@ class ClientController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        // 1. Validate the incoming data
+   {
+        // 1. Validate the incoming data, including the new image file
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -45,16 +46,44 @@ class ClientController extends Controller
             'address' => 'required|string',
             'date_of_birth' => 'required|date',
             'care_plan' => 'nullable|string',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Validation for image
         ]);
 
-        // 2. Create a new client record
+        $profilePictureUrl = null;
+
+        // 2. Handle the file upload to Firebase
+        if ($request->hasFile('profile_picture')) {
+            $firebase = (new Factory)->withServiceAccount(config('firebase.credentials.file'));
+            $storage = $firebase->createStorage();
+            $bucket = $storage->getBucket();
+
+            $image = $request->file('profile_picture');
+            $fileName = 'profile_pictures/' . time() . '.' . $image->getClientOriginalExtension();
+
+            $bucket->upload(
+                file_get_contents($image->getRealPath()),
+                ['name' => $fileName]
+            );
+
+            // Get the public URL
+            $object = $bucket->object($fileName);
+
+           // **FIXED CODE:** Make the object public directly
+            $object->update(['acl' => []], ['predefinedAcl' => 'publicRead']);
+
+            $profilePictureUrl = $object->info()['mediaLink'];
+        }
+
+        // 3. Add the URL to the validated data
+        $validated['profile_picture_url'] = $profilePictureUrl;
+
+        // 4. Create a new client record
         Client::create($validated);
 
-        // 3. Redirect back to the client list with a success message
+        // 5. Redirect back to the client list with a success message
         return redirect()->route('clients.index')
                          ->with('success', 'Client added successfully!');
     }
-
     /**
      * Display the specified resource.
      */
@@ -87,3 +116,5 @@ class ClientController extends Controller
         //
     }
 }
+
+

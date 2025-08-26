@@ -50,8 +50,12 @@
                                 <x-input-error :messages="$errors->get('date_of_birth')" class="mt-2" />
                             </div>
 
-                            {{-- This section is empty to align the grid --}}
-                            <div></div>
+                             <!-- Profile Picture -->
+                            <div>
+                                <x-input-label for="profile_picture" :value="__('Profile Picture (Optional)')" />
+                                <input id="profile_picture" name="profile_picture" type="file" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 mt-1">
+                                <x-input-error :messages="$errors->get('profile_picture')" class="mt-2" />
+                            </div>
 
                             <!-- Address (Spans full width) -->
                             <div class="md:col-span-2">
