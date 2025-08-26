@@ -53,9 +53,13 @@ class ClientController extends Controller
 
         // 2. Handle the file upload to Firebase
         if ($request->hasFile('profile_picture')) {
-            $firebase = (new Factory)->withServiceAccount(config('firebase.credentials.file'));
+
+              $serviceAccount = storage_path('app/firebase/firebase_credentials.json');
+            $firebase = (new Factory)->withServiceAccount($serviceAccount);
+            
             $storage = $firebase->createStorage();
-            $bucket = $storage->getBucket();
+            // **FIXED CODE:** Get the bucket name from the .env file
+            $bucket = $storage->getBucket(env('FIREBASE_STORAGE_BUCKET'));
 
             $image = $request->file('profile_picture');
             $fileName = 'profile_pictures/' . time() . '.' . $image->getClientOriginalExtension();
