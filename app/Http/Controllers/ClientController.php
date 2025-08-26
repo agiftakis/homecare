@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Kreait\Firebase\Factory;
-use Spatie\Image\Image;
-use Spatie\Image\Enums\Fit; // <-- Add this line for the Fit enum
 
 class ClientController extends Controller
 {
@@ -62,14 +60,8 @@ class ClientController extends Controller
             $image = $request->file('profile_picture');
             $fileName = 'profile_pictures/' . time() . '.jpg'; // Always save as jpg for consistency
 
-            // Create a temporary file path to store the resized image
-            $tempPath = tempnam(sys_get_temp_dir(), 'optimized-image');
-
-            // **OPTIMIZATION WITH NEW PACKAGE:** Resize and save to temp path
-            Image::load($image->getRealPath())
-                ->fit(Fit::Crop, 500, 500) // <-- Use the Fit::Crop enum
-                ->optimize() // Optimize the image
-                ->save($tempPath);
+            // **NEW, SIMPLER RESIZING LOGIC USING PHP's BUILT-IN GD LIBRARY**
+            $tempPath = $this->resizeImageWithGD($image);
 
             // Upload the contents of the temporary file
             $bucket->upload(
@@ -93,6 +85,61 @@ class ClientController extends Controller
         return redirect()->route('clients.index')
                          ->with('success', 'Client added successfully!');
     }
+
+    /**
+     * A new helper function to resize an image using GD.
+     */
+    private function resizeImageWithGD($file)
+    {
+        $maxWidth = 500;
+        $maxHeight = 500;
+        $sourcePath = $file->getRealPath();
+        
+        // Get original image info
+        list($width, $height, $type) = getimagesize($sourcePath);
+
+        // Create image resource from file
+        switch ($type) {
+            case IMAGETYPE_JPEG:
+                $sourceImage = imagecreatefromjpeg($sourcePath);
+                break;
+            case IMAGETYPE_PNG:
+                $sourceImage = imagecreatefrompng($sourcePath);
+                break;
+            case IMAGETYPE_GIF:
+                $sourceImage = imagecreatefromgif($sourcePath);
+                break;
+            default:
+                // Or handle error appropriately
+                return $sourcePath; 
+        }
+
+        // Create a new true color image
+        $resizedImage = imagecreatetruecolor($maxWidth, $maxHeight);
+
+        // Preserve transparency for PNG and GIF
+        if ($type == IMAGETYPE_PNG || $type == IMAGETYPE_GIF) {
+            imagecolortransparent($resizedImage, imagecolorallocatealpha($resizedImage, 0, 0, 0, 127));
+            imagealphablending($resizedImage, false);
+            imagesavealpha($resizedImage, true);
+        }
+
+        // Resize and crop
+        imagecopyresampled($resizedImage, $sourceImage, 0, 0, 0, 0, $maxWidth, $maxHeight, $width, $height);
+
+        // Create a temporary file to save the new image
+        $tempPath = tempnam(sys_get_temp_dir(), 'resized-');
+        
+        // Save the resized image as a JPEG
+        imagejpeg($resizedImage, $tempPath, 80); // 80% quality
+
+        // Free up memory
+        imagedestroy($sourceImage);
+        imagedestroy($resizedImage);
+
+        return $tempPath;
+    }
+
 
     /**
      * Display the specified resource.
