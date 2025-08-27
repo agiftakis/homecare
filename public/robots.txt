@@ -1,2 +1,16 @@
+# Block all web crawlers from accessing non-public areas.
 User-agent: *
-Disallow:
+Disallow: /storage/
+Disallow: /vendor/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /email/verify
+Disallow: /profile
+
+# Allow everything else.
+Allow: /
+
+# You can add a sitemap later if you create one.
+# Sitemap: http://localhost:8000/sitemap.xml
