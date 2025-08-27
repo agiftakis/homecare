@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CaregiverController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -19,6 +20,8 @@ Route::middleware('auth')->group(function () {
 
     // ADD THIS LINE FOR CLIENTS
     Route::resource('clients', ClientController::class);
+    //ADD THIS FOR CAREGIVERS
+    Route::resource('caregivers', CaregiverController::class);
 });
 
 require __DIR__.'/auth.php';
