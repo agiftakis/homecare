@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Kreait\Firebase\Factory;
+use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
 {
@@ -44,30 +45,7 @@ class ClientController extends Controller
         $profilePictureUrl = null;
 
         if ($request->hasFile('profile_picture')) {
-            $serviceAccount = storage_path('app/firebase/firebase_credentials.json');
-            $firebase = (new Factory)->withServiceAccount($serviceAccount);
-            
-            $storage = $firebase->createStorage();
-            $bucketName = env('FIREBASE_STORAGE_BUCKET');
-            $bucket = $storage->getBucket($bucketName);
-
-            $image = $request->file('profile_picture');
-            $fileName = 'profile_pictures/' . time() . '.jpg';
-
-            $tempPath = $this->resizeImageWithGD($image);
-
-            // Upload the contents of the temporary file and get the object back
-            $object = $bucket->upload(
-                file_get_contents($tempPath),
-                ['name' => $fileName]
-            );
-
-            // **CRITICAL FIX:** Make the uploaded file public
-            $object->update(['acl' => []], ['predefinedAcl' => 'publicRead']);
-
-            unlink($tempPath);
-            
-            $profilePictureUrl = "https://storage.googleapis.com/{$bucketName}/{$fileName}";
+            $profilePictureUrl = $this->uploadImageToFirebase($request->file('profile_picture'));
         }
 
         $validated['profile_picture_url'] = $profilePictureUrl;
@@ -76,6 +54,69 @@ class ClientController extends Controller
 
         return redirect()->route('clients.index')
                          ->with('success', 'Client added successfully!');
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Client $client)
+    {
+        return view('clients.edit', compact('client'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Client $client)
+    {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => ['required', 'email', Rule::unique('clients')->ignore($client->id)],
+            'phone_number' => 'required|string|max:20',
+            'address' => 'required|string',
+            'date_of_birth' => 'required|date|date_format:Y-m-d',
+            'care_plan' => 'nullable|string',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $profilePictureUrl = $client->profile_picture_url;
+
+        if ($request->hasFile('profile_picture')) {
+            $profilePictureUrl = $this->uploadImageToFirebase($request->file('profile_picture'));
+        }
+
+        $validated['profile_picture_url'] = $profilePictureUrl;
+
+        $client->update($validated);
+
+        return redirect()->route('clients.index')
+                         ->with('success', 'Client updated successfully!');
+    }
+
+    private function uploadImageToFirebase($image)
+    {
+        $serviceAccount = storage_path('app/firebase/firebase_credentials.json');
+        $firebase = (new Factory)->withServiceAccount($serviceAccount);
+        
+        $storage = $firebase->createStorage();
+        $bucketName = env('FIREBASE_STORAGE_BUCKET');
+        $bucket = $storage->getBucket($bucketName);
+
+        $fileName = 'profile_pictures/' . time() . '.jpg';
+
+        $tempPath = $this->resizeImageWithGD($image);
+
+        $object = $bucket->upload(
+            file_get_contents($tempPath),
+            ['name' => $fileName]
+        );
+
+        $object->update(['acl' => []], ['predefinedAcl' => 'publicRead']);
+
+        unlink($tempPath);
+        
+        return "https://storage.googleapis.com/{$bucketName}/{$fileName}";
     }
 
     private function resizeImageWithGD($file)
@@ -111,35 +152,5 @@ class ClientController extends Controller
         return $tempPath;
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
+    // ... destroy method ...
 }
