@@ -55,10 +55,14 @@ class CaregiverController extends Controller
 
             $tempPath = $this->resizeImageWithGD($image);
 
-            $bucket->upload(
+            // Upload the contents of the temporary file and get the object back
+            $object = $bucket->upload(
                 file_get_contents($tempPath),
                 ['name' => $fileName]
             );
+
+            // **CRITICAL FIX:** Make the uploaded file public
+            $object->update(['acl' => []], ['predefinedAcl' => 'publicRead']);
 
             unlink($tempPath);
             
@@ -78,9 +82,7 @@ class CaregiverController extends Controller
         $maxWidth = 500;
         $maxHeight = 500;
         $sourcePath = $file->getRealPath();
-        
         list($width, $height, $type) = getimagesize($sourcePath);
-
         switch ($type) {
             case IMAGETYPE_JPEG:
                 $sourceImage = imagecreatefromjpeg($sourcePath);
@@ -94,26 +96,49 @@ class CaregiverController extends Controller
             default:
                 return $sourcePath; 
         }
-
         $resizedImage = imagecreatetruecolor($maxWidth, $maxHeight);
-
         if ($type == IMAGETYPE_PNG || $type == IMAGETYPE_GIF) {
             imagecolortransparent($resizedImage, imagecolorallocatealpha($resizedImage, 0, 0, 0, 127));
             imagealphablending($resizedImage, false);
             imagesavealpha($resizedImage, true);
         }
-
         imagecopyresampled($resizedImage, $sourceImage, 0, 0, 0, 0, $maxWidth, $maxHeight, $width, $height);
-
         $tempPath = tempnam(sys_get_temp_dir(), 'resized-');
-        
         imagejpeg($resizedImage, $tempPath, 80);
-
         imagedestroy($sourceImage);
         imagedestroy($resizedImage);
-
         return $tempPath;
     }
 
-    // ... (Leave show, edit, update, destroy methods empty for now)
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        //
+    }
 }
