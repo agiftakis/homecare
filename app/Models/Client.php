@@ -24,4 +24,9 @@ class Client extends Model
         'care_plan',
         'profile_picture_url',
     ];
+
+    public function shifts()
+    {
+        return $this->hasMany(Shift::class);
+    }
 }

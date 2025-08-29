@@ -23,4 +23,9 @@ class Caregiver extends Model
         'certifications',
         'profile_picture_url',
     ];
+
+    public function shifts()
+    {
+        return $this->hasMany(Shift::class);
+    }
 }
