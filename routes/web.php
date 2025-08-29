@@ -27,6 +27,8 @@ Route::middleware('auth')->group(function () {
     // Scheduling Routes
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::post('/shifts', [ScheduleController::class, 'store'])->name('shifts.store');
+    Route::put('/shifts/{shift}', [ScheduleController::class, 'update'])->name('shifts.update'); // <-- Add this
+    Route::delete('/shifts/{shift}', [ScheduleController::class, 'destroy'])->name('shifts.destroy'); // <-- Add this
     // We will add update and destroy routes later
 });
 
