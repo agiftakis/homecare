@@ -17,7 +17,7 @@
                     <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
 
                     <!-- Add Shift Modal -->
-                    <div x-show="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showModal = false">
+                    <div x-show="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showModal = false" style="display: none;">
                         <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-2xl" @click.away="showModal = false">
                             <h3 class="text-lg font-medium mb-4">Add New Shift</h3>
                             <form @submit.prevent="submitShiftForm">
@@ -60,7 +60,7 @@
                                     </div>
                                 </div>
                                 <div class="mt-6 flex justify-end space-x-4">
-                                    <x-secondary-button @click="showModal = false">Cancel</x-secondary-button>
+                                    <x-secondary-button type="button" @click="showModal = false">Cancel</x-secondary-button>
                                     <x-primary-button type="submit">Save Shift</x-primary-button>
                                 </div>
                             </form>
@@ -107,6 +107,8 @@
                         }
                     });
                     this.calendar.render();
+                    toastr.options.progressBar = true;
+                    toastr.options.positionClass = 'toast-bottom-right';
                 },
                 submitShiftForm() {
                     fetch('{{ route("shifts.store") }}', {
@@ -120,10 +122,20 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            window.location.reload();
+                            this.calendar.addEvent({
+                                title: data.shift.title,
+                                start: data.shift.start,
+                                end: data.shift.end,
+                                backgroundColor: '#4f46e5',
+                                borderColor: '#4f46e5'
+                            });
+                            this.showModal = false;
+                            this.newShift = { client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' };
+                            toastr.success('New shift created successfully!');
                         } else {
-                            // Handle errors, e.g., display them to the user
-                            alert(data.message || 'An error occurred.');
+                            // Handle validation errors
+                            let errorMessages = Object.values(data.errors).flat().join('\n');
+                            toastr.error(errorMessages || 'An error occurred.');
                         }
                     });
                 }

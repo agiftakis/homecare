@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Caregiver;
 use App\Models\Shift;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class ScheduleController extends Controller
 {
@@ -26,7 +27,7 @@ class ScheduleController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'client_id' => 'required|exists:clients,id',
             'caregiver_id' => 'required|exists:caregivers,id',
             'start_time' => 'required|date',
@@ -34,8 +35,20 @@ class ScheduleController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        Shift::create($validated);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()]);
+        }
 
-        return response()->json(['success' => true]);
+        $shift = Shift::create($validator->validated());
+        $shift->load(['client', 'caregiver']); // Eager load relationships
+
+        // Prepare data for FullCalendar
+        $eventData = [
+            'title' => $shift->client->first_name . ' w/ ' . $shift->caregiver->first_name,
+            'start' => $shift->start_time,
+            'end' => $shift->end_time,
+        ];
+
+        return response()->json(['success' => true, 'shift' => $eventData]);
     }
 }
