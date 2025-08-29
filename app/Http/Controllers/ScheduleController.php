@@ -17,7 +17,12 @@ class ScheduleController extends Controller
     {
         $clients = Client::orderBy('first_name')->get();
         $caregivers = Caregiver::orderBy('first_name')->get();
-        $shifts = Shift::with(['client', 'caregiver'])->get();
+        
+        // Only get shifts that have a client and caregiver to prevent errors
+        $shifts = Shift::whereNotNull('client_id')
+                       ->whereNotNull('caregiver_id')
+                       ->with(['client', 'caregiver'])
+                       ->get();
 
         return view('schedule.index', compact('clients', 'caregivers', 'shifts'));
     }
@@ -36,7 +41,7 @@ class ScheduleController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()]);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         $shift = Shift::create($validator->validated());

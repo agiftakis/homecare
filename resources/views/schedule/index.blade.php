@@ -1,4 +1,3 @@
-<!-- File: resources/views/schedule/index.blade.php -->
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
@@ -39,6 +38,7 @@
                                         <select id="caregiver_id" name="caregiver_id" x-model="newShift.caregiver_id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                             <option value="">Select a Caregiver</option>
                                             @foreach($caregivers as $caregiver)
+                                                <!-- **CRITICAL FIX:** Use caregiver->id instead of client->id -->
                                                 <option value="{{ $caregiver->id }}">{{ $caregiver->first_name }} {{ $caregiver->last_name }}</option>
                                             @endforeach
                                         </select>
@@ -115,11 +115,19 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
                         },
                         body: JSON.stringify(this.newShift)
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(errorData => {
+                                throw errorData;
+                            });
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             this.calendar.addEvent({
@@ -132,11 +140,14 @@
                             this.showModal = false;
                             this.newShift = { client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' };
                             toastr.success('New shift created successfully!');
-                        } else {
-                            // Handle validation errors
-                            let errorMessages = Object.values(data.errors).flat().join('\n');
-                            toastr.error(errorMessages || 'An error occurred.');
                         }
+                    })
+                    .catch(errorData => {
+                        let errorMessages = 'An unexpected error occurred.';
+                        if (errorData && errorData.errors) {
+                            errorMessages = Object.values(errorData.errors).flat().join('<br>');
+                        }
+                        toastr.error(errorMessages);
                     });
                 }
             }
