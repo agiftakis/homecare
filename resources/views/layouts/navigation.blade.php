@@ -100,6 +100,9 @@
             <x-responsive-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*')">
                 {{ __('Caregivers') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.*')">
+                {{ __('Schedule') }}
+            </x-responsive-nav-link>
         </div>
 
         <!-- Responsive Settings Options -->
