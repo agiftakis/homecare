@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CaregiverController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ScheduleController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -22,6 +23,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('clients', ClientController::class);
     //ADD THIS FOR CAREGIVERS
     Route::resource('caregivers', CaregiverController::class);
+
+    // Scheduling Routes
+    Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
+    Route::post('/shifts', [ScheduleController::class, 'store'])->name('shifts.store');
+    // We will add update and destroy routes later
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
