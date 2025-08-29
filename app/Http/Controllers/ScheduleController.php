@@ -14,11 +14,8 @@ class ScheduleController extends Controller
      */
     public function index()
     {
-        // Fetch all clients and caregivers to populate dropdowns in the form
         $clients = Client::orderBy('first_name')->get();
         $caregivers = Caregiver::orderBy('first_name')->get();
-
-        // Fetch all existing shifts to display on the calendar
         $shifts = Shift::with(['client', 'caregiver'])->get();
 
         return view('schedule.index', compact('clients', 'caregivers', 'shifts'));
@@ -29,6 +26,16 @@ class ScheduleController extends Controller
      */
     public function store(Request $request)
     {
-        // We will implement this logic in the next step
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'caregiver_id' => 'required|exists:caregivers,id',
+            'start_time' => 'required|date',
+            'end_time' => 'required|date|after:start_time',
+            'notes' => 'nullable|string',
+        ]);
+
+        Shift::create($validated);
+
+        return response()->json(['success' => true]);
     }
 }
