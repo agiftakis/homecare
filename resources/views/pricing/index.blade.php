@@ -16,12 +16,13 @@
 <body class="antialiased bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <!-- Header -->
     <header class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <nav x-data="{ open: false }" class="container mx-auto px-6 py-4 flex justify-between items-center">
             <a href="{{ url('/') }}" class="flex items-center space-x-2">
-                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-35 w-auto">
+                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-10 w-auto">
                 <span class="text-xl font-bold text-gray-800 dark:text-white">VitaLink</span>
             </a>
-            <div>
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex items-center space-x-4">
                 <a href="{{ route('login') }}"
                     class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-4 transition duration-300">Log
                     In</a>
@@ -29,6 +30,26 @@
                     class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 shadow-md">
                     Get Started
                 </a>
+            </div>
+            <!-- Hamburger Menu Button -->
+            <div class="md:hidden">
+                <button @click="open = !open" class="text-gray-800 dark:text-gray-200 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div x-show="open" @click.away="open = false"
+                class="md:hidden fixed top-0 left-0 w-full h-screen bg-gray-900 bg-opacity-95 z-50 flex flex-col items-center justify-center"
+                style="display: none;">
+                <button @click="open = false" class="absolute top-6 right-6 text-white text-3xl">&times;</button>
+                <a href="{{ route('login') }}" class="text-2xl text-white py-4">Log In</a>
+                <a href="{{ route('register') }}"
+                    class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg text-xl transition duration-300">Get
+                    Started</a>
             </div>
         </nav>
     </header>
@@ -39,7 +60,7 @@
         <section class="bg-gray-50 dark:bg-gray-800 py-20">
             <div class="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
                 <div class="text-center md:text-left">
-                    <span class="text-indigo-500 font-semibold text-xl">Pricing Plans</span>
+                    <span class="text-indigo-500 font-semibold text-6xl">Pricing Plans</span>
                     <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mt-2 mb-4">Home Care
                         Software Plans That Meet Your Agency's Needs</h1>
                     <p class="text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto md:mx-0">Choose the right plan
@@ -128,7 +149,8 @@
                         <span class="font-semibold">Billing</span>
                     </div>
                     <div class="flex flex-col items-center p-4 rounded-lg">
-                        <img src="{{ asset('images/feature-caregiver.png') }}" alt="Caregiver" class="h-12 w-12 mb-3">
+                        <img src="{{ asset('images/feature-caregiver.png') }}" alt="Caregiver"
+                            class="h-12 w-12 mb-3">
                         <span class="font-semibold">Caregiver App</span>
                     </div>
                     <div class="flex flex-col items-center p-4 rounded-lg">
@@ -148,9 +170,9 @@
         </section>
 
         <!-- FAQ Section -->
-        <section class="py-20 mt-20" x-data="{ open: 1 }">
+        <section class="py-20" x-data="{ open: 1 }">
             <div class="container mx-auto px-6 max-w-4xl">
-                <h2 class="text-3xl font-bold text-center m-22">Frequently Asked Questions</h2>
+                <h2 class="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
                 <div class="space-y-4">
                     <!-- FAQ Item 1 -->
                     <div
@@ -192,7 +214,7 @@
     <footer class="bg-gray-800 dark:bg-black text-white py-12">
         <div class="container mx-auto px-6 text-center">
             <a href="{{ url('/') }}" class="flex items-center justify-center space-x-2 mb-4">
-                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-15 w-auto">
+                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-10 w-auto">
                 <span class="text-xl font-bold">VitaLink</span>
             </a>
             <p class="text-gray-400">&copy; {{ date('Y') }} VitaLink, Inc. All rights reserved.</p>
