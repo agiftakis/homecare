@@ -12,12 +12,13 @@
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="antialiased bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    
     <!-- Header -->
     <header class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
         <nav x-data="{ open: false }" class="container mx-auto px-6 py-4 flex justify-between items-center">
             <a href="{{ url('/') }}" class="flex items-center space-x-3">
-                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-16 w-auto">
-                <span class="text-2xl font-bold text-gray-800 dark:text-white">VitaLink</span>
+                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-12 md:h-16 w-auto">
+                <span class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">VitaLink</span>
             </a>
             <!-- Desktop Menu -->
             <div class="hidden md:flex items-center space-x-6">
@@ -34,11 +35,20 @@
                 </button>
             </div>
              <!-- Mobile Menu -->
-            <div x-show="open" @click.away="open = false" class="md:hidden fixed top-0 left-0 w-full h-screen bg-gray-900 bg-opacity-95 z-50 flex flex-col items-center justify-center" style="display: none;">
-                <button @click="open = false" class="absolute top-6 right-6 text-white text-3xl">&times;</button>
-                <a href="{{ route('pricing') }}" class="text-2xl text-white py-4">Pricing</a>
-                <a href="{{ route('login') }}" class="text-2xl text-white py-4">Log In</a>
-                <a href="{{ route('register') }}" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg text-xl transition duration-300">Get Started</a>
+            <div x-show="open" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform -translate-x-full"
+                 x-transition:enter-end="opacity-100 transform translate-x-0"
+                 x-transition:leave="transition ease-in duration-300"
+                 x-transition:leave-start="opacity-100 transform translate-x-0"
+                 x-transition:leave-end="opacity-0 transform -translate-x-full"
+                 @click.away="open = false" 
+                 class="md:hidden fixed top-0 left-0 w-full h-screen bg-gray-900 bg-opacity-95 z-50 flex flex-col items-center justify-center" 
+                 style="display: none;">
+                <button @click="open = false" class="absolute top-6 right-6 text-white text-4xl">&times;</button>
+                <a href="{{ route('pricing') }}" class="text-3xl text-white py-4">Pricing</a>
+                <a href="{{ route('login') }}" class="text-3xl text-white py-4">Log In</a>
+                <a href="{{ route('register') }}" class="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg text-2xl transition duration-300">Get Started</a>
             </div>
         </nav>
     </header>
@@ -46,10 +56,10 @@
     <!-- Main Content -->
     <main>
         <!-- Hero Section -->
-        <section class="relative h-[60vh] flex items-center justify-center text-center text-white">
-            <div class="absolute inset-0 bg-black opacity-50"></div>
-            <img src="{{ asset('images/hero-background.jpg') }}" alt="Caregiver with a senior patient" class="w-full h-full object-cover">
-            <div class="relative z-10 p-6">
+        <section class="relative h-[60vh] flex items-center justify-center text-center text-white overflow-hidden">
+            <div class="absolute inset-0 bg-black opacity-50 z-10"></div>
+            <img src="{{ asset('images/hero-background.jpg') }}" alt="Caregiver with a senior patient" class="absolute inset-0 w-full h-full object-cover">
+            <div class="relative z-20 p-6">
                 <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">The Future of Home Care Management</h1>
                 <p class="text-lg md:text-xl max-w-3xl mx-auto mb-8">Streamline your scheduling, simplify client management, and empower your caregivers with VitaLink.</p>
                 <a href="{{ route('register') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-300 shadow-lg">
