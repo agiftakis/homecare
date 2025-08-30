@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\BelongsToAgency;
 
 class Shift extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToAgency;
 
     /**
      * The attributes that are mass assignable.

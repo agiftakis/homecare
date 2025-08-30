@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\BelongsToAgency;
 
 class Caregiver extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToAgency;
 
     /**
      * The attributes that are mass assignable.
