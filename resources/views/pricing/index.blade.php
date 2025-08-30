@@ -16,7 +16,7 @@
     <header class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
             <a href="{{ url('/') }}" class="flex items-center space-x-2">
-                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-30 w-auto">
+                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-35 w-auto">
                 <span class="text-xl font-bold text-gray-800 dark:text-white">VitaLink</span>
             </a>
             <div>
@@ -34,7 +34,7 @@
         <section class="bg-gray-50 dark:bg-gray-800 py-20">
             <div class="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
                 <div class="text-center md:text-left">
-                    <span class="text-indigo-500 font-semibold text-4xl">Pricing Plans</span>
+                    <span class="text-indigo-500 font-semibold text-xl">Pricing Plans</span>
                     <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mt-2 mb-4">Home Care Software Plans That Meet Your Agency's Needs</h1>
                     <p class="text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto md:mx-0">Choose the right plan for your agency. We understand that every agency is unique and has its own set of challenges and needs. Find the perfect fit based on the features you need and the number of clients you serve.</p>
                 </div>
@@ -122,9 +122,9 @@
         </section>
         
         <!-- FAQ Section -->
-        <section class="py-20" x-data="{ open: 1 }">
+        <section class="py-20 mt-20" x-data="{ open: 1 }">
             <div class="container mx-auto px-6 max-w-4xl">
-                <h2 class="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+                <h2 class="text-3xl font-bold text-center m-22">Frequently Asked Questions</h2>
                 <div class="space-y-4">
                     <!-- FAQ Item 1 -->
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
@@ -158,7 +158,7 @@
     <footer class="bg-gray-800 dark:bg-black text-white py-12">
         <div class="container mx-auto px-6 text-center">
             <a href="{{ url('/') }}" class="flex items-center justify-center space-x-2 mb-4">
-                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-10 w-auto">
+                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-15 w-auto">
                 <span class="text-xl font-bold">VitaLink</span>
             </a>
             <p class="text-gray-400">&copy; {{ date('Y') }} VitaLink, Inc. All rights reserved.</p>
