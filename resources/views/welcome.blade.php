@@ -1,168 +1,135 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>VitaLink - Home Care Software</title>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VitaLink - Home Care Management Software</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <!-- Scripts -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+<body class="antialiased bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
+        <nav x-data="{ open: false }" class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="{{ url('/') }}" class="flex items-center space-x-3">
+                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-20 w-auto">
+                <span class="text-2xl font-bold text-gray-800 dark:text-white">VitaLink</span>
+            </a>
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="{{ route('pricing') }}"
+                    class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition duration-300">Pricing</a>
+                <a href="{{ route('login') }}"
+                    class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition duration-300">Log
+                    In</a>
+                <a href="{{ route('register') }}"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg transition duration-300 shadow-md">
+                    Get Started
+                </a>
+            </div>
+            <!-- Hamburger Menu Button -->
+            <div class="md:hidden">
+                <button @click="open = !open" class="text-gray-800 dark:text-gray-200 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div x-show="open" @click.away="open = false"
+                class="md:hidden absolute top-0 left-0 w-full h-screen bg-gray-900 bg-opacity-95 z-50 flex flex-col items-center justify-center"
+                style="display: none;">
+                <button @click="open = false" class="absolute top-6 right-6 text-white text-3xl">&times;</button>
+                <a href="{{ route('pricing') }}" class="text-2xl text-white py-4">Pricing</a>
+                <a href="{{ route('login') }}" class="text-2xl text-white py-4">Log In</a>
+                <a href="{{ route('register') }}"
+                    class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg text-xl transition duration-300">Get
+                    Started</a>
+            </div>
+        </nav>
+    </header>
 
-        <style>
-            .hero-bg {
-                background-image: linear-gradient(rgba(17, 24, 39, 0.85), rgba(17, 24, 39, 0.85)), url('{{ asset('images/hero-background.jpg') }}');
-                background-size: cover;
-                background-position: center;
-                background-attachment: fixed;
-            }
-        </style>
-    </head>
-    <body class="antialiased font-sans text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-900">
-        <div x-data="{ navOpen: false }" @keydown.window.escape="navOpen = false">
-            <!-- Header -->
-            <header class="fixed inset-x-0 top-0 z-50 bg-gray-900/80 backdrop-blur-md">
-                <nav class="flex items-center justify-between p-6 lg:px-8" aria-label="Global">
-                    <div class="flex lg:flex-1">
-                        <a href="/" class="flex items-center">
-                            <img class="h-50 w-auto" src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo">
-                            <span class="ml-4 text-2xl font-bold text-white">VitaLink</span>
-                        </a>
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="relative h-[60vh] md:h-[80vh] flex items-center justify-center text-center text-white">
+            <div class="absolute inset-0 bg-black opacity-50"></div>
+            <img src="{{ asset('images/hero-background.jpg') }}" alt="Caregiver with a senior patient"
+                class="w-full h-full object-cover">
+            <div class="relative z-10 p-6">
+                <h1 class="text-4xl md:text-6xl font-bold mb-4">The Future of Home Care Management</h1>
+                <p class="text-lg md:text-xl max-w-3xl mx-auto mb-8">Streamline your scheduling, simplify client
+                    management, and empower your caregivers with VitaLink.</p>
+                <a href="{{ route('register') }}"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-300 shadow-lg">
+                    Get started for free
+                </a>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="py-20 bg-gray-50 dark:bg-gray-800">
+            <div class="container mx-auto px-6 text-center">
+                <span class="text-indigo-500 font-semibold">All-In-One Solution</span>
+                <h2 class="text-3xl md:text-4xl font-bold mt-2 mb-4 text-gray-900 dark:text-white">A Customizable
+                    Software Solution</h2>
+                <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-16">VitaLink provides the tools
+                    you need to operate efficiently, stay compliant, and provide the best possible care.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <!-- Feature 1 -->
+                    <div class="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-lg">
+                        <img src="{{ asset('images/icon-schedule.png') }}" alt="Scheduling Icon"
+                            class="h-16 w-16 mx-auto mb-4">
+                        <h3 class="text-2xl font-bold mb-2">Intelligent Scheduling</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Easily create, manage, and update shifts with our
+                            intuitive calendar interface. Match the right caregiver to the right client, every time.</p>
+                        <a href="#"
+                            class="mt-6 inline-block text-indigo-500 font-semibold hover:text-indigo-400">Learn more
+                            &rarr;</a>
                     </div>
-                    <div class="flex lg:hidden">
-                        <button type="button" @click="navOpen = !navOpen" class="inline-flex items-center justify-center rounded-md p-2.5 text-gray-200 hover:text-white">
-                            <span class="sr-only">Open main menu</span>
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" x-show="!navOpen" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" x-show="navOpen" />
-                            </svg>
-                        </button>
+                    <!-- Feature 2 -->
+                    <div class="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-lg">
+                        <img src="{{ asset('images/icon-client.png') }}" alt="Client Management Icon"
+                            class="h-16 w-16 mx-auto mb-4">
+                        <h3 class="text-2xl font-bold mb-2">Centralized Client Data</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Keep all client information, care plans, and contact
+                            details organized and accessible in one secure location.</p>
+                        <a href="#"
+                            class="mt-6 inline-block text-indigo-500 font-semibold hover:text-indigo-400">Learn more
+                            &rarr;</a>
                     </div>
-                    <div class="hidden lg:flex lg:flex-1 lg:justify-end lg:gap-x-6">
-                        @if (Route::has('login'))
-                            @auth
-                                <a href="{{ url('/dashboard') }}" class="rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">Dashboard</a>
-                            @else
-                                <a href="{{ route('login') }}" class="text-sm font-semibold leading-6 text-gray-200 hover:text-white transition-colors duration-200">Log in</a>
-                                <a href="{{ route('register') }}" class="rounded-full bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">Get Started</a>
-                            @endauth
-                        @endif
-                    </div>
-                </nav>
-                <!-- Mobile menu -->
-                <div x-show="navOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="lg:hidden fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-gray-800 shadow-xl rounded-r-2xl">
-                    <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                        <a href="/" class="flex items-center">
-                            <img class="h-50 w-auto" src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo">
-                            <span class="ml-4 text-xl font-bold text-gray-900 dark:text-white">VitaLink</span>
-                        </a>
-                        <button type="button" @click="navOpen = false" class="rounded-md p-2.5 text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-white">
-                            <span class="sr-only">Close menu</span>
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="mt-6 px-6 space-y-4">
-                        @if (Route::has('login'))
-                            @auth
-                                <a href="{{ url('/dashboard') }}" class="block rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">Dashboard</a>
-                            @else
-                                <a href="{{ route('login') }}" class="block rounded-full px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white transition-colors duration-200">Log in</a>
-                                <a href="{{ route('register') }}" class="block rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">Get Started</a>
-                            @endauth
-                        @endif
+                    <!-- Feature 3 -->
+                    <div class="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-lg">
+                        <img src="{{ asset('images/icon-communication.png') }}" alt="Communication Icon"
+                            class="h-16 w-16 mx-auto mb-4">
+                        <h3 class="text-2xl font-bold mb-2">Seamless Communication</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Our platform facilitates clear and secure
+                            communication between your office, caregivers, and clients.</p>
+                        <a href="#"
+                            class="mt-6 inline-block text-indigo-500 font-semibold hover:text-indigo-400">Learn more
+                            &rarr;</a>
                     </div>
                 </div>
-            </header>
+            </div>
+        </section>
 
-            <main>
-                <!-- Hero Section -->
-                <div class="relative isolate overflow-hidden hero-bg pt-24 pb-96">
-                    <div class="mx-auto max-w-7xl px-6 lg:px-8">
-                        <div class="mx-auto max-w-3xl text-center">
-                            <h1 class="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">The Future of Home Care Management</h1>
-                            <p class="mt-6 text-lg leading-8 text-gray-200">Streamline scheduling, simplify client management, and empower caregivers with VitaLink's all-in-one platform.</p>
-                            <div class="mt-10 flex items-center justify-center gap-x-6">
-                                <a href="{{ route('register') }}" class="rounded-full bg-indigo-600 px-6 py-3.5 text-base font-semibold text-white shadow-lg hover:bg-indigo-500 transition-all duration-200 transform hover:scale-105">Get Started for Free</a>
-                                <a href="#" class="text-sm font-semibold text-gray-200 hover:text-white transition-colors duration-200">Learn More <span aria-hidden="true">→</span></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    </main>
 
-                <!-- Feature Section -->
-                <div class="bg-white dark:bg-gray-900 py-24 sm:py-32">
-                    <div class="mx-auto max-w-7xl px-6 lg:px-8">
-                        <div class="mx-auto max-w-2xl text-center">
-                            <h2 class="text-base font-semibold leading-7 text-indigo-600 dark:text-indigo-400">All-In-One Solution</h2>
-                            <p class="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">A Customizable Software Solution</p>
-                            <p class="mt-4 text-lg text-gray-600 dark:text-gray-300">Discover how VitaLink transforms home care management with powerful, intuitive tools.</p>
-                        </div>
-                        <div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
-                            <dl class="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:grid-cols-3">
-                                <!-- Feature 1 -->
-                                <div class="flex flex-col items-center text-center bg-gray-50 dark:bg-gray-800 rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-                                    <img src="{{ asset('images/icon-schedule.png') }}" class="h-16 w-16 mb-4" alt="Scheduling Icon">
-                                    <dt class="text-lg font-semibold leading-7 text-gray-900 dark:text-white">Intelligent Scheduling</dt>
-                                    <dd class="mt-2 flex flex-auto flex-col text-base leading-7 text-gray-600 dark:text-gray-300">
-                                        <ul class="list-disc list-inside space-y-2 text-left">
-                                            <li>User-Friendly Interface</li>
-                                            <li>Real-Time Updates</li>
-                                            <li>Automated Matching</li>
-                                        </ul>
-                                        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                            <a href="#" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">Learn More <span aria-hidden="true">→</span></a>
-                                        </div>
-                                    </dd>
-                                </div>
-                                <!-- Feature 2 -->
-                                <div class="flex flex-col items-center text-center bg-gray-50 dark:bg-gray-800 rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-                                    <img src="{{ asset('images/icon-client.png') }}" class="h-16 w-16 mb-4" alt="Client Management Icon">
-                                    <dt class="text-lg font-semibold leading-7 text-gray-900 dark:text-white">Full Control of Operations</dt>
-                                    <dd class="mt-2 flex flex-auto flex-col text-base leading-7 text-gray-600 dark:text-gray-300">
-                                        <ul class="list-disc list-inside space-y-2 text-left">
-                                            <li>Centralized Client Data</li>
-                                            <li>Custom Reports & Analytics</li>
-                                            <li>Secure Document Storage</li>
-                                        </ul>
-                                        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                            <a href="#" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">Learn More <span aria-hidden="true">→</span></a>
-                                        </div>
-                                    </dd>
-                                </div>
-                                <!-- Feature 3 -->
-                                <div class="flex flex-col items-center text-center bg-gray-50 dark:bg-gray-800 rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-                                    <img src="{{ asset('images/icon-communication.png') }}" class="h-16 w-16 mb-4" alt="Communication Icon">
-                                    <dt class="text-lg font-semibold leading-7 text-gray-900 dark:text-white">Gain a Strategic Partner</dt>
-                                    <dd class="mt-2 flex flex-auto flex-col text-base leading-7 text-gray-600 dark:text-gray-300">
-                                        <ul class="list-disc list-inside space-y-2 text-left">
-                                            <li>Increase Revenue</li>
-                                            <li>Streamline Communication</li>
-                                            <li>Exceptional Support</li>
-                                        </ul>
-                                        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                            <a href="#" class="rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors duration-200">Learn More <span aria-hidden="true">→</span></a>
-                                        </div>
-                                    </dd>
-                                </div>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </main>
-
-            <!-- Footer -->
-            <footer class="bg-gray-800" aria-labelledby="footer-heading">
-                <div class="mx-auto max-w-7xl px-6 py-12 lg:px-8">
-                    <div class="mt-8 border-t border-gray-700 pt-8 text-center">
-                        <p class="text-sm leading-5 text-gray-400">&copy; {{ date('Y') }} VitaLink, Inc. All rights reserved.</p>
-                    </div>
-                </div>
-            </footer>
+    <!-- Footer -->
+    <footer class="bg-gray-800 dark:bg-black text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; {{ date('Y') }} VitaLink, Inc. All rights reserved.</p>
         </div>
-    </body>
+    </footer>
+</body>
+
 </html>
