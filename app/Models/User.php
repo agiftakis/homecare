@@ -20,6 +20,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'agency_id',
+        'role'
     ];
 
     /**
@@ -43,5 +45,14 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+
+    /**
+     * Get the agency that the user belongs to.
+     */
+    public function agency()
+    {
+        return $this->belongsTo(Agency::class);
     }
 }
