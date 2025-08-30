@@ -5,10 +5,13 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CaregiverController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\PricingController;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
