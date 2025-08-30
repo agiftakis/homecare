@@ -18,7 +18,7 @@
     <header class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
         <nav x-data="{ open: false }" class="container mx-auto px-6 py-4 flex justify-between items-center">
             <a href="{{ url('/') }}" class="flex items-center space-x-2">
-                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-10 w-auto">
+                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-16 w-auto">
                 <span class="text-xl font-bold text-gray-800 dark:text-white">VitaLink</span>
             </a>
             <!-- Desktop Menu -->
