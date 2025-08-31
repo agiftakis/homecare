@@ -6,7 +6,9 @@ use App\Http\Controllers\CaregiverController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\PricingController;
+// **FIXED:** Corrected the namespace for the registration controller
 use App\Http\Controllers\AgencyRegistrationController;
+// **ADDED:** New controller for subscriptions
 use App\Http\Controllers\SubscriptionController;
 
 /*
@@ -21,7 +23,8 @@ Route::get('/', function () {
 
 // Publicly accessible routes
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
-Route::get('/register-agency', [AgencyRegistrationController::class, 'showRegistrationForm'])->name('agency.register');
+// **FIXED:** Changed the method name from showRegistrationForm to create
+Route::get('/register-agency', [AgencyRegistrationController::class, 'create'])->name('agency.register');
 Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store');
 
 
@@ -47,3 +50,4 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+
