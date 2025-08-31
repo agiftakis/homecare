@@ -19,7 +19,7 @@
     <header class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
         <nav x-data="{ open: false }" class="container mx-auto px-6 py-4 flex justify-between items-center">
             <a href="{{ url('/') }}" class="flex items-center space-x-3">
-                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-12 md:h-16 w-auto">
+                <img src="{{ asset('images/vitalink-logo.png') }}" alt="VitaLink Logo" class="h-16 md:h-16 w-auto">
                 <span class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">VitaLink</span>
             </a>
             <!-- Desktop Menu -->
@@ -29,7 +29,7 @@
                 <a href="{{ route('login') }}"
                     class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition duration-300">Log
                     In</a>
-                <a href="{{ route('register') }}"
+                <a href="{{ route('agency.register') }}"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg transition duration-300 shadow-md">
                     Get Started
                 </a>
@@ -56,7 +56,7 @@
                 <button @click="open = false" class="absolute top-6 right-6 text-white text-4xl">&times;</button>
                 <a href="{{ route('pricing') }}" class="text-3xl text-white py-4">Pricing</a>
                 <a href="{{ route('login') }}" class="text-3xl text-white py-4">Log In</a>
-                <a href="{{ route('register') }}"
+                <a href="{{ route('agency.register') }}"
                     class="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg text-2xl transition duration-300">Get
                     Started</a>
             </div>
@@ -74,7 +74,7 @@
                 <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold mb-4">The Future of Home Care Management</h1>
                 <p class="text-lg md:text-xl max-w-3xl mx-auto mb-8">Streamline your scheduling, simplify client
                     management, and empower your caregivers with VitaLink.</p>
-                <a href="{{ route('register') }}"
+                <a href="{{ route('agency.register') }}"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition duration-300 shadow-lg">
                     Get started for free
                 </a>

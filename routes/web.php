@@ -6,12 +6,17 @@ use App\Http\Controllers\CaregiverController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\PricingController;
+use App\Http\Controllers\Auth\AgencyRegistrationController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
+
+Route::get('/register-agency', [AgencyRegistrationController::class, 'showRegistrationForm'])->name('agency.register');
+
+Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store');
 
 Route::get('/dashboard', function () {
     return view('dashboard');

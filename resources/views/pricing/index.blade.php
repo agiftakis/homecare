@@ -26,7 +26,7 @@
                 <a href="{{ route('login') }}"
                     class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-4 transition duration-300">Log
                     In</a>
-                <a href="{{ route('register') }}"
+                <a href="{{ route('agency.register') }}"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 shadow-md">
                     Get Started
                 </a>
@@ -47,7 +47,7 @@
                 style="display: none;">
                 <button @click="open = false" class="absolute top-6 right-6 text-white text-3xl">&times;</button>
                 <a href="{{ route('login') }}" class="text-2xl text-white py-4">Log In</a>
-                <a href="{{ route('register') }}"
+                <a href="{{ route('agency.register') }}"
                     class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg text-xl transition duration-300">Get
                     Started</a>
             </div>
