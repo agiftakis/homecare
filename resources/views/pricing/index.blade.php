@@ -88,7 +88,7 @@
                         <p class="italic font-bold text-[#42C9A7] text-[13px]">under 10 clients</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">Focus on stability and growth while
                             we handle the rest.</p>
-                        <a href="{{ route('register') }}?plan=basic"
+                        <a href="{{ route('agency.register') }}?plan=basic"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
                             Get a Quote
                         </a>
@@ -102,7 +102,7 @@
                         <p class="italic font-bold text-[#27D6F5] text-[13px]">between 20-100 clients</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">Improve caregiver retention and
                             streamline operations.</p>
-                        <a href="{{ route('register') }}?plan=professional"
+                        <a href="{{ route('agency.register') }}?plan=professional"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
                             Get a Quote
                         </a>
@@ -116,7 +116,7 @@
                         <p class="italic font-bold text-[#917dc7] text-[13px]">over 150 clients</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">Advanced tools for your agency's
                             specific requirements.</p>
-                        <a href="{{ route('register') }}?plan=enterprise"
+                        <a href="{{ route('agency.register') }}?plan=premium"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
                             Get a Quote
                         </a>
@@ -130,7 +130,7 @@
                         <p class="italic font-bold text-[#e3e36d] text-[13px]">an industry leader</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">A scalable solution as you continue
                             your partner growth.</p>
-                        <a href="{{ route('register') }}?plan=enterprise"
+                        <a href="{{ route('agency.register') }}?plan=enterprise"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
                             Book an Appointment
                         </a>
