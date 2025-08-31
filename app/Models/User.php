@@ -20,8 +20,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'agency_id',
-        'role'
+        'agency_id', // <-- This was added
+        'role',      // <-- This was added
     ];
 
     /**
@@ -47,7 +47,6 @@ class User extends Authenticatable
         ];
     }
 
-
     /**
      * Get the agency that the user belongs to.
      */
@@ -56,3 +55,4 @@ class User extends Authenticatable
         return $this->belongsTo(Agency::class);
     }
 }
+

@@ -7,6 +7,7 @@
     "require": {
         "php": "^8.2",
         "kreait/laravel-firebase": "^6.1",
+        "laravel/cashier": "*",
         "laravel/framework": "^11.0",
         "laravel/tinker": "^2.9"
     },
