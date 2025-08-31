@@ -167,7 +167,7 @@
                     </div>
                     <div class="flex flex-col items-center p-4 rounded-lg">
                         <img src="{{ asset('images/feature-evv.png') }}" alt="EVV" class="h-12 w-12 mb-3">
-                        <span class="font-semibold">EVV</span>
+                        <span class="font-semibold">Scheduling</span>
                     </div>
                 </div>
             </div>
