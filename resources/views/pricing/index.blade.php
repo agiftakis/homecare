@@ -84,12 +84,13 @@
                         class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700 text-center flex flex-col">
                         <img src="{{ asset('images/icon-small-agency.png') }}" alt="Small Agency Icon"
                             class="h-16 w-16 mx-auto mb-4">
-                        <h3 class="text-xl font-bold mb-2">Small Agencies</h3>
+                        <h3 class="text-xl font-bold mb-2">Start Up Agencies</h3>
+                        <p class="italic font-bold text-[#42C9A7] text-[13px]">under 10 clients</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">Focus on stability and growth while
                             we handle the rest.</p>
                         <a href="{{ route('register') }}?plan=basic"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-                            Request a Quote
+                            Get a Quote
                         </a>
                     </div>
                     <!-- Medium Agency Plan -->
@@ -97,12 +98,13 @@
                         class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700 text-center flex flex-col">
                         <img src="{{ asset('images/icon-medium-agency.png') }}" alt="Medium Agency Icon"
                             class="h-16 w-16 mx-auto mb-4">
-                        <h3 class="text-xl font-bold mb-2">Medium Agencies</h3>
+                        <h3 class="text-xl font-bold mb-2">Growing Agencies</h3>
+                        <p class="italic font-bold text-[#27D6F5] text-[13px]">between 20-100 clients</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">Improve caregiver retention and
                             streamline operations.</p>
                         <a href="{{ route('register') }}?plan=professional"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-                            Request a Quote
+                            Get a Quote
                         </a>
                     </div>
                     <!-- Large Agency Plan -->
@@ -110,12 +112,13 @@
                         class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700 text-center flex flex-col">
                         <img src="{{ asset('images/icon-large-agency.png') }}" alt="Large Agency Icon"
                             class="h-16 w-16 mx-auto mb-4">
-                        <h3 class="text-xl font-bold mb-2">Large Agencies</h3>
+                        <h3 class="text-xl font-bold mb-2">Established Agencies</h3>
+                        <p class="italic font-bold text-[#917dc7] text-[13px]">over 150 clients</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">Advanced tools for your agency's
                             specific requirements.</p>
                         <a href="{{ route('register') }}?plan=enterprise"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-                            Request a Quote
+                            Get a Quote
                         </a>
                     </div>
                     <!-- Enterprise Agency Plan -->
@@ -124,11 +127,12 @@
                         <img src="{{ asset('images/icon-enterprise-agency.png') }}" alt="Enterprise Agency Icon"
                             class="h-16 w-16 mx-auto mb-4">
                         <h3 class="text-xl font-bold mb-2">Enterprise</h3>
+                        <p class="italic font-bold text-[#e3e36d] text-[13px]">an industry leader</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">A scalable solution as you continue
                             your partner growth.</p>
                         <a href="{{ route('register') }}?plan=enterprise"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-                            Request a Quote
+                            Book an Appointment
                         </a>
                     </div>
                 </div>
