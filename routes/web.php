@@ -6,17 +6,24 @@ use App\Http\Controllers\CaregiverController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\PricingController;
-use App\Http\Controllers\Auth\AgencyRegistrationController;
+use App\Http\Controllers\AgencyRegistrationController;
+use App\Http\Controllers\SubscriptionController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/', function () {
     return view('welcome');
 });
 
+// Publicly accessible routes
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
-
 Route::get('/register-agency', [AgencyRegistrationController::class, 'showRegistrationForm'])->name('agency.register');
-
 Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store');
+
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -27,17 +34,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // ADD THIS LINE FOR CLIENTS
     Route::resource('clients', ClientController::class);
-    //ADD THIS FOR CAREGIVERS
     Route::resource('caregivers', CaregiverController::class);
 
     // Scheduling Routes
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
-    Route::post('/shifts', [ScheduleController::class, 'store'])->name('shifts.store');
-    Route::put('/shifts/{shift}', [ScheduleController::class, 'update'])->name('shifts.update'); // <-- Add this
-    Route::delete('/shifts/{shift}', [ScheduleController::class, 'destroy'])->name('shifts.destroy'); // <-- Add this
-    // We will add update and destroy routes later
+    Route::resource('shifts', ScheduleController::class)->only(['store', 'show', 'update', 'destroy']);
+
+    // **ADDED:** Subscription Routes
+    Route::get('/subscription', [SubscriptionController::class, 'create'])->name('subscription.create');
+    Route::post('/subscription', [SubscriptionController::class, 'store'])->name('subscription.store');
 });
 
 require __DIR__ . '/auth.php';
