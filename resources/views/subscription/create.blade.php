@@ -1,8 +1,8 @@
 <x-guest-layout>
     <div x-data="subscriptionForm()" x-init="initStripe()">
-        <h2 class="text-2xl font-bold text-center text-gray-800 dark:text-gray-200 mb-6">Subscribe to VitaLink</h2>
+        <h2 class="text-2xl font-bold text-center text-gray-800 dark:text-gray-200 mb-2">Subscribe to VitaLink</h2>
 
-        <div class="mb-4 text-center">
+        <div class="mb-6 text-center">
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300">
                 You've selected the <span class="font-bold mx-1">{{ ucfirst($plan) }}</span> Plan
             </span>
@@ -16,16 +16,34 @@
 
             <div>
                 <x-input-label for="card-holder-name" value="Card Holder Name" />
-                <x-text-input id="card-holder-name" class="block mt-1 w-full" type="text" required />
+                <x-text-input id="card-holder-name" class="block mt-1 w-full" type="text" required placeholder="Full Name as on Card" />
             </div>
 
             <div class="mt-4">
-                <x-input-label value="Credit or debit card" />
-                <div id="card-element" class="block mt-1 w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-900"></div>
-                <div id="card-errors" role="alert" class="text-red-500 text-sm mt-2"></div>
+                <x-input-label value="Card Number" />
+                <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-900">
+                    <div id="card-number-element"></div>
+                </div>
             </div>
 
-            <div class="flex items-center justify-end mt-6">
+            <div class="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                    <x-input-label value="Expiration Date" />
+                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-900">
+                        <div id="card-expiry-element"></div>
+                    </div>
+                </div>
+                <div>
+                    <x-input-label value="CVC" />
+                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-900">
+                        <div id="card-cvc-element"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="card-errors" role="alert" class="text-red-500 text-sm mt-4 min-h-[1.25rem]"></div>
+
+            <div class="flex items-center justify-end mt-4">
                 <x-primary-button id="card-button" data-secret="{{ $intent->client_secret }}">
                     {{ __('Subscribe Now') }}
                 </x-primary-button>
@@ -39,33 +57,54 @@
         function subscriptionForm() {
             return {
                 stripe: null,
-                cardElement: null,
                 initStripe() {
                     this.stripe = Stripe('{{ env("STRIPE_KEY") }}');
-                    const elements = this.stripe.elements();
-                    this.cardElement = elements.create('card');
-                    this.cardElement.mount('#card-element');
+                    const elements = this.stripe.elements({
+                        fonts: [{
+                            cssSrc: 'https://fonts.googleapis.com/css?family=Figtree'
+                        }],
+                        theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',
+                        variables: {
+                          colorPrimary: '#6366f1',
+                          colorBackground: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+                          colorText: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151',
+                          colorDanger: '#ef4444',
+                          fontFamily: 'Figtree, sans-serif',
+                          spacingUnit: '4px',
+                          borderRadius: '6px',
+                        }
+                    });
+
+                    const cardNumber = elements.create('cardNumber');
+                    cardNumber.mount('#card-number-element');
+
+                    const cardExpiry = elements.create('cardExpiry');
+                    cardExpiry.mount('#card-expiry-element');
+
+                    const cardCvc = elements.create('cardCvc');
+                    cardCvc.mount('#card-cvc-element');
 
                     const cardHolderName = document.getElementById('card-holder-name');
                     const cardButton = document.getElementById('card-button');
                     const clientSecret = cardButton.dataset.secret;
                     const paymentForm = document.getElementById('payment-form');
+                    const errorDiv = document.getElementById('card-errors');
 
                     paymentForm.addEventListener('submit', async (e) => {
                         e.preventDefault();
                         cardButton.disabled = true;
+                        errorDiv.textContent = '';
 
                         const { setupIntent, error } = await this.stripe.confirmCardSetup(
                             clientSecret, {
                                 payment_method: {
-                                    card: this.cardElement,
+                                    card: cardNumber,
                                     billing_details: { name: cardHolderName.value }
                                 }
                             }
                         );
 
                         if (error) {
-                            const errorDiv = document.getElementById('card-errors');
                             errorDiv.textContent = error.message;
                             cardButton.disabled = false;
                         } else {
