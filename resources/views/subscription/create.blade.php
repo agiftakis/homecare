@@ -60,13 +60,13 @@
                 initStripe() {
                     this.stripe = Stripe('{{ env("STRIPE_KEY") }}');
                     
-                    // **THE FIX:** Use the new 'appearance' API for styling
+                    // **THE FIX:** Hardcode the dark theme styles for consistency and readability
                     const appearance = {
-                        theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',
+                        theme: 'night',
                         variables: {
                           colorPrimary: '#6366f1',
-                          colorBackground: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
-                          colorText: document.documentElement.classList.contains('dark') ? '#d1d5db' : '#374151',
+                          colorBackground: '#FFFAF0', // This is our dark:bg-gray-800 color
+                          colorText: '#FFFAF0',       // This is the "Floral White" you requested
                           colorDanger: '#ef4444',
                           fontFamily: 'Figtree, sans-serif',
                           spacingUnit: '4px',
