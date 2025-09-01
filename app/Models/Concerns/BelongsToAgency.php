@@ -4,29 +4,31 @@ namespace App\Models\Concerns;
 
 use App\Models\Agency;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth; // <-- Add this line
+use Illuminate\Support\Facades\Auth; // Use the Auth facade
 
 trait BelongsToAgency
 {
     /**
-     * The "booted" method of the model.
+     * The "boot" method of the model.
+     *
+     * This method is called when the trait is booted, and it applies our multi-tenancy rules.
      */
-    protected static function boot(): void
+    protected static function bootBelongsToAgency(): void
     {
-        parent::boot();
-
-        // This global scope will automatically filter all queries to only include
-        // records that belong to the currently logged-in user's agency.
+        // Global scope to automatically filter all data by the current user's agency.
         static::addGlobalScope('agency', function (Builder $builder) {
-            if (Auth::check() && Auth::user()->agency_id) {
-                $builder->where(static::getTable().'.agency_id', Auth::user()->agency_id);
+            // **THE FIX:** We only apply the agency filter if the user is logged in,
+            // has an agency_id, AND is NOT a super_admin.
+            if (Auth::check() && Auth::user()->agency_id && Auth::user()->role !== 'super_admin') {
+                $builder->where(static::getTable() . '.agency_id', Auth::user()->agency_id);
             }
         });
 
-        // This will automatically set the agency_id on any new records
-        // that are created, so you don't have to do it manually.
+        // Automatically set the agency_id when a new record is created by a regular user.
         static::creating(function ($model) {
-            if (Auth::check() && Auth::user()->agency_id) {
+            // **THE FIX:** We only set the agency_id automatically if the user is a regular
+            // agency user. The Super Admin will need to set it manually when creating records.
+            if (Auth::check() && Auth::user()->agency_id && Auth::user()->role !== 'super_admin') {
                 $model->agency_id = Auth::user()->agency_id;
             }
         });
@@ -40,3 +42,4 @@ trait BelongsToAgency
         return $this->belongsTo(Agency::class);
     }
 }
+

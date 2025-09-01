@@ -12,11 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('agency_id')->nullable()->constrained()->onDelete('cascade');
-            $table->string('role')->default('admin'); // e.g., admin, staff
+            // This allows the Super Admin to exist without an agency
+            $table->foreignId('agency_id')->nullable()->constrained()->onDelete('cascade'); 
+            
+            // This defines the different user roles in our system
+            $table->enum('role', ['super_admin', 'agency_admin', 'staff', 'caregiver'])->default('staff');
         });
     }
-
 
     /**
      * Reverse the migrations.
@@ -24,7 +26,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            // This properly reverses the changes made in the 'up' method
+            $table->dropForeign(['agency_id']);
+            $table->dropColumn(['agency_id', 'role']);
         });
     }
 };
+
