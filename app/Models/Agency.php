@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Laravel\Cashier\Billable; 
+use Laravel\Cashier\Billable;
 
 class Agency extends Model
 {
-    use HasFactory, Billable; 
+    use HasFactory, Billable;
 
     /**
      * The attributes that are mass assignable.
@@ -44,6 +44,24 @@ class Agency extends Model
         return $this->hasMany(User::class);
     }
 
-    // ... any other relationships like clients, caregivers, etc.
+    // **THE FIX:** These two methods are required by Laravel Cashier when you use a
+    // model other than User as the billable entity. They tell Stripe which
+    // name and email to use for the customer record.
+
+    /**
+     * Get the Stripe-compatible name for the billable model.
+     */
+    public function stripeName(): string|null
+    {
+        return $this->name;
+    }
+
+    /**
+     * Get the Stripe-compatible email address for the billable model.
+     */
+    public function stripeEmail(): string|null
+    {
+        return $this->contact_email;
+    }
 }
 
