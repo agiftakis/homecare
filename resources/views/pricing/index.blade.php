@@ -90,7 +90,7 @@
                             we handle the rest.</p>
                         <a href="{{ route('agency.register') }}?plan=basic"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-                            Get a Quote
+                            Register Now
                         </a>
                     </div>
                     <!-- Medium Agency Plan -->
@@ -104,7 +104,7 @@
                             streamline operations.</p>
                         <a href="{{ route('agency.register') }}?plan=professional"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-                            Get a Quote
+                            Register Now
                         </a>
                     </div>
                     <!-- Large Agency Plan -->
@@ -118,7 +118,7 @@
                             specific requirements.</p>
                         <a href="{{ route('agency.register') }}?plan=premium"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-                            Get a Quote
+                            Register Now
                         </a>
                     </div>
                     <!-- Enterprise Agency Plan -->
@@ -132,7 +132,7 @@
                             your partner growth.</p>
                         <a href="{{ route('agency.register') }}?plan=enterprise"
                             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300">
-                            Book an Appointment
+                            Register Now
                         </a>
                     </div>
                 </div>
