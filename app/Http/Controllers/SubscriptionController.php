@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Exception;
-use Illuminate\Support\Facades\Auth; // <-- Add this line
+use Illuminate\Support\Facades\Auth;
 
 class SubscriptionController extends Controller
 {
@@ -13,12 +13,8 @@ class SubscriptionController extends Controller
      */
     public function create(Request $request)
     {
-        // Get the plan from the query string (e.g., ?plan=basic)
-        $plan = $request->query('plan', 'basic'); 
-        
-        // **THE FIX:** Use the Auth facade for better IDE support
+        $plan = $request->query('plan', 'basic');
         $intent = Auth::user()->agency->createSetupIntent();
-
         return view('subscription.create', compact('plan', 'intent'));
     }
 
@@ -32,24 +28,24 @@ class SubscriptionController extends Controller
             'payment_method' => 'required|string',
         ]);
 
-        // **THE FIX:** Use the Auth facade here as well
         $agency = Auth::user()->agency;
         $planName = $request->plan;
         $paymentMethod = $request->payment_method;
 
         try {
-            // Create the subscription in Stripe
+            // **THE FIX:** We tell Stripe to create a new subscription WITH a 14-day trial.
+            // Stripe will now manage the trial period for us.
             $agency->newSubscription('default', $this->getStripePriceId($planName))
+                   ->trialDays(14) // <-- This is the crucial line
                    ->create($paymentMethod);
 
-            // Update the agency's status in your database
+            // Update our local database to reflect the active trial status
             $agency->update([
-                'subscription_status' => 'active',
+                'subscription_status' => 'trial',
                 'subscription_plan' => $planName,
-                'trial_ends_at' => null, // End the trial period
             ]);
             
-            return redirect()->route('dashboard')->with('success', 'Subscription activated successfully!');
+            return redirect()->route('dashboard')->with('success', 'Subscription activated! Your 14-day trial has begun.');
 
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Payment failed: ' . $e->getMessage()]);

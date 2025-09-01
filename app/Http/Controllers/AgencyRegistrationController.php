@@ -7,7 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth; // <-- Add this line
+use Illuminate\Support\Facades\Auth;
 
 class AgencyRegistrationController extends Controller
 {
@@ -16,7 +16,6 @@ class AgencyRegistrationController extends Controller
      */
     public function create(Request $request)
     {
-        // Get the plan from the query string, default to 'basic' if not present
         $plan = $request->query('plan', 'basic');
         return view('auth.register-agency', compact('plan'));
     }
@@ -37,13 +36,12 @@ class AgencyRegistrationController extends Controller
         $agency = null;
 
         DB::transaction(function () use ($validated, &$agency) {
-            // Create the agency
+            // **THE FIX:** We create the agency but DO NOT set any trial information here.
+            // The subscription status will be handled by the payment controller.
             $agency = Agency::create([
                 'name' => $validated['agency_name'],
                 'contact_email' => $validated['email'],
                 'subscription_plan' => $validated['plan'],
-                'subscription_status' => 'trial',
-                'trial_ends_at' => now()->addDays(14),
             ]);
 
             // Create the admin user for the agency
@@ -55,13 +53,12 @@ class AgencyRegistrationController extends Controller
                 'role' => 'agency_admin',
             ]);
 
-            // **THE FIX:** Use the Auth facade to log in the new user
+            // Login the new user
             Auth::login($user);
         });
 
-        // Redirect to the subscription page with the chosen plan
-        return redirect()->route('subscription.create', ['plan' => $validated['plan']])
-                         ->with('success', 'Welcome! Your agency account has been created. Please enter your payment details to start your subscription.');
+        // Redirect to the subscription page to collect payment details
+        return redirect()->route('subscription.create', ['plan' => $validated['plan']]);
     }
 }
 
