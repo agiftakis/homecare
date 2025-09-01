@@ -21,7 +21,8 @@
 
             <div class="mt-4">
                 <x-input-label value="Card Number" />
-                <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-100">
+                <!-- YOUR FIX APPLIED HERE: Changed dark:bg-gray-900 to bg-white for readability -->
+                <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white">
                     <div id="card-number-element"></div>
                 </div>
             </div>
@@ -29,13 +30,15 @@
             <div class="mt-4 grid grid-cols-2 gap-4">
                 <div>
                     <x-input-label value="Expiration Date" />
-                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-100">
+                    <!-- YOUR FIX APPLIED HERE: Changed dark:bg-gray-900 to bg-white for readability -->
+                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white">
                         <div id="card-expiry-element"></div>
                     </div>
                 </div>
                 <div>
                     <x-input-label value="CVC" />
-                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-100">
+                    <!-- YOUR FIX APPLIED HERE: Changed dark:bg-gray-900 to bg-white for readability -->
+                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white">
                         <div id="card-cvc-element"></div>
                     </div>
                 </div>
@@ -60,19 +63,9 @@
                 initStripe() {
                     this.stripe = Stripe('{{ env("STRIPE_KEY") }}');
                     
-                    // **THE FIX:** Use the standard 'stripe' (light) theme for guaranteed readability.
-                    // This will produce white input fields with black text, as you suggested.
-                    const appearance = {
-                        theme: 'stripe',
-                        variables: {
-                          colorPrimary: '#6366f1',
-                          fontFamily: 'Figtree, sans-serif',
-                          spacingUnit: '4px',
-                          borderRadius: '6px',
-                        }
-                    };
-
-                    const elements = this.stripe.elements({ appearance });
+                    // **THE FIX:** Removed the complex appearance object. Your HTML fix is better.
+                    // We will use Stripe's default 'stripe' theme which works perfectly on a white background.
+                    const elements = this.stripe.elements();
 
                     const cardNumber = elements.create('cardNumber');
                     cardNumber.mount('#card-number-element');
