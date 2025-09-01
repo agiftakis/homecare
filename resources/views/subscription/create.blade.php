@@ -21,7 +21,7 @@
 
             <div class="mt-4">
                 <x-input-label value="Card Number" />
-                <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-900">
+                <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-100">
                     <div id="card-number-element"></div>
                 </div>
             </div>
@@ -29,13 +29,13 @@
             <div class="mt-4 grid grid-cols-2 gap-4">
                 <div>
                     <x-input-label value="Expiration Date" />
-                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-900">
+                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-100">
                         <div id="card-expiry-element"></div>
                     </div>
                 </div>
                 <div>
                     <x-input-label value="CVC" />
-                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-900">
+                    <div class="mt-1 p-3 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-100">
                         <div id="card-cvc-element"></div>
                     </div>
                 </div>
@@ -60,14 +60,12 @@
                 initStripe() {
                     this.stripe = Stripe('{{ env("STRIPE_KEY") }}');
                     
-                    // **THE FIX:** Hardcode the dark theme styles for consistency and readability
+                    // **THE FIX:** Use the standard 'stripe' (light) theme for guaranteed readability.
+                    // This will produce white input fields with black text, as you suggested.
                     const appearance = {
-                        theme: 'night',
+                        theme: 'stripe',
                         variables: {
                           colorPrimary: '#6366f1',
-                          colorBackground: '#FFFAF0', // This is our dark:bg-gray-800 color
-                          colorText: '#FFFAF0',       // This is the "Floral White" you requested
-                          colorDanger: '#ef4444',
                           fontFamily: 'Figtree, sans-serif',
                           spacingUnit: '4px',
                           borderRadius: '6px',
