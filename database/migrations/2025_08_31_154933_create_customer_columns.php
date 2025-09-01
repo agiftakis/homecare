@@ -11,8 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // **THE FIX:** We are telling Cashier to add its columns
-        // to the 'agencies' table, not the 'users' table.
+        // This is the critical line. It MUST be 'agencies'.
         Schema::table('agencies', function (Blueprint $table) {
             $table->string('stripe_id')->nullable()->index();
             $table->string('pm_type')->nullable();
@@ -26,7 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // This properly reverses the changes
         Schema::table('agencies', function (Blueprint $table) {
             $table->dropColumn([
                 'stripe_id',
@@ -37,4 +35,5 @@ return new class extends Migration
         });
     }
 };
+
 
