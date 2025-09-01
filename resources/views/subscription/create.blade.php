@@ -59,10 +59,9 @@
                 stripe: null,
                 initStripe() {
                     this.stripe = Stripe('{{ env("STRIPE_KEY") }}');
-                    const elements = this.stripe.elements({
-                        fonts: [{
-                            cssSrc: 'https://fonts.googleapis.com/css?family=Figtree'
-                        }],
+                    
+                    // **THE FIX:** Use the new 'appearance' API for styling
+                    const appearance = {
                         theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',
                         variables: {
                           colorPrimary: '#6366f1',
@@ -73,7 +72,9 @@
                           spacingUnit: '4px',
                           borderRadius: '6px',
                         }
-                    });
+                    };
+
+                    const elements = this.stripe.elements({ appearance });
 
                     const cardNumber = elements.create('cardNumber');
                     cardNumber.mount('#card-number-element');
