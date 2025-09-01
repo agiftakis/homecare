@@ -20,8 +20,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'agency_id', // <-- This was added
-        'role',      // <-- This was added
+        'agency_id', // This is already correctly here
+        'role',      // This is also correctly here
     ];
 
     /**
@@ -48,7 +48,9 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the agency that the user belongs to.
+     * **THE FIX:** This is the "missing link".
+     * This method defines the relationship that a User belongs to an Agency.
+     * It allows us to use `auth()->user()->agency` throughout our application.
      */
     public function agency()
     {
