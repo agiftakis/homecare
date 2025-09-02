@@ -48,12 +48,13 @@
 
             <div id="card-errors" role="alert" class="text-red-500 text-sm mt-4 min-h-[1.25rem]"></div>
 
-            {{-- ADD THIS BLOCK to display backend errors from the controller --}}
-            @error('error')
+
+            {{-- REPLACE your @error block with this --}}
+            @if (session('error'))
                 <div class="text-red-500 text-sm mt-4">
-                    {{ $message }}
+                    {{ session('error') }}
                 </div>
-            @enderror
+            @endif
 
             <div class="flex items-center justify-end mt-4">
                 <x-primary-button id="card-button" data-secret="{{ $intent->client_secret }}">

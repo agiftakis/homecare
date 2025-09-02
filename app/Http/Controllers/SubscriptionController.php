@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Exception;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class SubscriptionController extends Controller
 {
@@ -29,23 +30,25 @@ class SubscriptionController extends Controller
         ]);
 
         $agency = Auth::user()->agency;
-        $planPriceId = $this->getStripePriceId($request->plan);
+        $planName = $request->plan;
         $paymentMethod = $request->payment_method;
 
         try {
-            $agency->newSubscription('default', $planPriceId)
-                ->trialDays(14)
+            // We have removed the ->trialDays(14) line.
+            // This will now charge the user's card immediately.
+            $agency->newSubscription('default', $this->getStripePriceId($planName))
                 ->create($paymentMethod);
 
-            // NO NEED to manually update the agency status. Cashier handles it.
-            // You can check the status anytime using: $agency->onTrial()
-
-            return redirect()->route('dashboard')->with('success', 'Subscription activated! Your 14-day trial has begun.');
+            // The success message is updated to reflect an immediate charge.
+            return redirect()->route('dashboard')->with('success', 'Thank you! Your subscription has been activated.');
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Payment failed: ' . $e->getMessage()]);
+            // THIS IS THE CRITICAL CHANGE: We log the detailed error.
+            Log::error('Stripe Subscription Failed: ' . $e->getMessage());
+
+            // We will also make sure the error message gets back to the user.
+            return back()->with('error', 'Payment failed: ' . $e->getMessage());
         }
     }
-
     /**
      * A helper function to get the correct Stripe Price ID from the .env file.
      */
