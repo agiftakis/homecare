@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            // THIS IS THE FIX: Changed 'user_id' to 'agency_id'
             $table->foreignId('agency_id');
+            // THIS IS THE NEWLY ADDED, REQUIRED COLUMN
+            $table->string('type');
             $table->string('stripe_id')->unique();
             $table->string('stripe_status');
             $table->string('stripe_price')->nullable();

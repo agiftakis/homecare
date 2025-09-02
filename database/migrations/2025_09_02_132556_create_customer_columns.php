@@ -11,7 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        // THIS IS THE FIX: We are targeting the 'agencies' table.
+        Schema::table('agencies', function (Blueprint $table) {
             $table->string('stripe_id')->nullable()->index();
             $table->string('pm_type')->nullable();
             $table->string('pm_last_four', 4)->nullable();
@@ -24,11 +25,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropIndex([
-                'stripe_id',
-            ]);
-
+        Schema::table('agencies', function (Blueprint $table) {
             $table->dropColumn([
                 'stripe_id',
                 'pm_type',

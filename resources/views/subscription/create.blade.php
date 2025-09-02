@@ -49,12 +49,12 @@
             <div id="card-errors" role="alert" class="text-red-500 text-sm mt-4 min-h-[1.25rem]"></div>
 
 
-            {{-- REPLACE your @error block with this --}}
+            {{-- REPLACE your @error block with this 
             @if (session('error'))
                 <div class="text-red-500 text-sm mt-4">
                     {{ session('error') }}
                 </div>
-            @endif
+            @endif --}}
 
             <div class="flex items-center justify-end mt-4">
                 <x-primary-button id="card-button" data-secret="{{ $intent->client_secret }}">
