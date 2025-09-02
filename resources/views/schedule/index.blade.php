@@ -12,17 +12,14 @@
                      x-data="schedule()"
                      x-init="initCalendar()">
 
-                    <!-- FullCalendar Container -->
                     <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
 
-                    <!-- Add Shift Modal -->
                     <div x-show="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showAddModal = false" style="display: none;">
                         <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-2xl" @click.away="showAddModal = false">
                             <h3 class="text-lg font-medium mb-4">Add New Shift</h3>
                             <form @submit.prevent="submitAddForm">
                                 @csrf
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <!-- Client, Caregiver, Start/End Times, Notes -->
                                     @include('schedule.partials.shift-form-fields', ['shift' => 'newShift'])
                                 </div>
                                 <div class="mt-6 flex justify-end space-x-4">
@@ -33,7 +30,6 @@
                         </div>
                     </div>
 
-                    <!-- Edit Shift Modal -->
                     <div x-show="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showEditModal = false" style="display: none;">
                         <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-2xl" @click.away="showEditModal = false">
                             <h3 class="text-lg font-medium mb-4">Edit Shift</h3>
@@ -41,7 +37,6 @@
                                 @csrf
                                 @method('PUT')
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <!-- Client, Caregiver, Start/End Times, Notes -->
                                     @include('schedule.partials.shift-form-fields', ['shift' => 'editShift'])
                                 </div>
                                 <div class="mt-6 flex justify-between">
@@ -59,6 +54,20 @@
             </div>
         </div>
     </div>
+
+    {{-- =============================================================== --}}
+    {{--                     **THE FIX IS RIGHT HERE** --}}
+    {{-- This CSS media query targets the calendar title on screens      --}}
+    {{-- 420px wide or smaller and reduces the font size to prevent      --}}
+    {{-- it from looking squished.                                       --}}
+    {{-- =============================================================== --}}
+    <style>
+        @media screen and (max-width: 420px) {
+            .fc-toolbar-title {
+                font-size: 1.1em !important;
+            }
+        }
+    </style>
 
     <script>
         function schedule() {
@@ -102,7 +111,7 @@
                             this.editShift.client_id = info.event.extendedProps.client_id;
                             this.editShift.caregiver_id = info.event.extendedProps.caregiver_id;
                             this.editShift.start_time = info.event.startStr.slice(0, 16);
-                            this.editShift.end_time = info.event.endStr.slice(0, 16);
+                            this.editShift.end_time = info.event.endStr ? info.event.endStr.slice(0, 16) : this.editShift.start_time;
                             this.editShift.notes = info.event.extendedProps.notes;
                             this.showEditModal = true;
                         }
