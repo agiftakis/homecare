@@ -6,10 +6,9 @@ use App\Http\Controllers\CaregiverController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\PricingController;
-// **FIXED:** Corrected the namespace for the registration controller
 use App\Http\Controllers\AgencyRegistrationController;
-// **ADDED:** New controller for subscriptions
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,16 +22,13 @@ Route::get('/', function () {
 
 // Publicly accessible routes
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
-// **FIXED:** Changed the method name from showRegistrationForm to create
 Route::get('/register-agency', [AgencyRegistrationController::class, 'create'])->name('agency.register');
 Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store');
 
-
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
+// Authenticated Routes
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -44,10 +40,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::resource('shifts', ScheduleController::class)->only(['store', 'show', 'update', 'destroy']);
 
-    // **ADDED:** Subscription Routes
+    // Subscription Routes
     Route::get('/subscription', [SubscriptionController::class, 'create'])->name('subscription.create');
     Route::post('/subscription', [SubscriptionController::class, 'store'])->name('subscription.store');
 });
 
 require __DIR__ . '/auth.php';
-
