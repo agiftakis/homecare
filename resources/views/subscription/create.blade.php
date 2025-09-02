@@ -3,7 +3,8 @@
         <h2 class="text-2xl font-bold text-center text-gray-800 dark:text-gray-200 mb-2">Subscribe to VitaLink</h2>
 
         <div class="mb-6 text-center">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300">
+            <span
+                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300">
                 You've selected the <span class="font-bold mx-1">{{ ucfirst($plan) }}</span> Plan
             </span>
         </div>
@@ -16,7 +17,8 @@
 
             <div>
                 <x-input-label for="card-holder-name" value="Card Holder Name" />
-                <x-text-input id="card-holder-name" class="block mt-1 w-full" type="text" required placeholder="Full Name as on Card" />
+                <x-text-input id="card-holder-name" class="block mt-1 w-full" type="text" required
+                    placeholder="Full Name as on Card" />
             </div>
 
             <div class="mt-4">
@@ -46,6 +48,13 @@
 
             <div id="card-errors" role="alert" class="text-red-500 text-sm mt-4 min-h-[1.25rem]"></div>
 
+            {{-- ADD THIS BLOCK to display backend errors from the controller --}}
+            @error('error')
+                <div class="text-red-500 text-sm mt-4">
+                    {{ $message }}
+                </div>
+            @enderror
+
             <div class="flex items-center justify-end mt-4">
                 <x-primary-button id="card-button" data-secret="{{ $intent->client_secret }}">
                     {{ __('Subscribe Now') }}
@@ -61,8 +70,8 @@
             return {
                 stripe: null,
                 initStripe() {
-                    this.stripe = Stripe('{{ env("STRIPE_KEY") }}');
-                    
+                    this.stripe = Stripe('{{ env('STRIPE_KEY') }}');
+
                     // **THE FIX:** Removed the complex appearance object. Your HTML fix is better.
                     // We will use Stripe's default 'stripe' theme which works perfectly on a white background.
                     const elements = this.stripe.elements();
@@ -87,11 +96,16 @@
                         cardButton.disabled = true;
                         errorDiv.textContent = '';
 
-                        const { setupIntent, error } = await this.stripe.confirmCardSetup(
+                        const {
+                            setupIntent,
+                            error
+                        } = await this.stripe.confirmCardSetup(
                             clientSecret, {
                                 payment_method: {
                                     card: cardNumber,
-                                    billing_details: { name: cardHolderName.value }
+                                    billing_details: {
+                                        name: cardHolderName.value
+                                    }
                                 }
                             }
                         );
@@ -109,4 +123,3 @@
         }
     </script>
 </x-guest-layout>
-

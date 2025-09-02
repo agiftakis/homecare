@@ -29,24 +29,18 @@ class SubscriptionController extends Controller
         ]);
 
         $agency = Auth::user()->agency;
-        $planName = $request->plan;
+        $planPriceId = $this->getStripePriceId($request->plan);
         $paymentMethod = $request->payment_method;
 
         try {
-            // **THE FIX:** We tell Stripe to create a new subscription WITH a 14-day trial.
-            // Stripe will now manage the trial period for us.
-            $agency->newSubscription('default', $this->getStripePriceId($planName))
-                   ->trialDays(14) // <-- This is the crucial line
-                   ->create($paymentMethod);
+            $agency->newSubscription('default', $planPriceId)
+                ->trialDays(14)
+                ->create($paymentMethod);
 
-            // Update our local database to reflect the active trial status
-            $agency->update([
-                'subscription_status' => 'trial',
-                'subscription_plan' => $planName,
-            ]);
-            
+            // NO NEED to manually update the agency status. Cashier handles it.
+            // You can check the status anytime using: $agency->onTrial()
+
             return redirect()->route('dashboard')->with('success', 'Subscription activated! Your 14-day trial has begun.');
-
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Payment failed: ' . $e->getMessage()]);
         }
@@ -57,7 +51,7 @@ class SubscriptionController extends Controller
      */
     private function getStripePriceId($plan)
     {
-        return match(strtolower($plan)) {
+        return match (strtolower($plan)) {
             'professional' => env('STRIPE_PROFESSIONAL_PRICE_ID'),
             'premium' => env('STRIPE_PREMIUM_PRICE_ID'),
             'enterprise' => env('STRIPE_ENTERPRISE_PRICE_ID'),
@@ -66,4 +60,3 @@ class SubscriptionController extends Controller
         };
     }
 }
-
