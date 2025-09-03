@@ -18,7 +18,7 @@ class FirebaseStorageService
         $this->storage = $factory->createStorage();
 
         // STEP 2: Manually specify the exact bucket name we know is correct.
-        $this->bucket = $this->storage->getBucket('homecare-app-bd322.firebasestorage.app');
+        $this->bucket = $this->storage->getBucket(env('FIREBASE_STORAGE_BUCKET'));
     }
 
     /**
@@ -27,7 +27,7 @@ class FirebaseStorageService
     public function uploadImage($image)
     {
         $fileName = 'profile_pictures/' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-        
+
         $imageStream = fopen($image->getRealPath(), 'r');
 
         $object = $this->bucket->upload($imageStream, [
@@ -51,7 +51,7 @@ class FirebaseStorageService
             // CORRECTED LOGIC: Manually parse the URL to get the object name
             $path = parse_url($url, PHP_URL_PATH);
             $objectNamePosition = strpos($path, '/o/');
-            
+
             if ($objectNamePosition === false) {
                 return; // Can't find the object name
             }
@@ -62,7 +62,7 @@ class FirebaseStorageService
             if (empty($objectName)) {
                 return;
             }
-            
+
             $object = $this->bucket->object($objectName);
             if ($object->exists()) {
                 $object->delete();
