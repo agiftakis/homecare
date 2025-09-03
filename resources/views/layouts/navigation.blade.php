@@ -31,6 +31,13 @@
                     <x-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.index')">
                         {{ __('Schedule') }}
                     </x-nav-link>
+                    {{-- SuperAdmin BLOCK --}}
+                    @if (Auth::user()->role === 'super_admin')
+                        <x-nav-link :href="route('superadmin.dashboard')" :active="request()->routeIs('superadmin.dashboard')">
+                            {{ __('Admin Dashboard') }}
+                        </x-nav-link>
+                    @endif
+                    {{-- END SuperAdmin BLOCK --}}
                 </div>
             </div>
 
