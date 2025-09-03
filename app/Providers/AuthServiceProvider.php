@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Client;
 use App\Policies\ClientPolicy;
+use App\Models\Caregiver;        
+use App\Policies\CaregiverPolicy;  
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -18,6 +20,7 @@ class AuthServiceProvider extends ServiceProvider
         // Now, Laravel will automatically use your policy's rules
         // whenever you call authorize() with a Client instance.
         Client::class => ClientPolicy::class,
+        Caregiver::class => CaregiverPolicy::class,
     ];
 
     /**

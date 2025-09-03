@@ -3,12 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Caregiver;
+use App\Services\FirebaseStorageService; // Use our service
 use Illuminate\Http\Request;
-use Kreait\Firebase\Factory;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class CaregiverController extends Controller
 {
+    protected $firebaseStorageService;
+
+    // Inject the service we already built
+    public function __construct(FirebaseStorageService $firebaseStorageService)
+    {
+        $this->firebaseStorageService = $firebaseStorageService;
+    }
+
     public function index()
     {
         $caregivers = Caregiver::latest()->get();
@@ -22,118 +31,80 @@ class CaregiverController extends Controller
 
     public function store(Request $request)
     {
+        $agencyId = Auth::user()->agency_id;
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:caregivers,email',
+            // Correct multi-tenant validation
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('caregivers')->where(fn ($query) => $query->where('agency_id', $agencyId)),
+            ],
             'phone_number' => 'required|string|max:20',
             'date_of_birth' => 'required|date|date_format:Y-m-d',
             'certifications' => 'nullable|string',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $profilePictureUrl = null;
-
         if ($request->hasFile('profile_picture')) {
-            $profilePictureUrl = $this->uploadImageToFirebase($request->file('profile_picture'));
+            $validated['profile_picture_url'] = $this->firebaseStorageService->uploadImage($request->file('profile_picture'));
         }
-
-        $validated['profile_picture_url'] = $profilePictureUrl;
 
         Caregiver::create($validated);
 
-        return redirect()->route('caregivers.index')
-                         ->with('success', 'Caregiver added successfully!');
+        return redirect()->route('caregivers.index')->with('success', 'Caregiver added successfully!');
     }
 
     public function edit(Caregiver $caregiver)
     {
+        // Add authorization
+        $this->authorize('update', $caregiver);
+        
         return view('caregivers.edit', compact('caregiver'));
     }
 
     public function update(Request $request, Caregiver $caregiver)
     {
+        // Add authorization
+        $this->authorize('update', $caregiver);
+
+        $agencyId = Auth::user()->agency_id;
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => ['required', 'email', Rule::unique('caregivers')->ignore($caregiver->id)],
+            // Correct multi-tenant validation
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('caregivers')->where(fn ($query) => $query->where('agency_id', $agencyId))->ignore($caregiver->id),
+            ],
             'phone_number' => 'required|string|max:20',
             'date_of_birth' => 'required|date|date_format:Y-m-d',
             'certifications' => 'nullable|string',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $profilePictureUrl = $caregiver->profile_picture_url;
-
         if ($request->hasFile('profile_picture')) {
-            $profilePictureUrl = $this->uploadImageToFirebase($request->file('profile_picture'));
+            $this->firebaseStorageService->deleteImage($caregiver->profile_picture_url);
+            $validated['profile_picture_url'] = $this->firebaseStorageService->uploadImage($request->file('profile_picture'));
         }
-
-        $validated['profile_picture_url'] = $profilePictureUrl;
 
         $caregiver->update($validated);
 
-        return redirect()->route('caregivers.index')
-                         ->with('success', 'Caregiver updated successfully!');
+        return redirect()->route('caregivers.index')->with('success', 'Caregiver updated successfully!');
     }
 
-    private function uploadImageToFirebase($image)
+    public function destroy(Caregiver $caregiver)
     {
-        $serviceAccount = storage_path('app/firebase/firebase_credentials.json');
-        $firebase = (new Factory)->withServiceAccount($serviceAccount);
-        
-        $storage = $firebase->createStorage();
-        $bucketName = env('FIREBASE_STORAGE_BUCKET');
-        $bucket = $storage->getBucket($bucketName);
+        // Add authorization
+        $this->authorize('delete', $caregiver);
 
-        $fileName = 'profile_pictures/' . time() . '.jpg';
+        $this->firebaseStorageService->deleteImage($caregiver->profile_picture_url);
+        $caregiver->delete();
 
-        $tempPath = $this->resizeImageWithGD($image);
-
-        $object = $bucket->upload(
-            file_get_contents($tempPath),
-            ['name' => $fileName]
-        );
-
-        $object->update(['acl' => []], ['predefinedAcl' => 'publicRead']);
-
-        unlink($tempPath);
-        
-        return "https://storage.googleapis.com/{$bucketName}/{$fileName}";
+        return redirect()->route('caregivers.index')->with('success', 'Caregiver deleted successfully.');
     }
-
-    private function resizeImageWithGD($file)
-    {
-        $maxWidth = 500;
-        $maxHeight = 500;
-        $sourcePath = $file->getRealPath();
-        list($width, $height, $type) = getimagesize($sourcePath);
-        switch ($type) {
-            case IMAGETYPE_JPEG:
-                $sourceImage = imagecreatefromjpeg($sourcePath);
-                break;
-            case IMAGETYPE_PNG:
-                $sourceImage = imagecreatefrompng($sourcePath);
-                break;
-            case IMAGETYPE_GIF:
-                $sourceImage = imagecreatefromgif($sourcePath);
-                break;
-            default:
-                return $sourcePath; 
-        }
-        $resizedImage = imagecreatetruecolor($maxWidth, $maxHeight);
-        if ($type == IMAGETYPE_PNG || $type == IMAGETYPE_GIF) {
-            imagecolortransparent($resizedImage, imagecolorallocatealpha($resizedImage, 0, 0, 0, 127));
-            imagealphablending($resizedImage, false);
-            imagesavealpha($resizedImage, true);
-        }
-        imagecopyresampled($resizedImage, $sourceImage, 0, 0, 0, 0, $maxWidth, $maxHeight, $width, $height);
-        $tempPath = tempnam(sys_get_temp_dir(), 'resized-');
-        imagejpeg($resizedImage, $tempPath, 80);
-        imagedestroy($sourceImage);
-        imagedestroy($resizedImage);
-        return $tempPath;
-    }
-
-    // ... destroy method ...
 }
