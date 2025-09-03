@@ -3,38 +3,48 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
-use Kreait\Firebase\Factory;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    protected $firebaseStorageService;
+
+    // Use dependency injection to get our new service
+    public function __construct(FirebaseStorageService $firebaseStorageService)
+    {
+        $this->firebaseStorageService = $firebaseStorageService;
+    }
+
     public function index()
     {
+        // This is already correctly scoped by your BelongsToAgency trait
         $clients = Client::latest()->get();
         return view('clients.index', compact('clients'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         return view('clients.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
+        $agencyId = Auth::user()->agency_id;
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:clients,email',
+            // CHANGE: Email uniqueness is now scoped to the current agency
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('clients')->where(function ($query) use ($agencyId) {
+                    return $query->where('agency_id', $agencyId);
+                }),
+            ],
             'phone_number' => 'required|string|max:20',
             'address' => 'required|string',
             'date_of_birth' => 'required|date|date_format:Y-m-d',
@@ -42,37 +52,41 @@ class ClientController extends Controller
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $profilePictureUrl = null;
-
         if ($request->hasFile('profile_picture')) {
-            $profilePictureUrl = $this->uploadImageToFirebase($request->file('profile_picture'));
+            $validated['profile_picture_url'] = $this->firebaseStorageService->uploadImage($request->file('profile_picture'));
         }
-
-        $validated['profile_picture_url'] = $profilePictureUrl;
 
         Client::create($validated);
 
-        return redirect()->route('clients.index')
-                         ->with('success', 'Client added successfully!');
+        return redirect()->route('clients.index')->with('success', 'Client added successfully!');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Client $client)
     {
+        // ADDITION: Authorize that the user can edit this client
+        $this->authorize('update', $client);
+        
         return view('clients.edit', compact('client'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Client $client)
     {
+        // ADDITION: Authorize that the user can update this client
+        $this->authorize('update', $client);
+
+        $agencyId = Auth::user()->agency_id;
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => ['required', 'email', Rule::unique('clients')->ignore($client->id)],
+            // CHANGE: Email uniqueness is now scoped to the current agency
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('clients')->where(function ($query) use ($agencyId) {
+                    return $query->where('agency_id', $agencyId);
+                })->ignore($client->id),
+            ],
             'phone_number' => 'required|string|max:20',
             'address' => 'required|string',
             'date_of_birth' => 'required|date|date_format:Y-m-d',
@@ -80,77 +94,32 @@ class ClientController extends Controller
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        $profilePictureUrl = $client->profile_picture_url;
-
         if ($request->hasFile('profile_picture')) {
-            $profilePictureUrl = $this->uploadImageToFirebase($request->file('profile_picture'));
+            // First, delete the old picture
+            $this->firebaseStorageService->deleteImage($client->profile_picture_url);
+            // Then, upload the new one
+            $validated['profile_picture_url'] = $this->firebaseStorageService->uploadImage($request->file('profile_picture'));
         }
-
-        $validated['profile_picture_url'] = $profilePictureUrl;
 
         $client->update($validated);
 
-        return redirect()->route('clients.index')
-                         ->with('success', 'Client updated successfully!');
+        return redirect()->route('clients.index')->with('success', 'Client updated successfully!');
     }
-
-    private function uploadImageToFirebase($image)
+    
+    /**
+     * ADDITION: New destroy method
+     */
+    public function destroy(Client $client)
     {
-        $serviceAccount = storage_path('app/firebase/firebase_credentials.json');
-        $firebase = (new Factory)->withServiceAccount($serviceAccount);
-        
-        $storage = $firebase->createStorage();
-        $bucketName = env('FIREBASE_STORAGE_BUCKET');
-        $bucket = $storage->getBucket($bucketName);
+        // ADDITION: Authorize that the user can delete this client
+        $this->authorize('delete', $client);
 
-        $fileName = 'profile_pictures/' . time() . '.jpg';
+        // Delete the profile picture from Firebase
+        $this->firebaseStorageService->deleteImage($client->profile_picture_url);
 
-        $tempPath = $this->resizeImageWithGD($image);
+        // Delete the client from the database
+        $client->delete();
 
-        $object = $bucket->upload(
-            file_get_contents($tempPath),
-            ['name' => $fileName]
-        );
-
-        $object->update(['acl' => []], ['predefinedAcl' => 'publicRead']);
-
-        unlink($tempPath);
-        
-        return "https://storage.googleapis.com/{$bucketName}/{$fileName}";
+        return redirect()->route('clients.index')->with('success', 'Client deleted successfully.');
     }
-
-    private function resizeImageWithGD($file)
-    {
-        $maxWidth = 500;
-        $maxHeight = 500;
-        $sourcePath = $file->getRealPath();
-        list($width, $height, $type) = getimagesize($sourcePath);
-        switch ($type) {
-            case IMAGETYPE_JPEG:
-                $sourceImage = imagecreatefromjpeg($sourcePath);
-                break;
-            case IMAGETYPE_PNG:
-                $sourceImage = imagecreatefrompng($sourcePath);
-                break;
-            case IMAGETYPE_GIF:
-                $sourceImage = imagecreatefromgif($sourcePath);
-                break;
-            default:
-                return $sourcePath; 
-        }
-        $resizedImage = imagecreatetruecolor($maxWidth, $maxHeight);
-        if ($type == IMAGETYPE_PNG || $type == IMAGETYPE_GIF) {
-            imagecolortransparent($resizedImage, imagecolorallocatealpha($resizedImage, 0, 0, 0, 127));
-            imagealphablending($resizedImage, false);
-            imagesavealpha($resizedImage, true);
-        }
-        imagecopyresampled($resizedImage, $sourceImage, 0, 0, 0, 0, $maxWidth, $maxHeight, $width, $height);
-        $tempPath = tempnam(sys_get_temp_dir(), 'resized-');
-        imagejpeg($resizedImage, $tempPath, 80);
-        imagedestroy($sourceImage);
-        imagedestroy($resizedImage);
-        return $tempPath;
-    }
-
-    // ... destroy method ...
 }
