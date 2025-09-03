@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias([
+            'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+            'superadmin' => \App\Http\Middleware\CheckSuperAdmin::class, // Add this line
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

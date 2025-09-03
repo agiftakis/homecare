@@ -9,6 +9,7 @@ use App\Http\Controllers\PricingController;
 use App\Http\Controllers\AgencyRegistrationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SuperAdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,6 +44,11 @@ Route::middleware('auth')->group(function () {
     // Subscription Routes
     Route::get('/subscription', [SubscriptionController::class, 'create'])->name('subscription.create');
     Route::post('/subscription', [SubscriptionController::class, 'store'])->name('subscription.store');
+});
+
+// Super Admin Routes
+Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
+    Route::get('/dashboard', [SuperAdminController::class, 'index'])->name('dashboard');
 });
 
 require __DIR__ . '/auth.php';
