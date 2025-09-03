@@ -2,17 +2,23 @@
 
 namespace App\Services;
 
-use Kreait\Firebase\Contract\Storage;
+use Kreait\Firebase\Factory;
 
 class FirebaseStorageService
 {
     protected $storage;
     protected $bucket;
 
-    public function __construct(Storage $storage)
+    public function __construct()
     {
-        $this->storage = $storage;
-        $this->bucket = $this->storage->getBucket();
+        // STEP 1: Manually build the connection using the direct path to your credentials.
+        $factory = (new Factory)
+            ->withServiceAccount(storage_path('app/firebase/firebase_credentials.json'));
+
+        $this->storage = $factory->createStorage();
+
+        // STEP 2: Manually specify the exact bucket name we know is correct.
+        $this->bucket = $this->storage->getBucket('homecare-app-bd322.firebasestorage.app');
     }
 
     /**
@@ -26,10 +32,9 @@ class FirebaseStorageService
 
         $object = $this->bucket->upload($imageStream, [
             'name' => $fileName,
-            'predefinedAcl' => 'publicRead' // Make the file publicly readable
+            'predefinedAcl' => 'publicRead'
         ]);
 
-        // For publicly readable files, mediaLink is the direct, permanent URL
         return $object->info()['mediaLink'];
     }
 
@@ -42,23 +47,28 @@ class FirebaseStorageService
             return;
         }
 
-        // CORRECTED LOGIC: Extract the file path from the URL
-        $bucketName = env('FIREBASE_STORAGE_BUCKET');
-        // The path is everything after the bucket name in the URL's path component
-        $path = str_replace("/download/storage/v1/b/{$bucketName}/o/", '', parse_url($url, PHP_URL_PATH));
-        $objectName = rawurldecode($path);
-
-        if (empty($objectName)) {
-            return;
-        }
-        
         try {
+            // CORRECTED LOGIC: Manually parse the URL to get the object name
+            $path = parse_url($url, PHP_URL_PATH);
+            $objectNamePosition = strpos($path, '/o/');
+            
+            if ($objectNamePosition === false) {
+                return; // Can't find the object name
+            }
+
+            $urlencodedObjectName = substr($path, $objectNamePosition + 3);
+            $objectName = rawurldecode($urlencodedObjectName);
+
+            if (empty($objectName)) {
+                return;
+            }
+            
             $object = $this->bucket->object($objectName);
             if ($object->exists()) {
                 $object->delete();
             }
         } catch (\Exception $e) {
-            // Silently fail if the object doesn't exist or another error occurs
+            // Silently fail if the object doesn't exist
         }
     }
 }
