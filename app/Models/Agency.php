@@ -63,5 +63,12 @@ class Agency extends Model
     {
         return $this->contact_email;
     }
+
+    public function owner()
+    {
+        // This assumes your 'agencies' table has a 'user_id' column
+        // that links to the 'id' on the 'users' table.
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }
 

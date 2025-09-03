@@ -12,14 +12,26 @@ use Illuminate\Support\Facades\Auth;
 class DashboardController extends Controller
 {
     /**
-     * Display the agency's dashboard.
+     * Display the correct dashboard based on the user's role.
      */
     public function index()
     {
-        $agency = Auth::user()->agency;
+        $user = Auth::user();
 
-        // Thanks to your BelongsToAgency scope, these queries are automatically
-        // secure and scoped to the currently logged-in agency.
+        // Check the user's role.
+        if ($user->role === 'super_admin') {
+            // If they're a super admin, redirect them to their own dashboard.
+            return redirect()->route('superadmin.dashboard');
+        }
+
+        // If not a super admin, continue with the original agency dashboard logic.
+        $agency = $user->agency;
+
+        // Safety check in case a regular user isn't assigned to an agency.
+        if (!$agency) {
+            abort(403, 'You are not associated with an agency.');
+        }
+
         $clientCount = Client::count();
         $caregiverCount = Caregiver::count();
         
