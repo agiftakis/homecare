@@ -98,7 +98,7 @@
                                             <div class="text-sm text-gray-500 dark:text-gray-400">{{ $client->phone_number }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('clients.edit', $client) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">Edit</a>
+                                            <a href="{{ route('clients.edit', $client) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">Edit/View Profile</a>
                                         </td>
                                     </tr>
                                 @empty
