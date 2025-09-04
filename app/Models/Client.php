@@ -20,10 +20,19 @@ class Client extends Model
         'last_name',
         'email',
         'phone_number',
-        'address',
         'date_of_birth',
+        'address',
         'care_plan',
-        'profile_picture_url',
+        'profile_picture_path',
+        // ADD CODE HERE - new client fields
+        'current_medications',
+        'discontinued_medications',
+        'recent_hospitalizations',
+        'current_concurrent_dx',
+        'designated_poa',
+        'current_routines_am_pm',
+        'fall_risk',
+        'agency_id'
     ];
 
     public function shifts()

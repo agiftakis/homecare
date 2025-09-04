@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Kreait\Firebase\Factory;
+use Illuminate\Http\UploadedFile;
 
 class FirebaseStorageService
 {
@@ -38,6 +39,35 @@ class FirebaseStorageService
         return $object->info()['mediaLink'];
     }
 
+    // ADD CODE HERE - after the uploadProfilePicture method
+    /**
+     * Upload a document with descriptive filename
+     */
+    public function uploadDocument(UploadedFile $file, string $caregiverName, string $documentType, string $folderPath = 'caregiver_documents'): array
+    {
+        // Clean the caregiver name for filename
+        $cleanName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $caregiverName);
+        $cleanDocumentType = ucfirst(str_replace('_', '_', $documentType));
+
+        // Create descriptive filename: John_Doe_Certification.pdf
+        $extension = $file->getClientOriginalExtension();
+        $descriptiveFilename = $cleanName . '_' . $cleanDocumentType . '.' . $extension;
+
+        // Create unique Firebase path to avoid conflicts
+        $uniqueId = uniqid();
+        $firebasePath = $folderPath . '/' . $uniqueId . '_' . $descriptiveFilename;
+
+        $bucket = $this->storage->getBucket(env('FIREBASE_STORAGE_BUCKET'));
+        $bucket->upload(
+            file_get_contents($file->getRealPath()),
+            ['name' => $firebasePath]
+        );
+
+        return [
+            'firebase_path' => $firebasePath,
+            'descriptive_filename' => $descriptiveFilename
+        ];
+    }
     /**
      * Delete an image from Firebase Storage.
      */
