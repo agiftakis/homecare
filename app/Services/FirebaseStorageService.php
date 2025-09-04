@@ -5,7 +5,7 @@ namespace App\Services;
 use Kreait\Firebase\Factory;
 use Illuminate\Http\UploadedFile;
 
-class FirebaseStorageService
+class FirebaseStorageService 
 {
     protected $storage;
     protected $bucket;
@@ -39,7 +39,6 @@ class FirebaseStorageService
         return $object->info()['mediaLink'];
     }
 
-    // ADD CODE HERE - after the uploadProfilePicture method
     /**
      * Upload a document with descriptive filename
      */
@@ -68,6 +67,7 @@ class FirebaseStorageService
             'descriptive_filename' => $descriptiveFilename
         ];
     }
+
     /**
      * Delete an image from Firebase Storage.
      */
@@ -100,5 +100,55 @@ class FirebaseStorageService
         } catch (\Exception $e) {
             // Silently fail if the object doesn't exist
         }
+    }
+
+    // ADD CODE HERE - add these helper methods
+    /**
+     * Upload profile picture (compatibility method)
+     */
+    public function uploadProfilePicture(UploadedFile $file, string $folderPath = 'profile_pictures'): string
+    {
+        return $this->uploadImage($file); // Use your existing method
+    }
+
+    /**
+     * Get public URL for a file path
+     */
+    public function getPublicUrl(string $firebasePath): string
+    {
+        try {
+            $object = $this->bucket->object($firebasePath);
+            if ($object->exists()) {
+                return $object->info()['mediaLink'];
+            }
+        } catch (\Exception $e) {
+            // Return empty string if file doesn't exist
+        }
+        return '';
+    }
+
+    /**
+     * Delete a file from Firebase Storage
+     */
+    public function deleteFile(string $firebasePath): bool
+    {
+        try {
+            $object = $this->bucket->object($firebasePath);
+            if ($object->exists()) {
+                $object->delete();
+                return true;
+            }
+        } catch (\Exception $e) {
+            // Silently fail
+        }
+        return false;
+    }
+
+    /**
+     * Delete profile picture (backward compatibility)
+     */
+    public function deleteProfilePicture(string $firebasePath): bool
+    {
+        return $this->deleteFile($firebasePath);
     }
 }

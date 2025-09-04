@@ -35,6 +35,49 @@ class Client extends Model
         'agency_id'
     ];
 
+
+    // ADD CODE HERE - before the shifts() method
+    /**
+     * Get formatted value or N/A for optional fields
+     */
+    public function getCurrentMedicationsDisplayAttribute(): string
+    {
+        return $this->current_medications ?: 'N/A';
+    }
+
+    public function getDiscontinuedMedicationsDisplayAttribute(): string
+    {
+        return $this->discontinued_medications ?: 'N/A';
+    }
+
+    public function getRecentHospitalizationsDisplayAttribute(): string
+    {
+        return $this->recent_hospitalizations ?: 'N/A';
+    }
+
+    public function getCurrentConcurrentDxDisplayAttribute(): string
+    {
+        return $this->current_concurrent_dx ?: 'N/A';
+    }
+
+    public function getDesignatedPoaDisplayAttribute(): string
+    {
+        return $this->designated_poa ?: 'N/A';
+    }
+
+    public function getCurrentRoutinesAmPmDisplayAttribute(): string
+    {
+        return $this->current_routines_am_pm ?: 'N/A';
+    }
+
+    public function getFallRiskDisplayAttribute(): string
+    {
+        if (!$this->fall_risk) {
+            return 'N/A';
+        }
+        return ucfirst($this->fall_risk);
+    }
+
     public function shifts()
     {
         return $this->hasMany(Shift::class);
