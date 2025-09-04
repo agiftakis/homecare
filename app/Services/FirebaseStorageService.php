@@ -23,20 +23,20 @@ class FirebaseStorageService
     }
 
     /**
-     * Upload an image to Firebase Storage.
+     * Upload a profile picture and return the Firebase path (not URL)
      */
-    public function uploadImage($image)
+    public function uploadProfilePicture(UploadedFile $file, string $folderPath = 'profile_pictures'): string
     {
-        $fileName = 'profile_pictures/' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+        $fileName = $folderPath . '/' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
 
-        $imageStream = fopen($image->getRealPath(), 'r');
+        $imageStream = fopen($file->getRealPath(), 'r');
 
-        $object = $this->bucket->upload($imageStream, [
+        $this->bucket->upload($imageStream, [
             'name' => $fileName,
             'predefinedAcl' => 'publicRead'
         ]);
 
-        return $object->info()['mediaLink'];
+        return $fileName; // Return the Firebase path, not the URL
     }
 
     /**
@@ -56,11 +56,12 @@ class FirebaseStorageService
         $uniqueId = uniqid();
         $firebasePath = $folderPath . '/' . $uniqueId . '_' . $descriptiveFilename;
 
-        $bucket = $this->storage->getBucket(env('FIREBASE_STORAGE_BUCKET'));
-        $bucket->upload(
-            file_get_contents($file->getRealPath()),
-            ['name' => $firebasePath]
-        );
+        $documentStream = fopen($file->getRealPath(), 'r');
+
+        $this->bucket->upload($documentStream, [
+            'name' => $firebasePath,
+            'predefinedAcl' => 'publicRead'
+        ]);
 
         return [
             'firebase_path' => $firebasePath,
@@ -69,7 +70,67 @@ class FirebaseStorageService
     }
 
     /**
-     * Delete an image from Firebase Storage.
+     * Get public URL for a file path
+     */
+    public function getPublicUrl(string $firebasePath): string
+    {
+        try {
+            $object = $this->bucket->object($firebasePath);
+            if ($object->exists()) {
+                return $object->info()['mediaLink'];
+            }
+        } catch (\Exception $e) {
+            // Return empty string if file doesn't exist
+        }
+        return '';
+    }
+
+    /**
+     * Delete a file from Firebase Storage using file path
+     */
+    public function deleteFile(string $firebasePath): bool
+    {
+        try {
+            $object = $this->bucket->object($firebasePath);
+            if ($object->exists()) {
+                $object->delete();
+                return true;
+            }
+        } catch (\Exception $e) {
+            // Silently fail
+        }
+        return false;
+    }
+
+    /**
+     * Delete profile picture (backward compatibility)
+     */
+    public function deleteProfilePicture(string $firebasePath): bool
+    {
+        return $this->deleteFile($firebasePath);
+    }
+
+    /**
+     * LEGACY METHOD: Upload an image to Firebase Storage (for backward compatibility)
+     * This method returns a URL - use uploadProfilePicture() for new code
+     */
+    public function uploadImage($image)
+    {
+        $fileName = 'profile_pictures/' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+
+        $imageStream = fopen($image->getRealPath(), 'r');
+
+        $object = $this->bucket->upload($imageStream, [
+            'name' => $fileName,
+            'predefinedAcl' => 'publicRead'
+        ]);
+
+        return $object->info()['mediaLink'];
+    }
+
+    /**
+     * LEGACY METHOD: Delete an image from Firebase Storage using URL
+     * This method works with URLs - use deleteFile() for new code
      */
     public function deleteImage($url)
     {
@@ -100,55 +161,5 @@ class FirebaseStorageService
         } catch (\Exception $e) {
             // Silently fail if the object doesn't exist
         }
-    }
-
-    // ADD CODE HERE - add these helper methods
-    /**
-     * Upload profile picture (compatibility method)
-     */
-    public function uploadProfilePicture(UploadedFile $file, string $folderPath = 'profile_pictures'): string
-    {
-        return $this->uploadImage($file); // Use your existing method
-    }
-
-    /**
-     * Get public URL for a file path
-     */
-    public function getPublicUrl(string $firebasePath): string
-    {
-        try {
-            $object = $this->bucket->object($firebasePath);
-            if ($object->exists()) {
-                return $object->info()['mediaLink'];
-            }
-        } catch (\Exception $e) {
-            // Return empty string if file doesn't exist
-        }
-        return '';
-    }
-
-    /**
-     * Delete a file from Firebase Storage
-     */
-    public function deleteFile(string $firebasePath): bool
-    {
-        try {
-            $object = $this->bucket->object($firebasePath);
-            if ($object->exists()) {
-                $object->delete();
-                return true;
-            }
-        } catch (\Exception $e) {
-            // Silently fail
-        }
-        return false;
-    }
-
-    /**
-     * Delete profile picture (backward compatibility)
-     */
-    public function deleteProfilePicture(string $firebasePath): bool
-    {
-        return $this->deleteFile($firebasePath);
     }
 }
