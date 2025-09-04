@@ -91,7 +91,7 @@
                                             </div>
                                             <div class="flex-1">
                                                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $caregiver->certifications_display }}</p>
-                                                <a href="{{ $caregiver->certifications_url }}" target="_blank" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">View Document →</a>
+                                                <a href="{{ $caregiver->certifications_url }}" target="_blank" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">Download Document →</a>
                                             </div>
                                         </div>
                                     @else
@@ -114,7 +114,7 @@
                                             </div>
                                             <div class="flex-1">
                                                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $caregiver->professional_licenses_display }}</p>
-                                                <a href="{{ $caregiver->professional_licenses_url }}" target="_blank" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">View Document →</a>
+                                                <a href="{{ $caregiver->professional_licenses_url }}" target="_blank" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">Download Document →</a>
                                             </div>
                                         </div>
                                     @else
@@ -137,7 +137,7 @@
                                             </div>
                                             <div class="flex-1">
                                                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $caregiver->state_province_id_display }}</p>
-                                                <a href="{{ $caregiver->state_province_id_url }}" target="_blank" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">View Document →</a>
+                                                <a href="{{ $caregiver->state_province_id_url }}" target="_blank" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">Download Document →</a>
                                             </div>
                                         </div>
                                     @else
