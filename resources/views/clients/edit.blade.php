@@ -45,7 +45,8 @@
 
                                 <div>
                                     <x-input-label for="date_of_birth" :value="__('Date of Birth')" />
-                                    <x-text-input id="date_of_birth" class="block mt-1 w-full dark:[color-scheme:dark]" type="date" name="date_of_birth" :value="old('date_of_birth', $client->date_of_birth)" required />
+                                    <!-- **THE FIX:** Format the date correctly for the HTML5 date input -->
+                                    <x-text-input id="date_of_birth" class="block mt-1 w-full dark:[color-scheme:dark]" type="date" name="date_of_birth" :value="old('date_of_birth', \Carbon\Carbon::parse($client->date_of_birth)->format('Y-m-d'))" required />
                                     <x-input-error :messages="$errors->get('date_of_birth')" class="mt-2" />
                                 </div>
 
