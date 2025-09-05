@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Concerns\BelongsToAgency;
-
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use App\Services\FirebaseStorageService;
 
 class Caregiver extends Model
@@ -24,72 +23,73 @@ class Caregiver extends Model
         'phone_number',
         'date_of_birth',
         'certifications',
+        'agency_id',
         'profile_picture_path',
-        // ADD CODE HERE - new document fields
+        // Document Fields
         'certifications_filename',
         'certifications_path',
         'professional_licenses_filename',
         'professional_licenses_path',
         'state_province_id_filename',
         'state_province_id_path',
-        'agency_id'
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'date_of_birth' => 'date',
+    ];
 
-    public function getCertificationsUrlAttribute(): ?string
+    /**
+     * Get the caregiver's full name.
+     */
+    public function getFullNameAttribute(): string
     {
-        if (!$this->certifications_path) {
-            return null;
-        }
-
-        $firebaseService = new FirebaseStorageService();
-        return $firebaseService->getPublicUrl($this->certifications_path);
-    }
-
-    public function getProfessionalLicensesUrlAttribute(): ?string
-    {
-        if (!$this->professional_licenses_path) {
-            return null;
-        }
-
-        $firebaseService = new FirebaseStorageService();
-        return $firebaseService->getPublicUrl($this->professional_licenses_path);
-    }
-
-    public function getStateProvinceIdUrlAttribute(): ?string
-    {
-        if (!$this->state_province_id_path) {
-            return null;
-        }
-
-        $firebaseService = new FirebaseStorageService();
-        return $firebaseService->getPublicUrl($this->state_province_id_path);
+        return "{$this->first_name} {$this->last_name}";
     }
 
     /**
-     * Display methods for documents
+     * Get the public URL for the profile picture.
      */
+    public function getProfilePictureUrlAttribute(): string
+    {
+        if ($this->profile_picture_path) {
+            $firebaseStorageService = new FirebaseStorageService();
+            return $firebaseStorageService->getPublicUrl($this->profile_picture_path);
+        }
+        return 'https://via.placeholder.com/150';
+    }
+
+    // --- Document Management Methods ---
+
+    // Certifications
+    public function getCertificationsUrlAttribute(): string
+    {
+        return $this->certifications_path ? (new FirebaseStorageService())->getPublicUrl($this->certifications_path) : '';
+    }
+
     public function getCertificationsDisplayAttribute(): string
     {
-        return $this->certifications_filename ?: 'No document uploaded';
+        return $this->certifications_filename ?: 'N/A';
+    }
+
+    public function hasCertifications(): bool
+    {
+        return !empty($this->certifications_path);
+    }
+
+    // Professional Licenses
+    public function getProfessionalLicensesUrlAttribute(): string
+    {
+        return $this->professional_licenses_path ? (new FirebaseStorageService())->getPublicUrl($this->professional_licenses_path) : '';
     }
 
     public function getProfessionalLicensesDisplayAttribute(): string
     {
-        return $this->professional_licenses_filename ?: 'No document uploaded';
-    }
-
-    public function getStateProvinceIdDisplayAttribute(): string
-    {
-        return $this->state_province_id_filename ?: 'No document uploaded';
-    }
-
-    /**
-     * Check if a document exists
-     */
-    public function hasCertifications(): bool
-    {
-        return !empty($this->certifications_path);
+        return $this->professional_licenses_filename ?: 'N/A';
     }
 
     public function hasProfessionalLicenses(): bool
@@ -97,11 +97,25 @@ class Caregiver extends Model
         return !empty($this->professional_licenses_path);
     }
 
+    // State/Province ID
+    public function getStateProvinceIdUrlAttribute(): string
+    {
+        return $this->state_province_id_path ? (new FirebaseStorageService())->getPublicUrl($this->state_province_id_path) : '';
+    }
+
+    public function getStateProvinceIdDisplayAttribute(): string
+    {
+        return $this->state_province_id_filename ?: 'N/A';
+    }
+
     public function hasStateProvinceId(): bool
     {
         return !empty($this->state_province_id_path);
     }
 
+    /**
+     * Get the shifts for the caregiver.
+     */
     public function shifts()
     {
         return $this->hasMany(Shift::class);
