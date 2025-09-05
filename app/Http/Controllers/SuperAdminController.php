@@ -113,7 +113,8 @@ class SuperAdminController extends Controller
      */
     public function caregiversIndex()
     {
-        // Logic will be added here
+        $caregivers = Caregiver::withoutGlobalScope('agencyScope')->with('agency')->get();
+        return view('superadmin.caregivers.index', compact('caregivers'));
     }
 
     /**
@@ -121,7 +122,91 @@ class SuperAdminController extends Controller
      */
     public function caregiverShow(Caregiver $caregiver)
     {
-        // Logic will be added here
+        return view('superadmin.caregivers.show', compact('caregiver'));
+    }
+
+    /**
+     * Update the specified caregiver in storage.
+     */
+    public function caregiverUpdate(Request $request, Caregiver $caregiver)
+    {
+        $validatedData = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                 Rule::unique('caregivers')->where(function ($query) use ($caregiver) {
+                    return $query->where('agency_id', $caregiver->agency_id);
+                })->ignore($caregiver->id),
+            ],
+            'phone_number' => 'required|string|max:255',
+            'date_of_birth' => 'required|date',
+            'certifications' => 'nullable|string',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'certifications_document' => 'nullable|file|mimes:pdf,docx,jpeg,png,jpg,gif|max:10240',
+            'professional_licenses_document' => 'nullable|file|mimes:pdf,docx,jpeg,png,jpg,gif|max:10240',
+            'state_province_id_document' => 'nullable|file|mimes:pdf,docx,jpeg,png,jpg,gif|max:10240',
+        ]);
+
+        if ($request->hasFile('profile_picture')) {
+            if ($caregiver->profile_picture_path) {
+                $this->firebaseStorageService->deleteFile($caregiver->profile_picture_path);
+            }
+            $path = $this->firebaseStorageService->uploadProfilePicture($request->file('profile_picture'), 'caregiver_profiles');
+            $validatedData['profile_picture_path'] = $path;
+        }
+
+        $documentTypes = [
+            'certifications',
+            'professional_licenses',
+            'state_province_id',
+        ];
+
+        foreach ($documentTypes as $type) {
+            if ($request->hasFile("{$type}_document")) {
+                if ($caregiver->{"{$type}_path"}) {
+                    $this->firebaseStorageService->deleteFile($caregiver->{"{$type}_path"});
+                }
+                $file = $request->file("{$type}_document");
+                $caregiverName = $validatedData['first_name'] . ' ' . $validatedData['last_name'];
+                $documentInfo = $this->firebaseStorageService->uploadDocument($file, $caregiverName, $type);
+                
+                $validatedData["{$type}_path"] = $documentInfo['firebase_path'];
+                $validatedData["{$type}_filename"] = $documentInfo['descriptive_filename'];
+            }
+        }
+
+        $caregiver->update($validatedData);
+
+        return redirect()->route('superadmin.caregivers.show', $caregiver)->with('success', 'Caregiver profile updated successfully.');
+    }
+
+    /**
+     * Remove the specified caregiver from storage.
+     */
+    public function caregiverDestroy(Caregiver $caregiver)
+    {
+        // Delete profile picture
+        if ($caregiver->profile_picture_path) {
+            $this->firebaseStorageService->deleteFile($caregiver->profile_picture_path);
+        }
+        // Delete all associated documents
+        if ($caregiver->certifications_path) {
+            $this->firebaseStorageService->deleteFile($caregiver->certifications_path);
+        }
+        if ($caregiver->professional_licenses_path) {
+            $this->firebaseStorageService->deleteFile($caregiver->professional_licenses_path);
+        }
+        if ($caregiver->state_province_id_path) {
+            $this->firebaseStorageService->deleteFile($caregiver->state_province_id_path);
+        }
+
+        $caregiver->delete();
+
+        return redirect()->route('superadmin.caregivers.index')->with('success', 'Caregiver profile deleted successfully.');
     }
 }
 
