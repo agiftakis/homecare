@@ -24,6 +24,7 @@ class Agency extends Model
         'subscription_status',
         'trial_ends_at',
         'subscription_ends_at',
+        'user_id', // This is the required addition
     ];
 
     /**
@@ -44,10 +45,6 @@ class Agency extends Model
         return $this->hasMany(User::class);
     }
 
-    // **THE FIX:** These two methods are required by Laravel Cashier when you use a
-    // model other than User as the billable entity. They tell Stripe which
-    // name and email to use for the customer record.
-
     /**
      * Get the Stripe-compatible name for the billable model.
      */
@@ -64,10 +61,11 @@ class Agency extends Model
         return $this->contact_email;
     }
 
+    /**
+     * Get the user that owns the agency.
+     */
     public function owner()
     {
-        // This assumes your 'agencies' table has a 'user_id' column
-        // that links to the 'id' on the 'users' table.
         return $this->belongsTo(User::class, 'user_id');
     }
 }
