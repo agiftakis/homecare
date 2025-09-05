@@ -50,14 +50,17 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', [SuperAdminController::class, 'index'])->name('dashboard');
     
-    // Client and Caregiver Management for SuperAdmin
+    // Client Management Routes for SuperAdmin
     Route::get('/clients', [SuperAdminController::class, 'clientsIndex'])->name('clients.index');
     Route::get('/clients/{client}', [SuperAdminController::class, 'clientShow'])->name('clients.show');
     Route::put('/clients/{client}', [SuperAdminController::class, 'clientUpdate'])->name('clients.update');
     Route::delete('/clients/{client}', [SuperAdminController::class, 'clientDestroy'])->name('clients.destroy');
 
+    // Caregiver Management Routes for SuperAdmin
     Route::get('/caregivers', [SuperAdminController::class, 'caregiversIndex'])->name('caregivers.index');
     Route::get('/caregivers/{caregiver}', [SuperAdminController::class, 'caregiverShow'])->name('caregivers.show');
+    Route::put('/caregivers/{caregiver}', [SuperAdminController::class, 'caregiverUpdate'])->name('caregivers.update');
+    Route::delete('/caregivers/{caregiver}', [SuperAdminController::class, 'caregiverDestroy'])->name('caregivers.destroy');
 });
 
 require __DIR__ . '/auth.php';
