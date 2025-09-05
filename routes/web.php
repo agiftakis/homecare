@@ -49,6 +49,12 @@ Route::middleware('auth')->group(function () {
 // Super Admin Routes
 Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', [SuperAdminController::class, 'index'])->name('dashboard');
+    
+    // Client and Caregiver Management for SuperAdmin
+    Route::get('/clients', [SuperAdminController::class, 'clientsIndex'])->name('clients.index');
+    Route::get('/clients/{client}', [SuperAdminController::class, 'clientShow'])->name('clients.show');
+    Route::get('/caregivers', [SuperAdminController::class, 'caregiversIndex'])->name('caregivers.index');
+    Route::get('/caregivers/{caregiver}', [SuperAdminController::class, 'caregiverShow'])->name('caregivers.show');
 });
 
 require __DIR__ . '/auth.php';
