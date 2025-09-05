@@ -18,6 +18,20 @@
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Basic Information</h3>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- **THE FIX: Agency Selection for SuperAdmin** -->
+                                @if (Auth::user()->role === 'super_admin' && isset($agencies) && $agencies->count() > 0)
+                                <div class="md:col-span-2">
+                                    <x-input-label for="agency_id" :value="__('Agency')" />
+                                    <select id="agency_id" name="agency_id" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
+                                        <option value="">Select an Agency...</option>
+                                        @foreach ($agencies as $agency)
+                                            <option value="{{ $agency->id }}" {{ old('agency_id') == $agency->id ? 'selected' : '' }}>{{ $agency->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <x-input-error :messages="$errors->get('agency_id')" class="mt-2" />
+                                </div>
+                                @endif
+
                                 <div>
                                     <x-input-label for="first_name" :value="__('First Name')" />
                                     <x-text-input id="first_name" class="block mt-1 w-full" type="text" name="first_name" :value="old('first_name')" required autofocus />

@@ -3,16 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
-use App\Services\FirebaseStorageService;
+use App\Models\Agency; // <-- Import the Agency model
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use App\Services\FirebaseStorageService;
 use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller
 {
     protected $firebaseStorageService;
 
-    // Use dependency injection to get our new service
     public function __construct(FirebaseStorageService $firebaseStorageService)
     {
         $this->firebaseStorageService = $firebaseStorageService;
@@ -20,39 +19,48 @@ class ClientController extends Controller
 
     public function index()
     {
-        // This is already correctly scoped by your BelongsToAgency trait
         $clients = Client::latest()->get();
         return view('clients.index', compact('clients'));
     }
 
     public function create()
     {
-        return view('clients.create');
+        // **THE FIX: Step 1**
+        // If the user is a super_admin, fetch all agencies to pass to the view.
+        $agencies = [];
+        if (Auth::user()->role === 'super_admin') {
+            $agencies = Agency::orderBy('name')->get();
+        }
+        return view('clients.create', compact('agencies'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        // **THE FIX: Step 2**
+        // Add agency_id to validation rules ONLY for super_admin
+        $validationRules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'email',
-                'unique:clients,email,NULL,id,agency_id,' . Auth::user()->agency_id
-            ],
+            'email' => 'required|string|email|max:255|unique:clients,email',
             'phone_number' => 'required|string|max:20',
             'date_of_birth' => 'required|date',
             'address' => 'required|string',
             'care_plan' => 'nullable|string',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'current_medications' => 'nullable|string',
             'discontinued_medications' => 'nullable|string',
             'recent_hospitalizations' => 'nullable|string',
             'current_concurrent_dx' => 'nullable|string',
-            'designated_poa' => 'nullable|string|max:255',
+            'designated_poa' => 'nullable|string',
             'current_routines_am_pm' => 'nullable|string',
             'fall_risk' => 'nullable|in:yes,no',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        ];
+
+        if (Auth::user()->role === 'super_admin') {
+            $validationRules['agency_id'] = 'required|exists:agencies,id';
+        }
+
+        $validated = $request->validate($validationRules);
 
         // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
@@ -63,8 +71,14 @@ class ClientController extends Controller
             $validated['profile_picture_path'] = $profilePicturePath;
         }
 
-        // Add agency_id to the validated data
-        $validated['agency_id'] = Auth::user()->agency_id;
+        // **THE FIX: Step 3**
+        // Assign agency_id based on user role
+        if (Auth::user()->role === 'super_admin') {
+            $validated['agency_id'] = $request->agency_id;
+        } else {
+            $validated['agency_id'] = Auth::user()->agency_id;
+        }
+
 
         Client::create($validated);
 
@@ -73,51 +87,40 @@ class ClientController extends Controller
 
     public function edit(Client $client)
     {
-        // Authorize that the user can edit this client
         $this->authorize('update', $client);
-
         return view('clients.edit', compact('client'));
     }
 
     public function update(Request $request, Client $client)
     {
-        // Authorize that the user can update this client
         $this->authorize('update', $client);
 
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'email',
-                'unique:clients,email,' . $client->id . ',id,agency_id,' . Auth::user()->agency_id
-            ],
+            'email' => 'required|string|email|max:255|unique:clients,email,' . $client->id,
             'phone_number' => 'required|string|max:20',
             'date_of_birth' => 'required|date',
             'address' => 'required|string',
             'care_plan' => 'nullable|string',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'current_medications' => 'nullable|string',
             'discontinued_medications' => 'nullable|string',
             'recent_hospitalizations' => 'nullable|string',
             'current_concurrent_dx' => 'nullable|string',
-            'designated_poa' => 'nullable|string|max:255',
+            'designated_poa' => 'nullable|string',
             'current_routines_am_pm' => 'nullable|string',
             'fall_risk' => 'nullable|in:yes,no',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
-            // Delete old profile picture if it exists
             if ($client->profile_picture_path) {
                 $this->firebaseStorageService->deleteFile($client->profile_picture_path);
             }
-            
-            $profilePicturePath = $this->firebaseStorageService->uploadProfilePicture(
+            $validated['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture(
                 $request->file('profile_picture'),
                 'client_profile_pictures'
             );
-            $validated['profile_picture_path'] = $profilePicturePath;
         }
 
         $client->update($validated);
@@ -129,7 +132,6 @@ class ClientController extends Controller
     {
         $this->authorize('delete', $client);
 
-        // Delete profile picture from Firebase if it exists
         if ($client->profile_picture_path) {
             $this->firebaseStorageService->deleteFile($client->profile_picture_path);
         }
