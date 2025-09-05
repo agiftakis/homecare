@@ -53,8 +53,12 @@ Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmi
     // Client and Caregiver Management for SuperAdmin
     Route::get('/clients', [SuperAdminController::class, 'clientsIndex'])->name('clients.index');
     Route::get('/clients/{client}', [SuperAdminController::class, 'clientShow'])->name('clients.show');
+    Route::put('/clients/{client}', [SuperAdminController::class, 'clientUpdate'])->name('clients.update');
+    Route::delete('/clients/{client}', [SuperAdminController::class, 'clientDestroy'])->name('clients.destroy');
+
     Route::get('/caregivers', [SuperAdminController::class, 'caregiversIndex'])->name('caregivers.index');
     Route::get('/caregivers/{caregiver}', [SuperAdminController::class, 'caregiverShow'])->name('caregivers.show');
 });
 
 require __DIR__ . '/auth.php';
+
