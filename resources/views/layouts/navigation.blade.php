@@ -18,22 +18,22 @@
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                             {{ __('Dashboard') }}
                         </x-nav-link>
+
+                        {{-- Clients Link - Only for regular users --}}
+                        <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*') && !request()->routeIs('superadmin.clients.*')">
+                            {{ __('Clients') }}
+                        </x-nav-link>
+
+                        {{-- Caregivers Link - Only for regular users --}}
+                        <x-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*') && !request()->routeIs('superadmin.caregivers.*')">
+                            {{ __('Caregivers') }}
+                        </x-nav-link>
+
+                        {{-- Schedule Link - Only for regular users --}}
+                        <x-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.index')">
+                            {{ __('Schedule') }}
+                        </x-nav-link>
                     @endif
-
-                    {{-- Clients Link --}}
-                    <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*') && !request()->routeIs('superadmin.clients.*')">
-                        {{ __('Clients') }}
-                    </x-nav-link>
-
-                    {{-- Caregivers Link --}}
-                    <x-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*') && !request()->routeIs('superadmin.caregivers.*')">
-                        {{ __('Caregivers') }}
-                    </x-nav-link>
-
-                    {{-- Schedule Link --}}
-                    <x-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.index')">
-                        {{ __('Schedule') }}
-                    </x-nav-link>
 
                     {{-- SuperAdmin BLOCK --}}
                     @if (Auth::user()->role === 'super_admin')
@@ -134,16 +134,27 @@
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                     {{ __('Dashboard') }}
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
+                    {{ __('Clients') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*')">
+                    {{ __('Caregivers') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.*')">
+                    {{ __('Schedule') }}
+                </x-responsive-nav-link>
             @endif
-            <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
-                {{ __('Clients') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*')">
-                {{ __('Caregivers') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.*')">
-                {{ __('Schedule') }}
-            </x-responsive-nav-link>
+            @if (Auth::user()->role === 'super_admin')
+                <x-responsive-nav-link :href="route('superadmin.dashboard')" :active="request()->routeIs('superadmin.dashboard')">
+                    {{ __('Admin Dashboard') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('superadmin.clients.index')" :active="request()->routeIs('superadmin.clients.*')">
+                    {{ __('View All Clients') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('superadmin.caregivers.index')" :active="request()->routeIs('superadmin.caregivers.*')">
+                    {{ __('View All Caregivers') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

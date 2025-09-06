@@ -54,10 +54,26 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     
+                    <!-- Search Bar -->
+                    <div class="mb-6">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input type="text" 
+                                   id="caregiverSearch" 
+                                   placeholder="Search caregivers by name..." 
+                                   class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    
                     <!-- Mobile View -->
-                    <div class="space-y-4 md:hidden">
+                    <div id="mobileView" class="space-y-4 md:hidden">
                         @forelse ($caregivers as $caregiver)
-                            <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border dark:border-gray-700">
+                            <div class="caregiver-card bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border dark:border-gray-700" 
+                                 data-name="{{ strtolower($caregiver->first_name . ' ' . $caregiver->last_name) }}">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-12 w-12">
@@ -99,7 +115,7 @@
                     </div>
 
                     <!-- Desktop View -->
-                    <div class="hidden md:block overflow-x-auto">
+                    <div id="desktopView" class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
@@ -116,7 +132,7 @@
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 @forelse ($caregivers as $caregiver)
-                                    <tr>
+                                    <tr class="caregiver-row" data-name="{{ strtolower($caregiver->first_name . ' ' . $caregiver->last_name) }}">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-10 w-10">
@@ -165,8 +181,66 @@
                         </table>
                     </div>
 
+                    <!-- No Results Message -->
+                    <div id="noResults" class="hidden text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No caregivers found</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Try adjusting your search terms.</p>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('caregiverSearch');
+            const caregiverCards = document.querySelectorAll('.caregiver-card');
+            const caregiverRows = document.querySelectorAll('.caregiver-row');
+            const noResults = document.getElementById('noResults');
+            const mobileView = document.getElementById('mobileView');
+            const desktopView = document.getElementById('desktopView');
+
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                let visibleCount = 0;
+
+                // Filter mobile cards
+                caregiverCards.forEach(card => {
+                    const caregiverName = card.getAttribute('data-name');
+                    if (caregiverName.includes(searchTerm)) {
+                        card.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Filter desktop rows
+                caregiverRows.forEach(row => {
+                    const caregiverName = row.getAttribute('data-name');
+                    if (caregiverName.includes(searchTerm)) {
+                        row.style.display = 'table-row';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Show/hide no results message
+                if (visibleCount === 0 && searchTerm !== '') {
+                    noResults.classList.remove('hidden');
+                    mobileView.classList.add('hidden');
+                    desktopView.classList.add('hidden');
+                } else {
+                    noResults.classList.add('hidden');
+                    mobileView.classList.remove('hidden');
+                    desktopView.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
 </x-app-layout>
