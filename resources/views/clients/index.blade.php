@@ -1,10 +1,11 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight mb-4 sm:mb-0">
                 {{ __('Clients') }}
             </h2>
-            <a href="{{ route('clients.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+            <a href="{{ route('clients.create') }}" 
+               class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                 + Add New Client
             </a>
         </div>
@@ -22,9 +23,26 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     
-                    <div class="space-y-4 md:hidden">
+                    <!-- Search Bar -->
+                    <div class="mb-6">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input type="text" 
+                                   id="clientSearch" 
+                                   placeholder="Search clients by name..." 
+                                   class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile View -->
+                    <div id="mobileView" class="space-y-4 md:hidden">
                         @forelse ($clients as $client)
-                            <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border dark:border-gray-700">
+                            <div class="client-card bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border dark:border-gray-700" 
+                                 data-name="{{ strtolower($client->first_name . ' ' . $client->last_name) }}">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-12 w-12">
@@ -58,7 +76,8 @@
                         @endforelse
                     </div>
 
-                    <div class="hidden md:block overflow-x-auto">
+                    <!-- Desktop View -->
+                    <div id="desktopView" class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
@@ -72,7 +91,7 @@
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 @forelse ($clients as $client)
-                                    <tr>
+                                    <tr class="client-row" data-name="{{ strtolower($client->first_name . ' ' . $client->last_name) }}">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-10 w-10">
@@ -111,8 +130,66 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- No Results Message -->
+                    <div id="noResults" class="hidden text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No clients found</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Try adjusting your search terms.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('clientSearch');
+            const clientCards = document.querySelectorAll('.client-card');
+            const clientRows = document.querySelectorAll('.client-row');
+            const noResults = document.getElementById('noResults');
+            const mobileView = document.getElementById('mobileView');
+            const desktopView = document.getElementById('desktopView');
+
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                let visibleCount = 0;
+
+                // Filter mobile cards
+                clientCards.forEach(card => {
+                    const clientName = card.getAttribute('data-name');
+                    if (clientName.includes(searchTerm)) {
+                        card.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Filter desktop rows
+                clientRows.forEach(row => {
+                    const clientName = row.getAttribute('data-name');
+                    if (clientName.includes(searchTerm)) {
+                        row.style.display = 'table-row';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Show/hide no results message
+                if (visibleCount === 0 && searchTerm !== '') {
+                    noResults.classList.remove('hidden');
+                    mobileView.classList.add('hidden');
+                    desktopView.classList.add('hidden');
+                } else {
+                    noResults.classList.add('hidden');
+                    mobileView.classList.remove('hidden');
+                    desktopView.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
 </x-app-layout>
