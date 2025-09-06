@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Agency;
 use App\Models\Client;
 use App\Models\Caregiver;
+use App\Models\Shift;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\FirebaseStorageService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SuperAdminController extends Controller
@@ -20,22 +23,36 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * Display the super admin dashboard.
+     * Display the super admin dashboard with agency counts.
      */
     public function index()
     {
-        $agencies = Agency::with('owner')->get();
+        $agencies = Agency::with('owner')
+            ->withCount(['clients', 'caregivers'])
+            ->get();
+            
         return view('superadmin.dashboard', compact('agencies'));
     }
 
     /**
-     * Display a listing of all clients from all agencies.
+     * Display a listing of all clients from all agencies (with optional agency filter).
      */
-    public function clientsIndex()
+    public function clientsIndex(Request $request)
     {
-        // Use withoutGlobalScope to bypass the BelongsToAgency scope
-        $clients = Client::withoutGlobalScope('agencyScope')->with('agency')->get();
-        return view('superadmin.clients.index', compact('clients'));
+        $query = Client::withoutGlobalScope('agencyScope')->with('agency');
+        
+        // Apply agency filter if provided
+        if ($request->has('agency') && $request->agency) {
+            $query->where('agency_id', $request->agency);
+            $agency = Agency::find($request->agency);
+            $pageTitle = $agency ? "Clients from {$agency->name}" : "Filtered Clients";
+        } else {
+            $pageTitle = "All Clients (SuperAdmin View)";
+        }
+        
+        $clients = $query->get();
+        
+        return view('superadmin.clients.index', compact('clients', 'pageTitle'));
     }
 
     /**
@@ -43,7 +60,6 @@ class SuperAdminController extends Controller
      */
     public function clientShow(Client $client)
     {
-        // No scope needed here as route model binding handles it
         return view('superadmin.clients.show', compact('client'));
     }
 
@@ -60,7 +76,6 @@ class SuperAdminController extends Controller
                 'string',
                 'email',
                 'max:255',
-                // Ensure email is unique within its own agency, but allow the current client's email.
                 Rule::unique('clients')->where(function ($query) use ($client) {
                     return $query->where('agency_id', $client->agency_id);
                 })->ignore($client->id),
@@ -69,7 +84,7 @@ class SuperAdminController extends Controller
             'date_of_birth' => 'required|date',
             'address' => 'required|string',
             'care_plan' => 'nullable|string',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 2MB Max
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'current_medications' => 'nullable|string',
             'discontinued_medications' => 'nullable|string',
             'recent_hospitalizations' => 'nullable|string',
@@ -80,11 +95,9 @@ class SuperAdminController extends Controller
         ]);
 
         if ($request->hasFile('profile_picture')) {
-            // Delete old picture if it exists
             if ($client->profile_picture_path) {
                 $this->firebaseStorageService->deleteFile($client->profile_picture_path);
             }
-            // Upload new picture and get the path
             $path = $this->firebaseStorageService->uploadProfilePicture($request->file('profile_picture'), 'client_profiles');
             $validatedData['profile_picture_path'] = $path;
         }
@@ -107,14 +120,25 @@ class SuperAdminController extends Controller
         return redirect()->route('superadmin.clients.index')->with('success', 'Client profile has been deleted successfully.');
     }
 
-
     /**
-     * Display a listing of all caregivers from all agencies.
+     * Display a listing of all caregivers from all agencies (with optional agency filter).
      */
-    public function caregiversIndex()
+    public function caregiversIndex(Request $request)
     {
-        $caregivers = Caregiver::withoutGlobalScope('agencyScope')->with('agency')->get();
-        return view('superadmin.caregivers.index', compact('caregivers'));
+        $query = Caregiver::withoutGlobalScope('agencyScope')->with('agency');
+        
+        // Apply agency filter if provided
+        if ($request->has('agency') && $request->agency) {
+            $query->where('agency_id', $request->agency);
+            $agency = Agency::find($request->agency);
+            $pageTitle = $agency ? "Caregivers from {$agency->name}" : "Filtered Caregivers";
+        } else {
+            $pageTitle = "All Caregivers";
+        }
+        
+        $caregivers = $query->get();
+        
+        return view('superadmin.caregivers.index', compact('caregivers', 'pageTitle'));
     }
 
     /**
@@ -138,7 +162,7 @@ class SuperAdminController extends Controller
                 'string',
                 'email',
                 'max:255',
-                 Rule::unique('caregivers')->where(function ($query) use ($caregiver) {
+                Rule::unique('caregivers')->where(function ($query) use ($caregiver) {
                     return $query->where('agency_id', $caregiver->agency_id);
                 })->ignore($caregiver->id),
             ],
@@ -208,5 +232,85 @@ class SuperAdminController extends Controller
 
         return redirect()->route('superadmin.caregivers.index')->with('success', 'Caregiver profile deleted successfully.');
     }
-}
 
+    /**
+     * Completely delete an agency and all associated data.
+     * This method should only be called for agencies with inactive subscriptions.
+     */
+    public function destroyAgency(Agency $agency)
+    {
+        // Safety check: Only allow deletion of agencies with inactive subscriptions
+        if ($agency->subscribed('default')) {
+            return redirect()->route('superadmin.dashboard')
+                ->with('error', 'Cannot delete agency with active subscription. Please cancel subscription first.');
+        }
+
+        try {
+            DB::transaction(function () use ($agency) {
+                // 1. Delete all client profile pictures and records
+                $clients = Client::withoutGlobalScope('agencyScope')
+                    ->where('agency_id', $agency->id)
+                    ->get();
+                
+                foreach ($clients as $client) {
+                    if ($client->profile_picture_path) {
+                        $this->firebaseStorageService->deleteFile($client->profile_picture_path);
+                    }
+                    $client->delete();
+                }
+
+                // 2. Delete all caregiver documents, profile pictures, and records
+                $caregivers = Caregiver::withoutGlobalScope('agencyScope')
+                    ->where('agency_id', $agency->id)
+                    ->get();
+                
+                foreach ($caregivers as $caregiver) {
+                    // Delete profile picture
+                    if ($caregiver->profile_picture_path) {
+                        $this->firebaseStorageService->deleteFile($caregiver->profile_picture_path);
+                    }
+                    // Delete all documents
+                    if ($caregiver->certifications_path) {
+                        $this->firebaseStorageService->deleteFile($caregiver->certifications_path);
+                    }
+                    if ($caregiver->professional_licenses_path) {
+                        $this->firebaseStorageService->deleteFile($caregiver->professional_licenses_path);
+                    }
+                    if ($caregiver->state_province_id_path) {
+                        $this->firebaseStorageService->deleteFile($caregiver->state_province_id_path);
+                    }
+                    $caregiver->delete();
+                }
+
+                // 3. Delete all shifts associated with this agency
+                Shift::withoutGlobalScope('agencyScope')
+                    ->where('agency_id', $agency->id)
+                    ->delete();
+
+                // 4. Delete all users associated with this agency (except the owner, we'll delete that last)
+                $users = User::where('agency_id', $agency->id)
+                    ->where('id', '!=', $agency->user_id)
+                    ->get();
+                
+                foreach ($users as $user) {
+                    $user->delete();
+                }
+
+                // 5. Delete the owner user
+                if ($agency->owner) {
+                    $agency->owner->delete();
+                }
+
+                // 6. Finally, delete the agency itself
+                $agency->delete();
+            });
+
+            return redirect()->route('superadmin.dashboard')
+                ->with('success', 'Agency and all associated data have been permanently deleted.');
+
+        } catch (\Exception $e) {
+            return redirect()->route('superadmin.dashboard')
+                ->with('error', 'An error occurred while deleting the agency. Please try again.');
+        }
+    }
+}

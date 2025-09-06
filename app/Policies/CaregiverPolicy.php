@@ -13,6 +13,12 @@ class CaregiverPolicy
      */
     public function update(User $user, Caregiver $caregiver): bool
     {
+        // SuperAdmin can access everything
+        if ($user->role === 'super_admin') {
+            return true;
+        }
+        
+        // Regular users can only access their agency's caregivers
         return $user->agency_id === $caregiver->agency_id;
     }
 
@@ -21,6 +27,12 @@ class CaregiverPolicy
      */
     public function delete(User $user, Caregiver $caregiver): bool
     {
+        // SuperAdmin can access everything
+        if ($user->role === 'super_admin') {
+            return true;
+        }
+        
+        // Regular users can only access their agency's caregivers
         return $user->agency_id === $caregiver->agency_id;
     }
 }

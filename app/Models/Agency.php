@@ -68,5 +68,20 @@ class Agency extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-}
 
+    /**
+     * Get the clients for the agency.
+     */
+    public function clients()
+    {
+        return $this->hasMany(Client::class);
+    }
+
+    /**
+     * Get the caregivers for the agency.
+     */
+    public function caregivers()
+    {
+        return $this->hasMany(Caregiver::class);
+    }
+}

@@ -49,7 +49,7 @@ Route::middleware('auth')->group(function () {
 // Super Admin Routes
 Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', [SuperAdminController::class, 'index'])->name('dashboard');
-    
+
     // Client Management Routes for SuperAdmin
     Route::get('/clients', [SuperAdminController::class, 'clientsIndex'])->name('clients.index');
     Route::get('/clients/{client}', [SuperAdminController::class, 'clientShow'])->name('clients.show');
@@ -61,7 +61,9 @@ Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmi
     Route::get('/caregivers/{caregiver}', [SuperAdminController::class, 'caregiverShow'])->name('caregivers.show');
     Route::put('/caregivers/{caregiver}', [SuperAdminController::class, 'caregiverUpdate'])->name('caregivers.update');
     Route::delete('/caregivers/{caregiver}', [SuperAdminController::class, 'caregiverDestroy'])->name('caregivers.destroy');
+
+    // Agency Management Routes for SuperAdmin
+    Route::delete('/agencies/{agency}', [SuperAdminController::class, 'destroyAgency'])->name('agencies.destroy');
 });
 
 require __DIR__ . '/auth.php';
-

@@ -13,6 +13,12 @@ class ClientPolicy
      */
     public function update(User $user, Client $client): bool
     {
+        // SuperAdmin can access everything
+        if ($user->role === 'super_admin') {
+            return true;
+        }
+        
+        // Regular users can only access their agency's clients
         return $user->agency_id === $client->agency_id;
     }
 
@@ -21,6 +27,12 @@ class ClientPolicy
      */
     public function delete(User $user, Client $client): bool
     {
+        // SuperAdmin can access everything
+        if ($user->role === 'super_admin') {
+            return true;
+        }
+        
+        // Regular users can only access their agency's clients
         return $user->agency_id === $client->agency_id;
     }
 }
