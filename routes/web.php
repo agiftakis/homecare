@@ -64,6 +64,9 @@ Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmi
 
     // Agency Management Routes for SuperAdmin
     Route::delete('/agencies/{agency}', [SuperAdminController::class, 'destroyAgency'])->name('agencies.destroy');
+
+    // Schedule Management Routes for SuperAdmin
+    Route::get('/schedule', [SuperAdminController::class, 'scheduleIndex'])->name('schedule.index');
 });
 
 require __DIR__ . '/auth.php';

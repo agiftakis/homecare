@@ -41,6 +41,10 @@
                             {{ __('Admin Dashboard') }}
                         </x-nav-link>
 
+                        <x-nav-link :href="route('superadmin.schedule.index')" :active="request()->routeIs('superadmin.schedule.*')">
+                            {{ __('Schedule') }}
+                        </x-nav-link>
+
                         <!-- SuperAdmin Profile Management Dropdown -->
                         <div class="hidden sm:flex sm:items-center sm:ms-10">
                             <x-dropdown align="left" width="48">
@@ -147,6 +151,9 @@
             @if (Auth::user()->role === 'super_admin')
                 <x-responsive-nav-link :href="route('superadmin.dashboard')" :active="request()->routeIs('superadmin.dashboard')">
                     {{ __('Admin Dashboard') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('superadmin.schedule.index')" :active="request()->routeIs('superadmin.schedule.*')">
+                    {{ __('Schedule') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('superadmin.clients.index')" :active="request()->routeIs('superadmin.clients.*')">
                     {{ __('View All Clients') }}

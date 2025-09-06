@@ -30,7 +30,7 @@ class SuperAdminController extends Controller
         $agencies = Agency::with('owner')
             ->withCount(['clients', 'caregivers'])
             ->get();
-            
+
         return view('superadmin.dashboard', compact('agencies'));
     }
 
@@ -40,7 +40,7 @@ class SuperAdminController extends Controller
     public function clientsIndex(Request $request)
     {
         $query = Client::withoutGlobalScope('agencyScope')->with('agency');
-        
+
         // Apply agency filter if provided
         if ($request->has('agency') && $request->agency) {
             $query->where('agency_id', $request->agency);
@@ -49,9 +49,9 @@ class SuperAdminController extends Controller
         } else {
             $pageTitle = "All Clients (SuperAdmin View)";
         }
-        
+
         $clients = $query->get();
-        
+
         return view('superadmin.clients.index', compact('clients', 'pageTitle'));
     }
 
@@ -126,7 +126,7 @@ class SuperAdminController extends Controller
     public function caregiversIndex(Request $request)
     {
         $query = Caregiver::withoutGlobalScope('agencyScope')->with('agency');
-        
+
         // Apply agency filter if provided
         if ($request->has('agency') && $request->agency) {
             $query->where('agency_id', $request->agency);
@@ -135,9 +135,9 @@ class SuperAdminController extends Controller
         } else {
             $pageTitle = "All Caregivers";
         }
-        
+
         $caregivers = $query->get();
-        
+
         return view('superadmin.caregivers.index', compact('caregivers', 'pageTitle'));
     }
 
@@ -197,7 +197,7 @@ class SuperAdminController extends Controller
                 $file = $request->file("{$type}_document");
                 $caregiverName = $validatedData['first_name'] . ' ' . $validatedData['last_name'];
                 $documentInfo = $this->firebaseStorageService->uploadDocument($file, $caregiverName, $type);
-                
+
                 $validatedData["{$type}_path"] = $documentInfo['firebase_path'];
                 $validatedData["{$type}_filename"] = $documentInfo['descriptive_filename'];
             }
@@ -251,7 +251,7 @@ class SuperAdminController extends Controller
                 $clients = Client::withoutGlobalScope('agencyScope')
                     ->where('agency_id', $agency->id)
                     ->get();
-                
+
                 foreach ($clients as $client) {
                     if ($client->profile_picture_path) {
                         $this->firebaseStorageService->deleteFile($client->profile_picture_path);
@@ -263,7 +263,7 @@ class SuperAdminController extends Controller
                 $caregivers = Caregiver::withoutGlobalScope('agencyScope')
                     ->where('agency_id', $agency->id)
                     ->get();
-                
+
                 foreach ($caregivers as $caregiver) {
                     // Delete profile picture
                     if ($caregiver->profile_picture_path) {
@@ -291,7 +291,7 @@ class SuperAdminController extends Controller
                 $users = User::where('agency_id', $agency->id)
                     ->where('id', '!=', $agency->user_id)
                     ->get();
-                
+
                 foreach ($users as $user) {
                     $user->delete();
                 }
@@ -307,10 +307,32 @@ class SuperAdminController extends Controller
 
             return redirect()->route('superadmin.dashboard')
                 ->with('success', 'Agency and all associated data have been permanently deleted.');
-
         } catch (\Exception $e) {
             return redirect()->route('superadmin.dashboard')
                 ->with('error', 'An error occurred while deleting the agency. Please try again.');
         }
+    }
+
+
+
+    /**
+     * Display a listing of all shifts from all agencies (with optional agency filter).
+     */
+    public function scheduleIndex(Request $request)
+    {
+        $query = Shift::withoutGlobalScope('agencyScope')->with(['client', 'caregiver', 'agency']);
+
+        // Apply agency filter if provided
+        if ($request->has('agency') && $request->agency) {
+            $query->where('agency_id', $request->agency);
+            $agency = Agency::find($request->agency);
+            $pageTitle = $agency ? "Schedule for {$agency->name}" : "Filtered Schedule";
+        } else {
+            $pageTitle = "All Schedules (SuperAdmin View)";
+        }
+
+        $shifts = $query->orderBy('start_time', 'desc')->get();
+
+        return view('superadmin.schedule.index', compact('shifts', 'pageTitle'));
     }
 }
