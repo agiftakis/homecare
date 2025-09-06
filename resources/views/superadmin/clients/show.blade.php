@@ -4,7 +4,8 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                 View/Edit Client Profile: {{ $client->first_name }} {{ $client->last_name }}
             </h2>
-            <a href="{{ route('superadmin.clients.index') }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+            <a href="{{ route('superadmin.clients.index') }}"
+                class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
                 &larr; Back to All Clients
             </a>
         </div>
@@ -13,136 +14,179 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             @if (session('success'))
-                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="bg-green-100 dark:bg-green-900/50 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 px-4 py-3 rounded-lg relative mb-6" role="alert">
+                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
+                    x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="bg-green-100 dark:bg-green-900/50 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 px-4 py-3 rounded-lg relative mb-6"
+                    role="alert">
                     <span class="block sm:inline">{{ session('success') }}</span>
                 </div>
             @endif
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 md:p-8 text-gray-900 dark:text-gray-100">
 
-                    <form method="POST" action="{{ route('superadmin.clients.update', $client) }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('superadmin.clients.update', $client) }}"
+                        enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
                         <!-- Profile Header & Agency Info -->
                         <div class="flex flex-col sm:flex-row items-center sm:items-start mb-8">
                             @if ($client->profile_picture_url)
-                                <img class="h-24 w-24 rounded-full object-cover mb-4 sm:mb-0 sm:mr-6" src="{{ $client->profile_picture_url }}" alt="Client profile picture">
+                                <img class="h-24 w-24 rounded-full object-cover mb-4 sm:mb-0 sm:mr-6"
+                                    src="{{ $client->profile_picture_url }}" alt="Client profile picture">
                             @else
-                                <div class="h-24 w-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-4 sm:mb-0 sm:mr-6 flex-shrink-0">
+                                <div
+                                    class="h-24 w-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-4 sm:mb-0 sm:mr-6 flex-shrink-0">
                                     <svg class="h-16 w-16 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M24 20.993V24H0v-2.997A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                                        <path
+                                            d="M24 20.993V24H0v-2.997A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
                                     </svg>
                                 </div>
                             @endif
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $client->first_name }} {{ $client->last_name }}</h3>
-                                <p class="text-md text-gray-500 dark:text-gray-400">Agency: <span class="font-semibold">{{ $client->agency->name ?? 'N/A' }}</span></p>
+                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $client->first_name }}
+                                    {{ $client->last_name }}</h3>
+                                <p class="text-md text-gray-500 dark:text-gray-400">Agency: <span
+                                        class="font-semibold">{{ $client->agency->name ?? 'N/A' }}</span></p>
                             </div>
                         </div>
 
                         <!-- Basic Information Section -->
                         <div class="border-t border-gray-200 dark:border-gray-700 pt-8 mb-8">
-                             <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Basic Information</h4>
-                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Basic Information
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <x-input-label for="first_name" :value="__('First Name')" />
-                                    <x-text-input id="first_name" class="block mt-1 w-full" type="text" name="first_name" :value="old('first_name', $client->first_name)" required autofocus />
+                                    <x-text-input id="first_name" class="block mt-1 w-full" type="text"
+                                        name="first_name" :value="old('first_name', $client->first_name)" required autofocus />
                                     <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
                                 </div>
                                 <div>
                                     <x-input-label for="last_name" :value="__('Last Name')" />
-                                    <x-text-input id="last_name" class="block mt-1 w-full" type="text" name="last_name" :value="old('last_name', $client->last_name)" required />
+                                    <x-text-input id="last_name" class="block mt-1 w-full" type="text"
+                                        name="last_name" :value="old('last_name', $client->last_name)" required />
                                     <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <x-input-label for="email" :value="__('Email Address')" />
-                                    <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $client->email)" required />
+                                    <x-text-input id="email" class="block mt-1 w-full" type="email" name="email"
+                                        :value="old('email', $client->email)" required />
                                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
                                 </div>
                                 <div>
                                     <x-input-label for="phone_number" :value="__('Phone Number')" />
-                                    <x-text-input id="phone_number" class="block mt-1 w-full" type="tel" name="phone_number" :value="old('phone_number', $client->phone_number)" required />
+                                    <x-text-input id="phone_number" class="block mt-1 w-full" type="tel"
+                                        name="phone_number" :value="old('phone_number', $client->phone_number)" required />
                                     <x-input-error :messages="$errors->get('phone_number')" class="mt-2" />
                                 </div>
                                 <div>
                                     <x-input-label for="date_of_birth" :value="__('Date of Birth')" />
-                                    <x-text-input id="date_of_birth" class="block mt-1 w-full dark:[color-scheme:dark]" type="date" name="date_of_birth" :value="old('date_of_birth', $client->date_of_birth)" required />
+                                    <x-text-input id="date_of_birth" class="block mt-1 w-full dark:[color-scheme:dark]"
+                                        type="date" name="date_of_birth" :value="old(
+                                            'date_of_birth',
+                                            \Carbon\Carbon::parse($client->date_of_birth)->format('Y-m-d'),
+                                        )" required />
                                     <x-input-error :messages="$errors->get('date_of_birth')" class="mt-2" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <x-input-label for="address" :value="__('Address')" />
-                                    <textarea id="address" name="address" rows="3" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>{{ old('address', $client->address) }}</textarea>
+                                    <textarea id="address" name="address" rows="3"
+                                        class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                        required>{{ old('address', $client->address) }}</textarea>
                                     <x-input-error :messages="$errors->get('address')" class="mt-2" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <x-input-label for="care_plan" :value="__('Care Plan (Optional)')" />
-                                    <textarea id="care_plan" name="care_plan" rows="4" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">{{ old('care_plan', $client->care_plan) }}</textarea>
+                                    <textarea id="care_plan" name="care_plan" rows="4"
+                                        class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">{{ old('care_plan', $client->care_plan) }}</textarea>
                                     <x-input-error :messages="$errors->get('care_plan')" class="mt-2" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <x-input-label for="profile_picture" :value="__('Update Profile Picture (Optional)')" />
-                                    <input id="profile_picture" name="profile_picture" type="file" class="block mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 dark:[color-scheme:dark]">
+                                    <input id="profile_picture" name="profile_picture" type="file"
+                                        class="block mt-1 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 dark:[color-scheme:dark]">
                                     <x-input-error :messages="$errors->get('profile_picture')" class="mt-2" />
                                 </div>
-                             </div>
+                            </div>
                         </div>
 
                         <!-- Medical Information Section -->
                         <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
-                            <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Medical Information</h4>
+                            <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Medical Information
+                            </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <x-input-label for="designated_poa" :value="__('Designated Power of Attorney (Optional)')" />
-                                    <x-text-input id="designated_poa" class="block mt-1 w-full" type="text" name="designated_poa" :value="old('designated_poa', $client->designated_poa)" placeholder="Name of POA" />
+                                    <x-text-input id="designated_poa" class="block mt-1 w-full" type="text"
+                                        name="designated_poa" :value="old('designated_poa', $client->designated_poa)" placeholder="Name of POA" />
                                     <x-input-error :messages="$errors->get('designated_poa')" class="mt-2" />
                                 </div>
                                 <div>
                                     <x-input-label for="fall_risk" :value="__('Fall Risk (Optional)')" />
-                                    <select id="fall_risk" name="fall_risk" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                    <select id="fall_risk" name="fall_risk"
+                                        class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                         <option value="">Select...</option>
-                                        <option value="yes" {{ old('fall_risk', $client->fall_risk) == 'yes' ? 'selected' : '' }}>Yes</option>
-                                        <option value="no" {{ old('fall_risk', $client->fall_risk) == 'no' ? 'selected' : '' }}>No</option>
+                                        <option value="yes"
+                                            {{ old('fall_risk', $client->fall_risk) == 'yes' ? 'selected' : '' }}>Yes
+                                        </option>
+                                        <option value="no"
+                                            {{ old('fall_risk', $client->fall_risk) == 'no' ? 'selected' : '' }}>No
+                                        </option>
                                     </select>
                                     <x-input-error :messages="$errors->get('fall_risk')" class="mt-2" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <x-input-label for="current_medications" :value="__('Current Medications (Optional)')" />
-                                    <textarea id="current_medications" name="current_medications" rows="3" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" placeholder="List current medications...">{{ old('current_medications', $client->current_medications) }}</textarea>
+                                    <textarea id="current_medications" name="current_medications" rows="3"
+                                        class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                        placeholder="List current medications...">{{ old('current_medications', $client->current_medications) }}</textarea>
                                     <x-input-error :messages="$errors->get('current_medications')" class="mt-2" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <x-input-label for="discontinued_medications" :value="__('Discontinued Medications (Optional)')" />
-                                    <textarea id="discontinued_medications" name="discontinued_medications" rows="3" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" placeholder="List previously used medications...">{{ old('discontinued_medications', $client->discontinued_medications) }}</textarea>
+                                    <textarea id="discontinued_medications" name="discontinued_medications" rows="3"
+                                        class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                        placeholder="List previously used medications...">{{ old('discontinued_medications', $client->discontinued_medications) }}</textarea>
                                     <x-input-error :messages="$errors->get('discontinued_medications')" class="mt-2" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <x-input-label for="recent_hospitalizations" :value="__('Recent Hospitalizations (Optional)')" />
-                                    <textarea id="recent_hospitalizations" name="recent_hospitalizations" rows="3" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" placeholder="List recent hospital visits...">{{ old('recent_hospitalizations', $client->recent_hospitalizations) }}</textarea>
+                                    <textarea id="recent_hospitalizations" name="recent_hospitalizations" rows="3"
+                                        class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                        placeholder="List recent hospital visits...">{{ old('recent_hospitalizations', $client->recent_hospitalizations) }}</textarea>
                                     <x-input-error :messages="$errors->get('recent_hospitalizations')" class="mt-2" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <x-input-label for="current_concurrent_dx" :value="__('Current and Concurrent Diagnoses (Optional)')" />
-                                    <textarea id="current_concurrent_dx" name="current_concurrent_dx" rows="3" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" placeholder="List current diagnoses...">{{ old('current_concurrent_dx', $client->current_concurrent_dx) }}</textarea>
+                                    <textarea id="current_concurrent_dx" name="current_concurrent_dx" rows="3"
+                                        class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                        placeholder="List current diagnoses...">{{ old('current_concurrent_dx', $client->current_concurrent_dx) }}</textarea>
                                     <x-input-error :messages="$errors->get('current_concurrent_dx')" class="mt-2" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <x-input-label for="current_routines_am_pm" :value="__('Current Routines (AM/PM) (Optional)')" />
-                                    <textarea id="current_routines_am_pm" name="current_routines_am_pm" rows="4" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" placeholder="Describe daily routines...">{{ old('current_routines_am_pm', $client->current_routines_am_pm) }}</textarea>
+                                    <textarea id="current_routines_am_pm" name="current_routines_am_pm" rows="4"
+                                        class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                        placeholder="Describe daily routines...">{{ old('current_routines_am_pm', $client->current_routines_am_pm) }}</textarea>
                                     <x-input-error :messages="$errors->get('current_routines_am_pm')" class="mt-2" />
                                 </div>
                             </div>
                         </div>
 
                         <!-- Form Actions -->
-                        <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <div
+                            class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
                             <div>
-                                <x-danger-button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'confirm-client-deletion')">
+                                <x-danger-button type="button" x-data=""
+                                    x-on:click.prevent="$dispatch('open-modal', 'confirm-client-deletion')">
                                     {{ __('Delete Client') }}
                                 </x-danger-button>
                             </div>
                             <div class="flex items-center">
-                                <a href="{{ route('superadmin.clients.index') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <a href="{{ route('superadmin.clients.index') }}"
+                                    class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                     Cancel
                                 </a>
                                 <x-primary-button class="ms-4">
@@ -167,7 +211,8 @@
             </h2>
 
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                Once this profile is deleted, all of its resources and data will be permanently removed. This action cannot be undone.
+                Once this profile is deleted, all of its resources and data will be permanently removed. This action
+                cannot be undone.
             </p>
 
             <div class="mt-6 flex justify-end">
@@ -182,4 +227,3 @@
         </form>
     </x-modal>
 </x-app-layout>
-
