@@ -14,17 +14,48 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
-            <!-- Success Message -->
             @if (session('success'))
                 <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                     <span class="block sm:inline">{{ session('success') }}</span>
                 </div>
             @endif
 
+            @if (session('setup_link'))
+                <div x-data="{ 
+                        open: true, 
+                        link: '{{ session('setup_link') }}',
+                        copyText: 'Copy',
+                        copyLink() {
+                            navigator.clipboard.writeText(this.link);
+                            this.copyText = 'Copied!';
+                            setTimeout(() => { this.copyText = 'Copy' }, 2000);
+                        }
+                    }" 
+                     class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50"
+                     x-show="open"
+                     x-cloak
+                >
+                    <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-lg mx-4" @click.away="open = false">
+                        <div class="flex justify-between items-center mb-4">
+                             <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Caregiver Onboarding Link</h3>
+                             <button @click="open = false" class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">&times;</button>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">
+                            The caregiver has been created successfully. Please copy the secure link below and send it to them so they can set up their password and log in.
+                        </p>
+                        <p class="text-sm text-red-600 dark:text-red-400 mb-4">
+                            <strong>This is a one-time use link that will expire in 48 hours.</strong>
+                        </p>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" :value="link" readonly class="block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                            <x-primary-button @click="copyLink()" x-text="copyText"></x-primary-button>
+                        </div>
+                    </div>
+                </div>
+            @endif
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     
-                    <!-- Search Bar -->
                     <div class="mb-6">
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -39,7 +70,6 @@
                         </div>
                     </div>
                     
-                    <!-- Caregiver List (Mobile View) -->
                     <div id="mobileView" class="space-y-4 md:hidden">
                         @forelse ($caregivers as $caregiver)
                             <div class="caregiver-card bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border dark:border-gray-700" 
@@ -68,8 +98,8 @@
                                 </div>
                                 <div class="mt-4 text-right">
                                      <a href="{{ route('caregivers.edit', $caregiver) }}" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                                        Edit
-                                    </a>
+                                         Edit
+                                     </a>
                                 </div>
                             </div>
                         @empty
@@ -77,7 +107,6 @@
                         @endforelse
                     </div>
 
-                    <!-- Caregiver Table (Desktop View) -->
                     <div id="desktopView" class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
@@ -132,7 +161,6 @@
                         </table>
                     </div>
 
-                    <!-- No Results Message -->
                     <div id="noResults" class="hidden text-center py-12">
                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -175,21 +203,21 @@
                     const caregiverName = row.getAttribute('data-name');
                     if (caregiverName.includes(searchTerm)) {
                         row.style.display = 'table-row';
-                        visibleCount++;
+                        // For desktop, we count rows visible in the current view
+                        if (window.getComputedStyle(desktopView).display !== 'none') {
+                           visibleCount++;
+                        }
                     } else {
                         row.style.display = 'none';
                     }
                 });
 
                 // Show/hide no results message
-                if (visibleCount === 0 && searchTerm !== '') {
+                const totalItems = caregiverCards.length > 0 ? caregiverCards.length : caregiverRows.length;
+                if (visibleCount === 0 && totalItems > 0 && searchTerm !== '') {
                     noResults.classList.remove('hidden');
-                    mobileView.classList.add('hidden');
-                    desktopView.classList.add('hidden');
                 } else {
                     noResults.classList.add('hidden');
-                    mobileView.classList.remove('hidden');
-                    desktopView.classList.remove('hidden');
                 }
             });
         });
