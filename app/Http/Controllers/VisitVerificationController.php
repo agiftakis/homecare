@@ -6,6 +6,7 @@ use App\Models\Shift;
 use App\Models\Visit;
 use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -19,6 +20,23 @@ class VisitVerificationController extends Controller
         $this->firebaseStorageService = $firebaseStorageService;
     }
 
+
+    /**
+     * Show the verification page for a specific shift.
+     */
+    public function show(Shift $shift)
+    {
+        // Authorization: Ensure the logged-in user is the caregiver assigned to this shift.
+        // NOTE: In a real app with different user roles, you might use a formal Policy here.
+        if (Auth::user()->id !== $shift->caregiver->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Find the existing visit record for this shift, if one exists.
+        $visit = Visit::where('shift_id', $shift->id)->first();
+
+        return view('visits.show', compact('shift', 'visit'));
+    }
     /**
      * Handle the clock-in action for a specific shift.
      */

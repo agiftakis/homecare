@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
 
     // ✅ CORRECT PLACEMENT FOR VISIT ROUTES
     // Visit Verification Routes
+    Route::get('/shifts/{shift}/verify', [\App\Http\Controllers\VisitVerificationController::class, 'show'])->name('visits.show');
     Route::post('/shifts/{shift}/clock-in', [\App\Http\Controllers\VisitVerificationController::class, 'clockIn'])->name('visits.clockin');
     Route::post('/visits/{visit}/clock-out', [\App\Http\Controllers\VisitVerificationController::class, 'clockOut'])->name('visits.clockout');
 });
