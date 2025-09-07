@@ -112,6 +112,17 @@ class Caregiver extends Model
     {
         return !empty($this->state_province_id_path);
     }
+    
+    // ✅ NEW RELATIONSHIP
+    /**
+     * Get the user account associated with the caregiver.
+     */
+    public function user()
+    {
+        // This links the Caregiver model to the User model
+        // by matching their email addresses.
+        return $this->belongsTo(User::class, 'email', 'email');
+    }
 
     /**
      * Get the shifts for the caregiver.
