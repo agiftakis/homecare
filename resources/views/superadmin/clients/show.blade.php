@@ -10,18 +10,7 @@
             </a>
         </div>
     </x-slot>
-    <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-        @if (session('success'))
-            <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
-                x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100"
-                x-transition:leave-end="opacity-0"
-                class="bg-green-100 dark:bg-green-900/50 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 px-4 py-3 rounded-lg relative mt-6"
-                role="alert">
-                <span class="block sm:inline">{{ session('success') }}</span>
-            </div>
-        @endif
-    </div>
-
+   
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             @if (session('success'))
