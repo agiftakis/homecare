@@ -26,6 +26,10 @@ Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 Route::get('/register-agency', [AgencyRegistrationController::class, 'create'])->name('agency.register');
 Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store');
 
+//new routes for user- client or caregiver- registration password setup
+Route::get('/setup-password/{token}', [\App\Http\Controllers\PasswordSetupController::class, 'show'])->name('password.setup.show');
+Route::post('/setup-password', [\App\Http\Controllers\PasswordSetupController::class, 'store'])->name('password.setup.store');
+
 // Authenticated Routes
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
