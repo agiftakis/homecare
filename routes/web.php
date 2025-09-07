@@ -44,7 +44,13 @@ Route::middleware('auth')->group(function () {
     // Subscription Routes
     Route::get('/subscription', [SubscriptionController::class, 'create'])->name('subscription.create');
     Route::post('/subscription', [SubscriptionController::class, 'store'])->name('subscription.store');
+
+    // ✅ CORRECT PLACEMENT FOR VISIT ROUTES
+    // Visit Verification Routes
+    Route::post('/shifts/{shift}/clock-in', [\App\Http\Controllers\VisitVerificationController::class, 'clockIn'])->name('visits.clockin');
+    Route::post('/visits/{visit}/clock-out', [\App\Http\Controllers\VisitVerificationController::class, 'clockOut'])->name('visits.clockout');
 });
+
 
 // Super Admin Routes
 Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
