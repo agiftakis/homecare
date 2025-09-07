@@ -15,16 +15,13 @@ class PasswordSetupController extends Controller
      */
     public function show(string $token)
     {
-        // Find the user by the hashed version of the token
         $user = User::where('password_setup_token', hash('sha256', $token))->first();
 
-        // 1. Check if the token is valid, has not expired, and a password isn't already set
-        if (!$user || $user->password_setup_expires_at->isPast() || $user->password !== null) {
-            // Invalidate the token to prevent reuse
+        // ✅ CORRECTED LOGIC: We only need to check if the user exists and the token is not expired.
+        if (!$user || $user->password_setup_expires_at->isPast()) {
             if ($user) {
                 $user->forceFill(['password_setup_token' => null, 'password_setup_expires_at' => null])->save();
             }
-            // Show a view indicating the link is invalid or expired
             return view('auth.invalid-link');
         }
 
@@ -41,26 +38,22 @@ class PasswordSetupController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        // Find the user by the hashed version of the token again for security
         $user = User::where('password_setup_token', hash('sha256', $request->token))->first();
 
-        // Perform the same validation checks as the show method
-        if (!$user || $user->password_setup_expires_at->isPast() || $user->password !== null) {
+        // ✅ CORRECTED LOGIC: Perform the same corrected check here.
+        if (!$user || $user->password_setup_expires_at->isPast()) {
             return view('auth.invalid-link');
         }
 
-        // Update the user's record
         $user->forceFill([
             'password' => Hash::make($request->password),
-            'email_verified_at' => now(), // Mark email as verified since they used the link
-            'password_setup_token' => null, // Invalidate the token
+            'email_verified_at' => now(),
+            'password_setup_token' => null,
             'password_setup_expires_at' => null,
         ])->save();
 
-        // Log the new user in
         Auth::login($user);
 
-        // Redirect them to their dashboard
         return redirect()->route('dashboard')->with('success', 'Welcome! Your password has been set successfully.');
     }
 }

@@ -20,8 +20,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'agency_id', // This is already correctly here
-        'role',      // This is also correctly here
+        'agency_id',
+        'role',
     ];
 
     /**
@@ -44,17 +44,16 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            // ✅ THE FIX IS HERE: Cast the expiration timestamp to a date object
+            'password_setup_expires_at' => 'datetime',
         ];
     }
 
     /**
-     * **THE FIX:** This is the "missing link".
      * This method defines the relationship that a User belongs to an Agency.
-     * It allows us to use `auth()->user()->agency` throughout our application.
      */
     public function agency()
     {
         return $this->belongsTo(Agency::class);
     }
 }
-
