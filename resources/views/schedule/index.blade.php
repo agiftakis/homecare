@@ -5,6 +5,16 @@
         </h2>
     </x-slot>
 
+    {{-- I'm assuming you have a scripts slot in your app.blade.php for this --}}
+    <x-slot name="scripts">
+        <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+        {{-- If you use toastr, its script would go here too --}}
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    </x-slot>
+
+
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
@@ -20,6 +30,7 @@
                             <form @submit.prevent="submitAddForm">
                                 @csrf
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {{-- Assuming this partial binds to 'newShift' --}}
                                     @include('schedule.partials.shift-form-fields', ['shift' => 'newShift'])
                                 </div>
                                 <div class="mt-6 flex justify-end space-x-4">
@@ -37,6 +48,7 @@
                                 @csrf
                                 @method('PUT')
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {{-- Assuming this partial binds to 'editShift' --}}
                                     @include('schedule.partials.shift-form-fields', ['shift' => 'editShift'])
                                 </div>
                                 <div class="mt-6 flex justify-between">
@@ -55,12 +67,6 @@
         </div>
     </div>
 
-    {{-- =============================================================== --}}
-    {{--                     **THE FIX IS RIGHT HERE** --}}
-    {{-- This CSS media query targets the calendar title on screens      --}}
-    {{-- 420px wide or smaller and reduces the font size to prevent      --}}
-    {{-- it from looking squished.                                       --}}
-    {{-- =============================================================== --}}
     <style>
         @media screen and (max-width: 420px) {
             .fc-toolbar-title {
@@ -79,6 +85,17 @@
                 newShift: { client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' },
                 editShift: { id: null, client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' },
                 
+                // ✅ NEW HELPER FUNCTION
+                formatDateTimeLocal(date) {
+                    if (!date) return '';
+                    const year = date.getFullYear();
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const day = date.getDate().toString().padStart(2, '0');
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    return `${year}-${month}-${day}T${hours}:${minutes}`;
+                },
+
                 initCalendar() {
                     const calendarEl = document.getElementById('calendar');
                     this.calendar = new FullCalendar.Calendar(calendarEl, {
@@ -101,17 +118,35 @@
                                 notes: shift.notes
                             }
                         })),
+
+                        // ✅ MODIFIED dateClick FUNCTION
                         dateClick: (info) => {
-                            this.newShift.start_time = `${info.dateStr}T09:00`;
-                            this.newShift.end_time = `${info.dateStr}T17:00`;
+                            let startTime;
+                            // In month view, `info.allDay` is true. In week/day views, it's false.
+                            if (info.allDay) {
+                                // If they click a day in month view, default to 9 AM
+                                startTime = new Date(info.dateStr + 'T09:00:00');
+                            } else {
+                                // Otherwise, use the exact time slot they clicked in week/day view
+                                startTime = info.date;
+                            }
+                            
+                            // Set a default end time 1 hour after the start time
+                            const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+
+                            // Populate the 'newShift' object with our formatted times
+                            this.newShift.start_time = this.formatDateTimeLocal(startTime);
+                            this.newShift.end_time = this.formatDateTimeLocal(endTime);
+                            
                             this.showAddModal = true;
                         },
+
                         eventClick: (info) => {
                             this.editShift.id = info.event.id;
                             this.editShift.client_id = info.event.extendedProps.client_id;
                             this.editShift.caregiver_id = info.event.extendedProps.caregiver_id;
-                            this.editShift.start_time = info.event.startStr.slice(0, 16);
-                            this.editShift.end_time = info.event.endStr ? info.event.endStr.slice(0, 16) : this.editShift.start_time;
+                            this.editShift.start_time = this.formatDateTimeLocal(info.event.start);
+                            this.editShift.end_time = this.formatDateTimeLocal(info.event.end);
                             this.editShift.notes = info.event.extendedProps.notes;
                             this.showEditModal = true;
                         }
@@ -137,7 +172,7 @@
                         } else {
                             throw data;
                         }
-                    }).catch(this.handleFormError);
+                    }).catch(error => this.handleFormError(error));
                 },
 
                 submitEditForm() {
@@ -157,7 +192,7 @@
                         } else {
                             throw data;
                         }
-                    }).catch(this.handleFormError);
+                    }).catch(error => this.handleFormError(error));
                 },
 
                 deleteShift() {
@@ -176,13 +211,13 @@
                         } else {
                             throw data;
                         }
-                    }).catch(this.handleFormError);
+                    }).catch(error => this.handleFormError(error));
                 },
 
-                handleFormError(errorData) {
+                handleFormError(error) {
                     let errorMessages = 'An unexpected error occurred.';
-                    if (errorData && errorData.errors) {
-                        errorMessages = Object.values(errorData.errors).flat().join('<br>');
+                    if (error && error.errors) {
+                        errorMessages = Object.values(error.errors).flat().join('<br>');
                     }
                     toastr.error(errorMessages);
                 }
