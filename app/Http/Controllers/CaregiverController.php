@@ -63,13 +63,8 @@ class CaregiverController extends Controller
         $caregiverName = $validated['first_name'] . '_' . $validated['last_name'];
 
         if ($request->hasFile('profile_picture')) {
-            $profilePicturePath = $this->firebaseStorageService->uploadProfilePicture(
-                $request->file('profile_picture'),
-                'caregiver_profile_pictures'
-            );
-            $validated['profile_picture_path'] = $profilePicturePath;
+            $validated['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture($request->file('profile_picture'), 'caregiver_profile_pictures');
         }
-
         if ($request->hasFile('certifications_document')) {
             $documentInfo = $this->firebaseStorageService->uploadDocument($request->file('certifications_document'), $caregiverName, 'Certifications');
             $validated['certifications_filename'] = $documentInfo['descriptive_filename'];
@@ -90,31 +85,27 @@ class CaregiverController extends Controller
 
         Caregiver::create($validated);
 
-        // --- NEW LOGIC STARTS HERE ---
-        // 1. Create a corresponding User record for the caregiver
         $user = User::create([
             'name' => $validated['first_name'] . ' ' . $validated['last_name'],
             'email' => $validated['email'],
             'agency_id' => $agencyId,
-            'role' => 'caregiver', // Assign the caregiver role
-            // ✅ THE ONLY CHANGE IS ON THIS LINE
-            'password' => Str::random(32), // Generate a random, unusable password
+            'role' => 'caregiver',
+            'password' => Str::random(32),
         ]);
 
-        // 2. Generate and store the secure token
         $token = Str::random(60);
         $user->forceFill([
             'password_setup_token' => hash('sha256', $token),
             'password_setup_expires_at' => now()->addHours(48),
         ])->save();
 
-        // 3. Generate the setup link to flash to the session
         $setupUrl = route('password.setup.show', ['token' => $token]);
 
-        return redirect()->route('caregivers.index')->with([
-            'success' => 'Caregiver added successfully!',
-            'setup_link' => $setupUrl
-        ]);
+        // ✅ THE FIX IS HERE: We now flash the session data and then redirect.
+        session()->flash('success', 'Caregiver added successfully!');
+        session()->flash('setup_link', $setupUrl);
+
+        return redirect()->route('caregivers.index');
     }
 
     public function edit(Caregiver $caregiver)
@@ -125,6 +116,7 @@ class CaregiverController extends Controller
 
     public function update(Request $request, Caregiver $caregiver)
     {
+        // ... (Your update method is unchanged and correct)
         $this->authorize('update', $caregiver);
         $agencyId = Auth::user()->agency_id;
 
