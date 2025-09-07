@@ -20,6 +20,7 @@ class Visit extends Model
         'clock_in_time',
         'clock_out_time',
         'signature_path',
+        'clock_out_signature_path',
     ];
 
     /**

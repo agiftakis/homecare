@@ -35,21 +35,21 @@ class VisitVerificationController extends Controller
 
         // 2. Decode the Base64 signature and save it to Firebase
         $signatureDataUrl = $request->input('signature');
-        
+
         // Remove the "data:image/png;base64," part
         $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $signatureDataUrl));
-        
+
         // Create a temporary file to upload
         $tempFilePath = tempnam(sys_get_temp_dir(), 'signature');
         file_put_contents($tempFilePath, $imageData);
-        
+
         // Create an UploadedFile instance from the temp file
         $file = new UploadedFile($tempFilePath, 'signature.png', 'image/png', null, true);
-        
+
         // Use our Firebase service to upload the signature
         $caregiverName = $shift->caregiver->full_name ?? 'caregiver';
         $documentInfo = $this->firebaseStorageService->uploadDocument($file, $caregiverName, 'Signature');
-        
+
         // Clean up the temporary file
         unlink($tempFilePath);
 
@@ -62,7 +62,7 @@ class VisitVerificationController extends Controller
         ]);
 
         return response()->json([
-            'success' => true, 
+            'success' => true,
             'message' => 'Clocked in successfully!',
             'visit_id' => $visit->id,
         ]);
@@ -73,15 +73,38 @@ class VisitVerificationController extends Controller
      */
     public function clockOut(Request $request, Visit $visit)
     {
-        // Here you might add authorization to ensure the correct user is clocking out.
-        // For now, we'll keep it simple.
+        // 1. Validate the signature data
+        $validator = Validator::make($request->all(), [
+            'signature' => 'required|string',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        // 2. Decode the Base64 signature and save it to Firebase
+        $signatureDataUrl = $request->input('signature');
+        $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $signatureDataUrl));
+
+        $tempFilePath = tempnam(sys_get_temp_dir(), 'signature_out');
+        file_put_contents($tempFilePath, $imageData);
+
+        $file = new UploadedFile($tempFilePath, 'signature_out.png', 'image/png', null, true);
+
+        // Use our Firebase service to upload the clock-out signature
+        $caregiverName = $visit->shift->caregiver->full_name ?? 'caregiver';
+        $documentInfo = $this->firebaseStorageService->uploadDocument($file, $caregiverName, 'SignatureOut');
+
+        unlink($tempFilePath);
+
+        // 3. Update the Visit record with the clock-out time and new signature path
         $visit->update([
-            'clock_out_time' => now()
+            'clock_out_time' => now(),
+            'clock_out_signature_path' => $documentInfo['firebase_path'],
         ]);
 
         return response()->json([
-            'success' => true, 
+            'success' => true,
             'message' => 'Clocked out successfully!'
         ]);
     }
