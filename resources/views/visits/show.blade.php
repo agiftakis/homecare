@@ -19,9 +19,9 @@
             )">
 
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6">
-                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-600">
                         <h3 class="text-lg font-semibold">{{ \Carbon\Carbon::parse($shift->start_time)->format('l, F jS') }}</h3>
-                        <p class="text-gray-600 dark:text-gray-400">{{ \Carbon\Carbon::parse($shift->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('g:i A') }}</p>
+                        <p class="text-gray-600 dark:text-gray-200">{{ \Carbon\Carbon::parse($shift->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('g:i A') }}</p>
                     </div>
                     <div class="p-6">
                         <p class="font-bold text-gray-800 dark:text-gray-200">Client: {{ $shift->client->full_name }}</p>
