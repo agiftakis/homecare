@@ -20,7 +20,7 @@
 
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-600">
-                        <h3 class="text-lg font-semibold">{{ \Carbon\Carbon::parse($shift->start_time)->format('l, F jS') }}</h3>
+                        <h3 class="text-lg font-semibold text-blue-200">{{ \Carbon\Carbon::parse($shift->start_time)->format('l, F jS') }}</h3>
                         <p class="text-gray-600 dark:text-gray-200">{{ \Carbon\Carbon::parse($shift->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('g:i A') }}</p>
                     </div>
                     <div class="p-6">
@@ -38,7 +38,7 @@
 
 
                 <div x-show="status === 'pending'" class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-semibold mb-2">Clock-In Signature</h3>
+                    <h3 class="text-lg font-semibold mb-2 text-blue-200">Clock-In Signature</h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member sign below to confirm you are starting your shift.</p>
                     <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
                         <canvas x-ref="signaturePadIn" class="w-full h-48"></canvas>
@@ -59,7 +59,7 @@
                         <p>Clocked in at: {{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->format('g:i A') : '' }}</p>
                     </div>
 
-                    <h3 class="text-lg font-semibold mb-2">Clock-Out Signature</h3>
+                    <h3 class="text-lg font-semibold mb-2 text-blue-200">Clock-Out Signature</h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member sign below to confirm you are ending your shift.</p>
                     <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
                         <canvas x-ref="signaturePadOut" class="w-full h-48"></canvas>
