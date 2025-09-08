@@ -18,25 +18,59 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Check the user's role.
+        // 1. Super Admin gets redirected to their own dashboard.
         if ($user->role === 'super_admin') {
-            // If they're a super admin, redirect them to their own dashboard.
             return redirect()->route('superadmin.dashboard');
         }
 
-        // If not a super admin, continue with the original agency dashboard logic.
+        // 2. Caregiver gets a specialized view with their own shifts.
+        if ($user->role === 'caregiver') {
+            $caregiver = $user->caregiver;
+
+            // Safety check for caregiver profile
+            if (!$caregiver) {
+                abort(403, 'Your caregiver profile is not accessible.');
+            }
+
+            // Get all upcoming shifts (today or in the future that are not completed)
+            $upcoming_shifts = Shift::with('client')
+                ->where('caregiver_id', $caregiver->id)
+                ->where('date', '>=', Carbon::today()->toDateString())
+                ->where('status', '!=', 'Completed')
+                ->orderBy('date', 'asc')
+                ->orderBy('start_time', 'asc')
+                ->get();
+
+            // Get ALL previously completed shifts for their history log
+            $all_past_shifts = Shift::with('client')
+                ->where('caregiver_id', $caregiver->id)
+                ->where('status', 'Completed')
+                ->orderBy('date', 'desc')
+                ->orderBy('start_time', 'desc')
+                ->get();
+
+
+            return view('dashboard', [
+                'upcoming_shifts' => $upcoming_shifts,
+                'all_past_shifts' => $all_past_shifts,
+            ]);
+        }
+
+        // 3. Agency Admin gets the agency overview.
         $agency = $user->agency;
 
-        // Safety check in case a regular user isn't assigned to an agency.
         if (!$agency) {
             abort(403, 'You are not associated with an agency.');
         }
 
-        $clientCount = Client::count();
-        $caregiverCount = Caregiver::count();
-        
+        // CORRECTED: Counts are now scoped to the logged-in user's agency.
+        $clientCount = Client::where('agency_id', $user->agency_id)->count();
+        $caregiverCount = Caregiver::where('agency_id', $user->agency_id)->count();
+
+        // Shifts are now correctly scoped to the agency and query the 'date' column.
         $todaysShifts = Shift::with(['client', 'caregiver'])
-            ->whereDate('start_time', Carbon::today())
+            ->where('agency_id', $user->agency_id)
+            ->where('date', Carbon::today()->toDateString())
             ->orderBy('start_time')
             ->get();
 

@@ -22,7 +22,8 @@ class CaregiverController extends Controller
 
     public function index()
     {
-        $caregivers = Caregiver::latest()->get();
+        // ✅ UPDATED: Eager load the 'user' relationship to check onboarding status in the view.
+        $caregivers = Caregiver::with('user')->latest()->get();
         return view('caregivers.index', compact('caregivers'));
     }
 
@@ -83,15 +84,21 @@ class CaregiverController extends Controller
 
         $validated['agency_id'] = $agencyId;
 
-        Caregiver::create($validated);
+        // Create Caregiver first
+        $caregiver = Caregiver::create($validated);
 
+        // Then create and associate the User
         $user = User::create([
             'name' => $validated['first_name'] . ' ' . $validated['last_name'],
             'email' => $validated['email'],
             'agency_id' => $agencyId,
             'role' => 'caregiver',
-            'password' => Str::random(32),
+            'password' => bcrypt(Str::random(32)), // Ensure password is encrypted
         ]);
+
+        // Link the user to the caregiver profile
+        $caregiver->user_id = $user->id;
+        $caregiver->save();
 
         $token = Str::random(60);
         $user->forceFill([
@@ -101,12 +108,41 @@ class CaregiverController extends Controller
 
         $setupUrl = route('password.setup.show', ['token' => $token]);
 
-        // ✅ THE FIX IS HERE: We now flash the session data and then redirect.
         session()->flash('success', 'Caregiver added successfully!');
         session()->flash('setup_link', $setupUrl);
 
         return redirect()->route('caregivers.index');
     }
+
+    /**
+     * ✅ NEW: Regenerate and provide a new onboarding link for a caregiver.
+     */
+    public function resendOnboardingLink(Caregiver $caregiver)
+    {
+        $this->authorize('update', $caregiver); // Ensure admin has permission
+
+        $user = $caregiver->user;
+
+        // Only generate a link if the user exists and hasn't set up their password yet.
+        if ($user && $user->password_setup_token) {
+            $token = Str::random(60);
+
+            $user->forceFill([
+                'password_setup_token' => hash('sha256', $token),
+                'password_setup_expires_at' => now()->addHours(48), // Reset expiration
+            ])->save();
+
+            $setupUrl = route('password.setup.show', ['token' => $token]);
+
+            session()->flash('success', 'New onboarding link generated for ' . $caregiver->first_name . '!');
+            session()->flash('setup_link', $setupUrl);
+        } else {
+            session()->flash('error', 'This caregiver has already been onboarded.');
+        }
+
+        return redirect()->route('caregivers.index');
+    }
+
 
     public function edit(Caregiver $caregiver)
     {
@@ -116,7 +152,6 @@ class CaregiverController extends Controller
 
     public function update(Request $request, Caregiver $caregiver)
     {
-        // ... (Your update method is unchanged and correct)
         $this->authorize('update', $caregiver);
         $agencyId = Auth::user()->agency_id;
 
@@ -193,6 +228,11 @@ class CaregiverController extends Controller
         }
         if ($caregiver->state_province_id_path) {
             $this->firebaseStorageService->deleteFile($caregiver->state_province_id_path);
+        }
+
+        // Also delete the associated user to prevent orphaned records
+        if ($caregiver->user) {
+            $caregiver->user->delete();
         }
 
         $caregiver->delete();

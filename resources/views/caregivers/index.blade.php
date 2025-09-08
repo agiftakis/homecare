@@ -14,8 +14,9 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
+            {{-- Success Message --}}
             @if (session('success'))
-                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show"
+                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
                     x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
                     class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
@@ -24,6 +25,18 @@
                 </div>
             @endif
 
+            {{-- Error Message --}}
+            @if (session('error'))
+                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 4000)" x-show="show"
+                    x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline">{{ session('error') }}</span>
+                </div>
+            @endif
+
+
+            {{-- Setup Link Modal --}}
             @if (session('setup_link'))
                 <div x-data="{
                     open: true,
@@ -34,8 +47,7 @@
                         this.copyText = 'Copied!';
                         setTimeout(() => { this.copyText = 'Copy' }, 2000);
                     }
-                }"
-                    class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" x-show="open"
+                }" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" x-show="open"
                     x-cloak>
                     <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-lg mx-4"
                         @click.away="open = false">
@@ -46,8 +58,8 @@
                                 class="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">&times;</button>
                         </div>
                         <p class="text-gray-600 dark:text-gray-400 mb-4">
-                            The caregiver has been created successfully. Please copy the secure link below and send it
-                            to them so they can set up their password and log in.
+                            Please copy the secure link below and send it to the caregiver so they can set up their
+                            password and log in.
                         </p>
                         <p class="text-sm text-red-600 dark:text-red-400 mb-4">
                             <strong>This is a one-time use link that will expire in 48 hours.</strong>
@@ -60,14 +72,14 @@
                     </div>
                 </div>
             @endif
+
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
 
                     <div class="mb-6">
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
@@ -77,6 +89,7 @@
                         </div>
                     </div>
 
+                    {{-- Mobile View --}}
                     <div id="mobileView" class="space-y-4 md:hidden">
                         @forelse ($caregivers as $caregiver)
                             <div class="caregiver-card bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border dark:border-gray-700"
@@ -86,8 +99,7 @@
                                         <div class="flex-shrink-0 h-12 w-12">
                                             @if ($caregiver->profile_picture_url)
                                                 <img class="h-12 w-12 rounded-full object-cover"
-                                                    src="{{ $caregiver->profile_picture_url }}"
-                                                    alt="Caregiver profile picture">
+                                                    src="{{ $caregiver->profile_picture_url }}" alt="">
                                             @else
                                                 <div
                                                     class="h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
@@ -102,17 +114,38 @@
                                         <div class="ml-4">
                                             <div class="text-base font-bold text-gray-900 dark:text-gray-100">
                                                 {{ $caregiver->first_name }} {{ $caregiver->last_name }}</div>
+                                            {{-- ✅ NEW: Mobile Status Badge --}}
+                                            @if ($caregiver->user && $caregiver->user->password_setup_token)
+                                                <span
+                                                    class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                    Pending Setup
+                                                </span>
+                                            @else
+                                                <span
+                                                    class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    Active
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
-                                <div
-                                    class="text-sm text-gray-700 dark:text-gray-300 space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                                <div class="text-sm text-gray-700 dark:text-gray-300 space-y-2 border-t border-gray-200 dark:border-gray-700 pt-4">
                                     <p><span class="font-semibold text-gray-600 dark:text-gray-400">Email:</span>
                                         {{ $caregiver->email }}</p>
                                     <p><span class="font-semibold text-gray-600 dark:text-gray-400">Phone:</span>
                                         {{ $caregiver->phone_number }}</p>
                                 </div>
-                                <div class="mt-4 text-right">
+                                {{-- ✅ NEW: Mobile Action Buttons --}}
+                                <div class="mt-4 flex items-center justify-end space-x-2">
+                                    @if ($caregiver->user && $caregiver->user->password_setup_token)
+                                        <form action="{{ route('caregivers.resendOnboarding', $caregiver) }}" method="POST">
+                                            @csrf
+                                            <button type="submit"
+                                                class="inline-flex items-center px-3 py-1.5 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                Get Link
+                                            </button>
+                                        </form>
+                                    @endif
                                     <a href="{{ route('caregivers.edit', $caregiver) }}"
                                         class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                                         Edit
@@ -125,21 +158,20 @@
                         @endforelse
                     </div>
 
+                    {{-- Desktop View --}}
                     <div id="desktopView" class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Name</th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Email</th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Phone</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        Contact</th>
+                                    {{-- ✅ NEW: Status Column --}}
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        Status</th>
                                     <th scope="col" class="relative px-6 py-3">
-                                        <span class="sr-only">Edit</span>
+                                        <span class="sr-only">Actions</span>
                                     </th>
                                 </tr>
                             </thead>
@@ -152,15 +184,11 @@
                                                 <div class="flex-shrink-0 h-10 w-10">
                                                     @if ($caregiver->profile_picture_url)
                                                         <img class="h-10 w-10 rounded-full object-cover"
-                                                            src="{{ $caregiver->profile_picture_url }}"
-                                                            alt="Caregiver profile picture">
+                                                            src="{{ $caregiver->profile_picture_url }}" alt="">
                                                     @else
-                                                        <div
-                                                            class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                                            <svg class="h-6 w-6 text-gray-400" fill="currentColor"
-                                                                viewBox="0 0 24 24">
-                                                                <path
-                                                                    d="M24 20.993V24H0v-2.997A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                                                        <div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                                            <svg class="h-6 w-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                                                <path d="M24 20.993V24H0v-2.997A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
                                                             </svg>
                                                         </div>
                                                     @endif
@@ -172,23 +200,41 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-500 dark:text-gray-400">
-                                                {{ $caregiver->email }}</div>
+                                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ $caregiver->email }}</div>
+                                            <div class="text-sm text-gray-500 dark:text-gray-400">{{ $caregiver->phone_number }}</div>
                                         </td>
+                                        {{-- ✅ NEW: Desktop Status Badge --}}
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-500 dark:text-gray-400">
-                                                {{ $caregiver->phone_number }}</div>
+                                            @if ($caregiver->user && $caregiver->user->password_setup_token)
+                                                <span
+                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                    Pending Setup
+                                                </span>
+                                            @else
+                                                <span
+                                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                    Active
+                                                </span>
+                                            @endif
                                         </td>
+                                        {{-- ✅ NEW: Desktop Action Buttons --}}
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="{{ route('caregivers.edit', $caregiver) }}"
-                                                class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">Edit/View
-                                                Profile</a>
+                                            <div class="flex items-center justify-end space-x-2">
+                                                @if ($caregiver->user && $caregiver->user->password_setup_token)
+                                                    <form action="{{ route('caregivers.resendOnboarding', $caregiver) }}" method="POST">
+                                                        @csrf
+                                                        <button type="submit"
+                                                            class="text-yellow-600 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-300">Get Link</button>
+                                                    </form>
+                                                @endif
+                                                <a href="{{ route('caregivers.edit', $caregiver) }}"
+                                                    class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">Edit/View</a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4"
-                                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                             No caregivers have been added yet.
                                         </td>
                                     </tr>
@@ -198,8 +244,7 @@
                     </div>
 
                     <div id="noResults" class="hidden text-center py-12">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
@@ -213,42 +258,33 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const searchInput = document.getElementById('caregiverSearch');
             const caregiverCards = document.querySelectorAll('.caregiver-card');
             const caregiverRows = document.querySelectorAll('.caregiver-row');
             const noResults = document.getElementById('noResults');
-            const mobileView = document.getElementById('mobileView');
-            const desktopView = document.getElementById('desktopView');
 
-            searchInput.addEventListener('input', function() {
+            searchInput.addEventListener('input', function () {
                 const searchTerm = this.value.toLowerCase().trim();
                 let visibleCount = 0;
 
-                // Filter mobile cards
-                caregiverCards.forEach(card => {
-                    const caregiverName = card.getAttribute('data-name');
-                    if (caregiverName.includes(searchTerm)) {
-                        card.style.display = 'block';
-                        visibleCount++;
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-
-                // Filter desktop rows
-                caregiverRows.forEach(row => {
-                    const caregiverName = row.getAttribute('data-name');
-                    if (caregiverName.includes(searchTerm)) {
-                        row.style.display = 'table-row';
-                        // For desktop, we count rows visible in the current view
-                        if (window.getComputedStyle(desktopView).display !== 'none') {
+                // Unified search logic for both views
+                function filterItems(items) {
+                    items.forEach(item => {
+                        const caregiverName = item.getAttribute('data-name');
+                        if (caregiverName.includes(searchTerm)) {
+                            // The display property is different for table rows vs divs
+                            item.style.display = item.tagName === 'TR' ? 'table-row' : 'block';
                             visibleCount++;
+                        } else {
+                            item.style.display = 'none';
                         }
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
+                    });
+                }
+
+                filterItems(caregiverCards);
+                filterItems(caregiverRows);
+
 
                 // Show/hide no results message
                 const totalItems = caregiverCards.length > 0 ? caregiverCards.length : caregiverRows.length;

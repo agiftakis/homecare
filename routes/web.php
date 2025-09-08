@@ -10,6 +10,9 @@ use App\Http\Controllers\AgencyRegistrationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\PasswordSetupController;
+use App\Http\Controllers\VisitVerificationController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -27,8 +30,8 @@ Route::get('/register-agency', [AgencyRegistrationController::class, 'create'])-
 Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store');
 
 //new routes for user- client or caregiver- registration password setup
-Route::get('/setup-password/{token}', [\App\Http\Controllers\PasswordSetupController::class, 'show'])->name('password.setup.show');
-Route::post('/setup-password', [\App\Http\Controllers\PasswordSetupController::class, 'store'])->name('password.setup.store');
+Route::get('/setup-password/{token}', [PasswordSetupController::class, 'show'])->name('password.setup.show');
+Route::post('/setup-password', [PasswordSetupController::class, 'store'])->name('password.setup.store');
 
 // Authenticated Routes
 Route::middleware('auth')->group(function () {
@@ -41,6 +44,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('clients', ClientController::class);
     Route::resource('caregivers', CaregiverController::class);
 
+    // ✅ NEW: Route to resend/regenerate the caregiver onboarding link
+    Route::post('/caregivers/{caregiver}/resend-onboarding', [CaregiverController::class, 'resendOnboardingLink'])->name('caregivers.resendOnboarding');
+
+
     // Scheduling Routes
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::resource('shifts', ScheduleController::class)->only(['store', 'show', 'update', 'destroy']);
@@ -49,11 +56,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/subscription', [SubscriptionController::class, 'create'])->name('subscription.create');
     Route::post('/subscription', [SubscriptionController::class, 'store'])->name('subscription.store');
 
-    // ✅ CORRECT PLACEMENT FOR VISIT ROUTES
     // Visit Verification Routes
-    Route::get('/shifts/{shift}/verify', [\App\Http\Controllers\VisitVerificationController::class, 'show'])->name('visits.show');
-    Route::post('/shifts/{shift}/clock-in', [\App\Http\Controllers\VisitVerificationController::class, 'clockIn'])->name('visits.clockin');
-    Route::post('/visits/{visit}/clock-out', [\App\Http\Controllers\VisitVerificationController::class, 'clockOut'])->name('visits.clockout');
+    Route::get('/shifts/{shift}/verify', [VisitVerificationController::class, 'show'])->name('visits.show');
+    Route::post('/shifts/{shift}/clock-in', [VisitVerificationController::class, 'clockIn'])->name('visits.clockin');
+    Route::post('/visits/{visit}/clock-out', [VisitVerificationController::class, 'clockOut'])->name('visits.clockout');
 });
 
 
