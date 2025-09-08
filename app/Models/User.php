@@ -6,6 +6,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -44,7 +46,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            // ✅ THE FIX IS HERE: Cast the expiration timestamp to a date object
             'password_setup_expires_at' => 'datetime',
         ];
     }
@@ -52,8 +53,16 @@ class User extends Authenticatable
     /**
      * This method defines the relationship that a User belongs to an Agency.
      */
-    public function agency()
+    public function agency(): BelongsTo
     {
         return $this->belongsTo(Agency::class);
+    }
+
+    /**
+     * Get the caregiver profile associated with the user.
+     */
+    public function caregiver(): HasOne
+    {
+        return $this->hasOne(Caregiver::class);
     }
 }

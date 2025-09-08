@@ -6,6 +6,9 @@ use App\Models\Concerns\BelongsToAgency;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\FirebaseStorageService;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 class Caregiver extends Model
 {
@@ -24,6 +27,7 @@ class Caregiver extends Model
         'date_of_birth',
         'certifications',
         'agency_id',
+        'user_id', // ✅ ADDED: Make the user_id fillable
         'profile_picture_path',
         // Document Fields
         'certifications_filename',
@@ -54,18 +58,17 @@ class Caregiver extends Model
     /**
      * Get the public URL for the profile picture.
      */
-    public function getProfilePictureUrlAttribute(): string
+    public function getProfilePictureUrlAttribute(): ?string
     {
         if ($this->profile_picture_path) {
             $firebaseStorageService = new FirebaseStorageService();
             return $firebaseStorageService->getPublicUrl($this->profile_picture_path);
         }
-        return 'https://via.placeholder.com/150';
+        return null;
     }
 
     // --- Document Management Methods ---
 
-    // Certifications
     public function getCertificationsUrlAttribute(): string
     {
         return $this->certifications_path ? (new FirebaseStorageService())->getPublicUrl($this->certifications_path) : '';
@@ -81,7 +84,6 @@ class Caregiver extends Model
         return !empty($this->certifications_path);
     }
 
-    // Professional Licenses
     public function getProfessionalLicensesUrlAttribute(): string
     {
         return $this->professional_licenses_path ? (new FirebaseStorageService())->getPublicUrl($this->professional_licenses_path) : '';
@@ -97,7 +99,6 @@ class Caregiver extends Model
         return !empty($this->professional_licenses_path);
     }
 
-    // State/Province ID
     public function getStateProvinceIdUrlAttribute(): string
     {
         return $this->state_province_id_path ? (new FirebaseStorageService())->getPublicUrl($this->state_province_id_path) : '';
@@ -112,22 +113,20 @@ class Caregiver extends Model
     {
         return !empty($this->state_province_id_path);
     }
-    
-    // ✅ NEW RELATIONSHIP
+
     /**
      * Get the user account associated with the caregiver.
      */
-    public function user()
+    public function user(): BelongsTo
     {
-        // This links the Caregiver model to the User model
-        // by matching their email addresses.
-        return $this->belongsTo(User::class, 'email', 'email');
+        // ✅ CORRECTED: This now correctly uses the user_id foreign key.
+        return $this->belongsTo(User::class);
     }
 
     /**
      * Get the shifts for the caregiver.
      */
-    public function shifts()
+    public function shifts(): HasMany
     {
         return $this->hasMany(Shift::class);
     }

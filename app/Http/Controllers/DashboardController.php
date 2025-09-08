@@ -27,25 +27,22 @@ class DashboardController extends Controller
         if ($user->role === 'caregiver') {
             $caregiver = $user->caregiver;
 
-            // Safety check for caregiver profile
             if (!$caregiver) {
                 abort(403, 'Your caregiver profile is not accessible.');
             }
 
-            // Get all upcoming shifts (today or in the future that are not completed)
+            // ✅ FIX: Changed where('date', ...) to whereDate('start_time', ...) to match the database schema.
             $upcoming_shifts = Shift::with('client')
                 ->where('caregiver_id', $caregiver->id)
-                ->where('date', '>=', Carbon::today()->toDateString())
+                ->whereDate('start_time', '>=', Carbon::today())
                 ->where('status', '!=', 'Completed')
-                ->orderBy('date', 'asc')
                 ->orderBy('start_time', 'asc')
                 ->get();
 
-            // Get ALL previously completed shifts for their history log
+            // ✅ FIX: Changed where('date', ...) to whereDate('start_time', ...) to match the database schema.
             $all_past_shifts = Shift::with('client')
                 ->where('caregiver_id', $caregiver->id)
                 ->where('status', 'Completed')
-                ->orderBy('date', 'desc')
                 ->orderBy('start_time', 'desc')
                 ->get();
 
@@ -63,14 +60,13 @@ class DashboardController extends Controller
             abort(403, 'You are not associated with an agency.');
         }
 
-        // CORRECTED: Counts are now scoped to the logged-in user's agency.
         $clientCount = Client::where('agency_id', $user->agency_id)->count();
         $caregiverCount = Caregiver::where('agency_id', $user->agency_id)->count();
 
-        // Shifts are now correctly scoped to the agency and query the 'date' column.
+        // ✅ FIX: Changed where('date', ...) to whereDate('start_time', ...) to match the database schema.
         $todaysShifts = Shift::with(['client', 'caregiver'])
             ->where('agency_id', $user->agency_id)
-            ->where('date', Carbon::today()->toDateString())
+            ->whereDate('start_time', Carbon::today())
             ->orderBy('start_time')
             ->get();
 
@@ -82,3 +78,4 @@ class DashboardController extends Controller
         ]);
     }
 }
+
