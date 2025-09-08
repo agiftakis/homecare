@@ -1,8 +1,8 @@
 <x-app-layout>
-    {{-- Add the Signature Pad library via the scripts slot --}}
-    <x-slot name="scripts">
+    {{-- ✅ CORRECTED: Use @push to send this script to the layout's 'scripts' stack --}}
+    @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    </x-slot>
+    @endpush
 
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
@@ -20,32 +20,39 @@
 
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-600">
-                        <h3 class="text-lg font-semibold text-blue-200">{{ \Carbon\Carbon::parse($shift->start_time)->format('l, F jS') }}</h3>
-                        <p class="text-gray-600 dark:text-gray-200">{{ \Carbon\Carbon::parse($shift->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($shift->end_time)->format('g:i A') }}</p>
+                        {{-- ✅ CORRECTED: Added dark mode text color for better visibility --}}
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-blue-200">
+                            {{ \Carbon\Carbon::parse($shift->start_time)->format('l, F jS') }}</h3>
+                        <p class="text-gray-600 dark:text-gray-200">
+                            {{ \Carbon\Carbon::parse($shift->start_time)->format('g:i A') }} -
+                            {{ \Carbon\Carbon::parse($shift->end_time)->format('g:i A') }}</p>
                     </div>
                     <div class="p-6">
-                        <p class="font-bold text-gray-800 dark:text-gray-200">Client: {{ $shift->client->full_name }}</p>
+                        <p class="font-bold text-gray-800 dark:text-gray-200">Client: {{ $shift->client->full_name }}
+                        </p>
                         <p class="text-gray-600 dark:text-gray-400">Location: {{ $shift->client->address }}</p>
                     </div>
                 </div>
 
                 {{-- On-screen Error Message Display --}}
                 <div x-show="errorMessage" x-cloak
-                    class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+                    role="alert">
                     <strong class="font-bold">Error:</strong>
                     <span class="block sm:inline" x-text="errorMessage"></span>
                 </div>
 
-
                 <div x-show="status === 'pending'" class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-lg font-semibold mb-2 text-blue-200">Clock-In Signature</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member sign below to confirm you are starting your shift.</p>
+                    {{-- ✅ CORRECTED: Added dark mode text color for better visibility --}}
+                    <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-blue-200">Clock-In Signature</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member
+                        sign below to confirm you are starting your shift.</p>
                     <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
                         <canvas x-ref="signaturePadIn" class="w-full h-48"></canvas>
                     </div>
                     <div class="mt-4 flex justify-between items-center">
-                        <button @click="clearSignature('in')" class="text-sm text-gray-600 dark:text-gray-400 hover:underline">Clear</button>
-                        {{-- ✅ CORRECTED SYNTAX and removed alert() --}}
+                        <button @click="clearSignature('in')"
+                            class="text-sm text-gray-600 dark:text-gray-400 hover:underline">Clear</button>
                         <x-primary-button @click="submitClockIn()" x-bind:disabled="loading">
                             <span x-show="!loading">Clock In</span>
                             <span x-show="loading">Processing...</span>
@@ -54,19 +61,23 @@
                 </div>
 
                 <div x-show="status === 'in_progress'" class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
-                    <div class="mb-6 bg-green-100 dark:bg-green-900/50 border border-green-500 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
+                    <div
+                        class="mb-6 bg-green-100 dark:bg-green-900/50 border border-green-500 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
                         <p class="font-bold">Shift In Progress</p>
-                        <p>Clocked in at: {{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->format('g:i A') : '' }}</p>
+                        <p>Clocked in at:
+                            {{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->format('g:i A') : '' }}</p>
                     </div>
 
-                    <h3 class="text-lg font-semibold mb-2 text-blue-200">Clock-Out Signature</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member sign below to confirm you are ending your shift.</p>
+                    {{-- ✅ CORRECTED: Added dark mode text color for better visibility --}}
+                    <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-blue-200">Clock-Out Signature</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member
+                        sign below to confirm you are ending your shift.</p>
                     <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
                         <canvas x-ref="signaturePadOut" class="w-full h-48"></canvas>
                     </div>
                     <div class="mt-4 flex justify-between items-center">
-                        <button @click="clearSignature('out')" class="text-sm text-gray-600 dark:text-gray-400 hover:underline">Clear</button>
-                         {{-- ✅ CORRECTED SYNTAX and removed alert() --}}
+                        <button @click="clearSignature('out')"
+                            class="text-sm text-gray-600 dark:text-gray-400 hover:underline">Clear</button>
                         <x-primary-button @click="submitClockOut()" x-bind:disabled="loading">
                             <span x-show="!loading">Clock Out</span>
                             <span x-show="loading">Processing...</span>
@@ -74,10 +85,14 @@
                     </div>
                 </div>
 
-                <div x-show="status === 'completed'" class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6 text-center">
-                     <div class="mb-4 bg-blue-100 dark:bg-blue-900/50 border border-blue-500 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg">
+                <div x-show="status === 'completed'"
+                    class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6 text-center">
+                    <div
+                        class="mb-4 bg-blue-100 dark:bg-blue-900/50 border border-blue-500 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg">
                         <p class="font-bold">Visit Completed</p>
-                        <p>Clocked In: {{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->format('g:i A') : '' }} | Clocked Out: {{ $visit ? \Carbon\Carbon::parse($visit->clock_out_time)->format('g:i A') : '' }}</p>
+                        <p>Clocked In: {{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->format('g:i A') : '' }}
+                            | Clocked Out:
+                            {{ $visit ? \Carbon\Carbon::parse($visit->clock_out_time)->format('g:i A') : '' }}</p>
                     </div>
                     <p class="text-gray-600 dark:text-gray-400">Thank you for your work!</p>
                 </div>
@@ -92,29 +107,32 @@
                 visitId: visitId,
                 status: initialStatus,
                 loading: false,
-                errorMessage: '', // ✅ ADDED: For on-screen error messages
+                errorMessage: '',
                 signaturePadIn: null,
                 signaturePadOut: null,
 
                 init() {
                     this.$nextTick(() => {
                         if (this.status === 'pending') {
-                            this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn);
+                            this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn, {
+                                penColor: '#60A5FA' // Light blue color for clock-in signature
+                            });
                         } else if (this.status === 'in_progress') {
-                            this.signaturePadOut = new SignaturePad(this.$refs.signaturePadOut);
+                            this.signaturePadOut = new SignaturePad(this.$refs.signaturePadOut, {
+                                penColor: '#60A5FA' // Light blue color for clock-out signature
+                            });
                         }
                     });
                 },
-
                 clearSignature(type) {
                     if (type === 'in' && this.signaturePadIn) this.signaturePadIn.clear();
                     if (type === 'out' && this.signaturePadOut) this.signaturePadOut.clear();
                 },
 
                 async submitClockIn() {
-                    this.errorMessage = ''; // Clear previous errors
+                    this.errorMessage = '';
                     if (this.signaturePadIn.isEmpty()) {
-                        this.errorMessage = 'Please provide a signature first.'; // ✅ REPLACED alert()
+                        this.errorMessage = 'Please provide a signature first.';
                         return;
                     }
 
@@ -124,8 +142,13 @@
                     try {
                         const response = await fetch(`/shifts/${this.shiftId}/clock-in`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                            body: JSON.stringify({ signature: signatureData })
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                signature: signatureData
+                            })
                         });
 
                         const data = await response.json();
@@ -133,20 +156,19 @@
                         if (!response.ok) {
                             throw new Error(data.message || 'An error occurred.');
                         }
-                        
-                        // Success, reload the page to show the new state
+
                         window.location.reload();
 
                     } catch (error) {
-                        this.errorMessage = error.message; // ✅ REPLACED alert()
+                        this.errorMessage = error.message;
                         this.loading = false;
                     }
                 },
 
                 async submitClockOut() {
-                    this.errorMessage = ''; // Clear previous errors
+                    this.errorMessage = '';
                     if (this.signaturePadOut.isEmpty()) {
-                        this.errorMessage = 'Please provide a signature first.'; // ✅ REPLACED alert()
+                        this.errorMessage = 'Please provide a signature first.';
                         return;
                     }
 
@@ -156,8 +178,13 @@
                     try {
                         const response = await fetch(`/visits/${this.visitId}/clock-out`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                            body: JSON.stringify({ signature: signatureData })
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                signature: signatureData
+                            })
                         });
 
                         const data = await response.json();
@@ -165,12 +192,11 @@
                         if (!response.ok) {
                             throw new Error(data.message || 'An error occurred.');
                         }
-                        
-                        // Success, reload the page to show the new state
+
                         window.location.reload();
 
                     } catch (error) {
-                        this.errorMessage = error.message; // ✅ REPLACED alert()
+                        this.errorMessage = error.message;
                         this.loading = false;
                     }
                 }
