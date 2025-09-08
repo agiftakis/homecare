@@ -29,15 +29,24 @@
                     </div>
                 </div>
 
+                {{-- On-screen Error Message Display --}}
+                <div x-show="errorMessage" x-cloak
+                    class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <strong class="font-bold">Error:</strong>
+                    <span class="block sm:inline" x-text="errorMessage"></span>
+                </div>
+
+
                 <div x-show="status === 'pending'" class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
                     <h3 class="text-lg font-semibold mb-2">Clock-In Signature</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please sign below to confirm you are starting your shift.</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member sign below to confirm you are starting your shift.</p>
                     <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
                         <canvas x-ref="signaturePadIn" class="w-full h-48"></canvas>
                     </div>
                     <div class="mt-4 flex justify-between items-center">
                         <button @click="clearSignature('in')" class="text-sm text-gray-600 dark:text-gray-400 hover:underline">Clear</button>
-                        <x-primary-button @click="submitClockIn()" :disabled="loading">
+                        {{-- ✅ CORRECTED SYNTAX and removed alert() --}}
+                        <x-primary-button @click="submitClockIn()" x-bind:disabled="loading">
                             <span x-show="!loading">Clock In</span>
                             <span x-show="loading">Processing...</span>
                         </x-primary-button>
@@ -51,13 +60,14 @@
                     </div>
 
                     <h3 class="text-lg font-semibold mb-2">Clock-Out Signature</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please sign below to confirm you are ending your shift.</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member sign below to confirm you are ending your shift.</p>
                     <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
                         <canvas x-ref="signaturePadOut" class="w-full h-48"></canvas>
                     </div>
                     <div class="mt-4 flex justify-between items-center">
                         <button @click="clearSignature('out')" class="text-sm text-gray-600 dark:text-gray-400 hover:underline">Clear</button>
-                        <x-primary-button @click="submitClockOut()" :disabled="loading">
+                         {{-- ✅ CORRECTED SYNTAX and removed alert() --}}
+                        <x-primary-button @click="submitClockOut()" x-bind:disabled="loading">
                             <span x-show="!loading">Clock Out</span>
                             <span x-show="loading">Processing...</span>
                         </x-primary-button>
@@ -82,11 +92,11 @@
                 visitId: visitId,
                 status: initialStatus,
                 loading: false,
+                errorMessage: '', // ✅ ADDED: For on-screen error messages
                 signaturePadIn: null,
                 signaturePadOut: null,
 
                 init() {
-                    // Initialize the correct signature pad based on the status
                     this.$nextTick(() => {
                         if (this.status === 'pending') {
                             this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn);
@@ -102,8 +112,9 @@
                 },
 
                 async submitClockIn() {
+                    this.errorMessage = ''; // Clear previous errors
                     if (this.signaturePadIn.isEmpty()) {
-                        alert('Please provide a signature first.');
+                        this.errorMessage = 'Please provide a signature first.'; // ✅ REPLACED alert()
                         return;
                     }
 
@@ -127,14 +138,15 @@
                         window.location.reload();
 
                     } catch (error) {
-                        alert('Error: ' + error.message);
+                        this.errorMessage = error.message; // ✅ REPLACED alert()
                         this.loading = false;
                     }
                 },
 
                 async submitClockOut() {
+                    this.errorMessage = ''; // Clear previous errors
                     if (this.signaturePadOut.isEmpty()) {
-                        alert('Please provide a signature first.');
+                        this.errorMessage = 'Please provide a signature first.'; // ✅ REPLACED alert()
                         return;
                     }
 
@@ -158,7 +170,7 @@
                         window.location.reload();
 
                     } catch (error) {
-                        alert('Error: ' + error.message);
+                        this.errorMessage = error.message; // ✅ REPLACED alert()
                         this.loading = false;
                     }
                 }
