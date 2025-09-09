@@ -13,7 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-            'superadmin' => \App\Http\Middleware\CheckSuperAdmin::class, // Add this line
+            'superadmin' => \App\Http\Middleware\CheckSuperAdmin::class,
+            // ✅ --- FIX: Register the new middleware for checking the agency_admin role ---
+            'agency_admin' => \App\Http\Middleware\CheckAgencyAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
