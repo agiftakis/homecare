@@ -19,6 +19,21 @@
             <x-input-error :messages="$errors->get('agency_name')" class="mt-2" />
         </div>
 
+        <!-- ✅ START TIMEZONE FIX: Add Timezone Selection Dropdown -->
+        <div class="mt-4">
+            <x-input-label for="timezone" :value="__('Timezone')" />
+            <select id="timezone" name="timezone" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
+                <option value="" disabled selected>Select your timezone</option>
+                @foreach (\DateTimeZone::listIdentifiers(\DateTimeZone::ALL) as $timezone)
+                    <option value="{{ $timezone }}" {{ old('timezone') == $timezone ? 'selected' : '' }}>
+                        {{ $timezone }}
+                    </option>
+                @endforeach
+            </select>
+            <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
+        </div>
+        <!-- ✅ END TIMEZONE FIX -->
+
         <!-- Your Name -->
         <div class="mt-4">
             <x-input-label for="name" :value="__('Your Name')" />

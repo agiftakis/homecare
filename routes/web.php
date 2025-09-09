@@ -41,14 +41,19 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::resource('clients', ClientController::class);
-    Route::resource('caregivers', CaregiverController::class);
+    // ✅ --- START SECURITY FIX ---
+    // Routes that are ONLY accessible to Agency Admins.
+    // The 'agency_admin' middleware we created now protects this group.
+    Route::middleware('agency_admin')->group(function () {
+        Route::resource('clients', ClientController::class);
+        Route::resource('caregivers', CaregiverController::class);
+        // This route is also protected as it is part of caregiver management.
+        Route::post('/caregivers/{caregiver}/resend-onboarding', [CaregiverController::class, 'resendOnboardingLink'])->name('caregivers.resendOnboarding');
+    });
+    // ✅ --- END SECURITY FIX ---
 
-    // ✅ NEW: Route to resend/regenerate the caregiver onboarding link
-    Route::post('/caregivers/{caregiver}/resend-onboarding', [CaregiverController::class, 'resendOnboardingLink'])->name('caregivers.resendOnboarding');
 
-
-    // Scheduling Routes
+    // Scheduling Routes (Accessible to both Admins and Caregivers)
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::resource('shifts', ScheduleController::class)->only(['store', 'show', 'update', 'destroy']);
 
