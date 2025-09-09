@@ -90,8 +90,8 @@
                                     @forelse ($todaysShifts as $shift)
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                                {{ \Carbon\Carbon::parse($shift->start_time)->format('g:i A') }} -
-                                                {{ \Carbon\Carbon::parse($shift->end_time)->format('g:i A') }}</td>
+                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }} -
+                                                {{ \Carbon\Carbon::parse($shift->end_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                                                 {{ $shift->client->first_name ?? 'N/A' }}
                                                 {{ $shift->client->last_name ?? '' }}</td>
@@ -138,11 +138,11 @@
                                                 {{ $shift->client->first_name }} {{ $shift->client->last_name }}
                                             </p>
                                             <p class="text-sm text-gray-600 dark:text-gray-400">
-                                                {{ \Carbon\Carbon::parse($shift->date)->format('D, M j, Y') }}
+                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('D, M j, Y') }}
                                             </p>
                                             <p class="text-sm text-gray-600 dark:text-gray-400">
-                                                {{ \Carbon\Carbon::parse($shift->start_time)->format('g:i A') }} -
-                                                {{ \Carbon\Carbon::parse($shift->end_time)->format('g:i A') }}
+                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }} -
+                                                {{ \Carbon\Carbon::parse($shift->end_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }}
                                             </p>
                                         </div>
                                         <div class="mt-4 sm:mt-0">
@@ -175,7 +175,7 @@
                                             <p class="font-bold text-base text-gray-800 dark:text-gray-200">
                                                 {{ $shift->client->first_name }} {{ $shift->client->last_name }}</p>
                                             <p class="text-sm text-gray-500 dark:text-gray-400">
-                                                {{ \Carbon\Carbon::parse($shift->date)->format('D, M j, Y') }}
+                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('D, M j, Y') }}
                                             </p>
                                         </div>
                                         <div class="text-sm font-semibold text-green-600 dark:text-green-400">

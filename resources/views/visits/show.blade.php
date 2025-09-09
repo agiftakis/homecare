@@ -22,10 +22,10 @@
                     <div class="p-6 border-b border-gray-200 dark:border-gray-600">
                         {{-- ✅ CORRECTED: Added dark mode text color for better visibility --}}
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-blue-200">
-                            {{ \Carbon\Carbon::parse($shift->start_time)->format('l, F jS') }}</h3>
+                            {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('l, F jS') }}</h3>
                         <p class="text-gray-600 dark:text-gray-200">
-                            {{ \Carbon\Carbon::parse($shift->start_time)->format('g:i A') }} -
-                            {{ \Carbon\Carbon::parse($shift->end_time)->format('g:i A') }}</p>
+                            {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }} -
+                            {{ \Carbon\Carbon::parse($shift->end_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }}</p>
                     </div>
                     <div class="p-6">
                         <p class="font-bold text-gray-800 dark:text-gray-200">Client: {{ $shift->client->full_name }}
@@ -65,7 +65,7 @@
                         class="mb-6 bg-green-100 dark:bg-green-900/50 border border-green-500 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
                         <p class="font-bold">Shift In Progress</p>
                         <p>Clocked in at:
-                            {{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->format('g:i A') : '' }}</p>
+                            {{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') : '' }}</p>
                     </div>
 
                     {{-- ✅ CORRECTED: Added dark mode text color for better visibility --}}
@@ -90,9 +90,9 @@
                     <div
                         class="mb-4 bg-blue-100 dark:bg-blue-900/50 border border-blue-500 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-lg">
                         <p class="font-bold">Visit Completed</p>
-                        <p>Clocked In: {{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->format('g:i A') : '' }}
+                        <p>Clocked In: {{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') : '' }}
                             | Clocked Out:
-                            {{ $visit ? \Carbon\Carbon::parse($visit->clock_out_time)->format('g:i A') : '' }}</p>
+                            {{ $visit ? \Carbon\Carbon::parse($visit->clock_out_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') : '' }}</p>
                     </div>
                     <p class="text-gray-600 dark:text-gray-400">Thank you for your work!</p>
                 </div>
