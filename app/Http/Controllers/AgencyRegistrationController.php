@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Events\Registered;
+// ✅ TIMEZONE FIX: Import the In validation rule to check against a list of valid timezones.
+use Illuminate\Validation\Rule;
+
 
 class AgencyRegistrationController extends Controller
 {
@@ -26,18 +29,21 @@ class AgencyRegistrationController extends Controller
      */
     public function store(Request $request)
     {
+        // ✅ START TIMEZONE FIX: Add validation for the new timezone field.
         $validated = $request->validate([
             'agency_name' => 'required|string|max:255|unique:agencies,name',
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'plan' => 'required|in:basic,professional,premium,enterprise'
+            'plan' => 'required|in:basic,professional,premium,enterprise',
+            // Use Laravel's built-in timezone validation rule for robustness.
+            'timezone' => ['required', 'string', Rule::in(\DateTimeZone::listIdentifiers())],
         ]);
+        // ✅ END TIMEZONE FIX
 
         try {
             DB::transaction(function () use ($validated) {
-                // **FIX 1: Create the User FIRST**
-                // This gives us a user_id to link to the agency.
+                // Create the User FIRST
                 $user = User::create([
                     'name' => $validated['name'],
                     'email' => $validated['email'],
@@ -45,21 +51,20 @@ class AgencyRegistrationController extends Controller
                     'role' => 'agency_admin',
                 ]);
 
-                // **FIX 2: Create the Agency and immediately link it to the owner (user).**
+                // Create the Agency and immediately link it to the owner (user).
                 $agency = Agency::create([
                     'name' => $validated['agency_name'],
                     'contact_email' => $validated['email'],
                     'subscription_plan' => $validated['plan'],
-                    'user_id' => $user->id, // This is the crucial link for the "Owner" column.
+                    'user_id' => $user->id,
+                    // ✅ TIMEZONE FIX: Save the validated timezone to the database.
+                    'timezone' => $validated['timezone'],
                 ]);
 
                 // Now, link the user back to the agency.
                 $user->agency_id = $agency->id;
                 $user->save();
                 
-                // You were correct that your code creates a Stripe customer. 
-                // That is likely handled in your SubscriptionController. 
-                // Adding this here centralizes the setup logic, but your existing flow also works.
                 $agency->createAsStripeCustomer();
 
                 // Login the new user
@@ -75,4 +80,3 @@ class AgencyRegistrationController extends Controller
         return redirect()->route('subscription.create', ['plan' => $validated['plan']]);
     }
 }
-
