@@ -18,45 +18,56 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100"
-                     x-data="schedule({{ $is_admin ? 'true' : 'false' }})" {{-- ✅ SECURITY FIX: Pass admin status to JS --}}
-                     x-init="initCalendar()">
+                <div class="p-6 text-gray-900 dark:text-gray-100" x-data="schedule({{ $is_admin ? 'true' : 'false' }})" {{-- ✅ SECURITY FIX: Pass admin status to JS --}}
+                    x-init="initCalendar()">
 
                     <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
 
                     {{-- ✅ SECURITY FIX: These modals will ONLY be rendered for agency admins --}}
                     @if ($is_admin)
-                        <div x-show="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showAddModal = false" style="display: none;">
-                            <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-2xl" @click.away="showAddModal = false">
+                        <div x-show="showAddModal"
+                            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                            @click.self="showAddModal = false" style="display: none;">
+                            <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-2xl"
+                                @click.away="showAddModal = false">
                                 <h3 class="text-lg font-medium mb-4">Add New Shift</h3>
                                 <form @submit.prevent="submitAddForm">
                                     @csrf
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {{-- Assuming this partial binds to 'newShift' --}}
-                                        @include('schedule.partials.shift-form-fields', ['shift' => 'newShift'])
+                                        @include('schedule.partials.shift-form-fields', [
+                                            'shift' => 'newShift',
+                                        ])
                                     </div>
                                     <div class="mt-6 flex justify-end space-x-4">
-                                        <x-secondary-button type="button" @click="showAddModal = false">Cancel</x-secondary-button>
+                                        <x-secondary-button type="button"
+                                            @click="showAddModal = false">Cancel</x-secondary-button>
                                         <x-primary-button type="submit">Save Shift</x-primary-button>
                                     </div>
                                 </form>
                             </div>
                         </div>
 
-                        <div x-show="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showEditModal = false" style="display: none;">
-                            <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-2xl" @click.away="showEditModal = false">
+                        <div x-show="showEditModal"
+                            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                            @click.self="showEditModal = false" style="display: none;">
+                            <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-2xl"
+                                @click.away="showEditModal = false">
                                 <h3 class="text-lg font-medium mb-4">Edit Shift</h3>
                                 <form @submit.prevent="submitEditForm">
                                     @csrf
                                     @method('PUT')
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {{-- Assuming this partial binds to 'editShift' --}}
-                                        @include('schedule.partials.shift-form-fields', ['shift' => 'editShift'])
+                                        @include('schedule.partials.shift-form-fields', [
+                                            'shift' => 'editShift',
+                                        ])
                                     </div>
                                     <div class="mt-6 flex justify-between">
                                         <x-danger-button type="button" @click="deleteShift()">Delete</x-danger-button>
                                         <div class="space-x-4">
-                                            <x-secondary-button type="button" @click="showEditModal = false">Cancel</x-secondary-button>
+                                            <x-secondary-button type="button"
+                                                @click="showEditModal = false">Cancel</x-secondary-button>
                                             <x-primary-button type="submit">Update Shift</x-primary-button>
                                         </div>
                                     </div>
@@ -75,30 +86,37 @@
                 font-size: 1.1em !important;
             }
         }
+
         /* ✅ NEW STYLE for shift notes */
         .shift-notes {
             font-size: 0.8em;
-            color: #d1d5db; /* Lighter text for dark mode */
+            color: #d1d5db;
+            /* Lighter text for dark mode */
             margin-top: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        /* ✅ NEW STYLE for visit times */
+
+        /* ✅ FIXED STYLE for visit times - Bold Red */
         .visit-times {
-            font-size: 0.75em;
-            color: #10b981; /* Green color to indicate actual times */
+            font-size: 0.8em;
+            color: #ef4444 !important; /* Bright red color */
             margin-top: 2px;
-            font-weight: 600;
+            font-weight: bold !important; /* Bold font */
         }
+
         /* ✅ NEW STYLE for completed shifts */
         .shift-completed {
-            background-color: #10b981 !important; /* Green background for completed shifts */
+            background-color: #10b981 !important;
+            /* Green background for completed shifts */
             border-color: #059669 !important;
         }
+
         /* ✅ NEW STYLE for in-progress shifts */
         .shift-in-progress {
-            background-color: #f59e0b !important; /* Orange background for in-progress shifts */
+            background-color: #f59e0b !important;
+            /* Orange background for in-progress shifts */
             border-color: #d97706 !important;
         }
     </style>
@@ -111,8 +129,21 @@
                 showEditModal: false,
                 calendar: null,
                 shifts: @json($shifts),
-                newShift: { client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' },
-                editShift: { id: null, client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' },
+                newShift: {
+                    client_id: '',
+                    caregiver_id: '',
+                    start_time: '',
+                    end_time: '',
+                    notes: ''
+                },
+                editShift: {
+                    id: null,
+                    client_id: '',
+                    caregiver_id: '',
+                    start_time: '',
+                    end_time: '',
+                    notes: ''
+                },
                 isAdmin: isAdmin, // Store the admin status
 
                 // ✅ NEW HELPER FUNCTION
@@ -126,15 +157,19 @@
                     return `${year}-${month}-${day}T${hours}:${minutes}`;
                 },
 
-                // ✅ NEW HELPER FUNCTION: Format time from UTC to user timezone
+                // ✅ ACTUALLY FIXED: Format time from UTC to user timezone (REMOVED + 'Z')
                 formatTimeInUserTimezone(utcDateTime) {
                     if (!utcDateTime) return '';
-                    const date = new Date(utcDateTime);
-                    return date.toLocaleTimeString('en-US', { 
+                    
+                    // Laravel already provides UTC timestamps with 'Z', so don't add it again
+                    const utcDate = new Date(utcDateTime); 
+                    const userTimezone = '{{ Auth::user()->agency?->timezone ?? "UTC" }}';
+                    
+                    return utcDate.toLocaleTimeString('en-US', { 
                         hour: 'numeric', 
                         minute: '2-digit',
                         hour12: true,
-                        timeZone: '{{ Auth::user()->agency?->timezone ?? "UTC" }}'
+                        timeZone: userTimezone
                     });
                 },
 
@@ -180,42 +215,44 @@
                                 }
                             };
                         }),
-                        
-                        // ✅ ENHANCEMENT: Enhanced event content to show visit times
+
+                        // ✅ ENHANCED: Event content to show visit times in bold red
                         eventContent: (arg) => {
                             let eventHtml = `<b>${arg.timeText}</b> <i>${arg.event.title}</i>`;
-                            
+
                             const notes = arg.event.extendedProps.notes;
                             const visit = arg.event.extendedProps.visit;
-                            
+
                             // ✅ NEW: Show actual clock-in/out times if they exist
                             if (visit) {
                                 let visitTimesHtml = '<div class="visit-times">';
-                                
+
                                 if (visit.clock_in_time) {
                                     const clockInTime = this.formatTimeInUserTimezone(visit.clock_in_time);
-                                    visitTimesHtml += `In: ${clockInTime}`;
+                                    visitTimesHtml += `ACTUAL: In ${clockInTime}`;
                                 }
-                                
+
                                 if (visit.clock_out_time) {
                                     const clockOutTime = this.formatTimeInUserTimezone(visit.clock_out_time);
                                     if (visit.clock_in_time) {
-                                        visitTimesHtml += ` | Out: ${clockOutTime}`;
+                                        visitTimesHtml += ` | Out ${clockOutTime}`;
                                     } else {
-                                        visitTimesHtml += `Out: ${clockOutTime}`;
+                                        visitTimesHtml += `ACTUAL: Out ${clockOutTime}`;
                                     }
                                 }
-                                
+
                                 visitTimesHtml += '</div>';
                                 eventHtml += visitTimesHtml;
                             }
-                            
+
                             if (notes) {
                                 // If notes exist, add them to the event's HTML.
                                 eventHtml += `<div class="shift-notes">Note: ${notes}</div>`;
                             }
-                            
-                            return { html: eventHtml };
+
+                            return {
+                                html: eventHtml
+                            };
                         },
 
                         // ✅ SECURITY FIX: Make calendar read-only for non-admins
@@ -256,61 +293,96 @@
                 },
 
                 submitAddForm() {
-                    fetch('{{ route("shifts.store") }}', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                        body: JSON.stringify(this.newShift)
-                    })
-                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
-                    .then(({ ok, data }) => {
-                        if (ok) {
-                            this.calendar.addEvent(data.shift);
-                            this.showAddModal = false;
-                            this.newShift = { client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' };
-                            toastr.success('New shift created successfully!');
-                        } else {
-                            throw data;
-                        }
-                    }).catch(error => this.handleFormError(error));
+                    fetch('{{ route('shifts.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify(this.newShift)
+                        })
+                        .then(res => res.json().then(data => ({
+                            ok: res.ok,
+                            data
+                        })))
+                        .then(({
+                            ok,
+                            data
+                        }) => {
+                            if (ok) {
+                                this.calendar.addEvent(data.shift);
+                                this.showAddModal = false;
+                                this.newShift = {
+                                    client_id: '',
+                                    caregiver_id: '',
+                                    start_time: '',
+                                    end_time: '',
+                                    notes: ''
+                                };
+                                toastr.success('New shift created successfully!');
+                            } else {
+                                throw data;
+                            }
+                        }).catch(error => this.handleFormError(error));
                 },
 
                 submitEditForm() {
                     fetch(`/shifts/${this.editShift.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                        body: JSON.stringify(this.editShift)
-                    })
-                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
-                    .then(({ ok, data }) => {
-                        if (ok) {
-                            const event = this.calendar.getEventById(this.editShift.id);
-                            if (event) event.remove();
-                            this.calendar.addEvent(data.shift);
-                            this.showEditModal = false;
-                            toastr.success('Shift updated successfully!');
-                        } else {
-                            throw data;
-                        }
-                    }).catch(error => this.handleFormError(error));
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify(this.editShift)
+                        })
+                        .then(res => res.json().then(data => ({
+                            ok: res.ok,
+                            data
+                        })))
+                        .then(({
+                            ok,
+                            data
+                        }) => {
+                            if (ok) {
+                                const event = this.calendar.getEventById(this.editShift.id);
+                                if (event) event.remove();
+                                this.calendar.addEvent(data.shift);
+                                this.showEditModal = false;
+                                toastr.success('Shift updated successfully!');
+                            } else {
+                                throw data;
+                            }
+                        }).catch(error => this.handleFormError(error));
                 },
 
                 deleteShift() {
                     if (!confirm('Are you sure you want to delete this shift?')) return;
                     fetch(`/shifts/${this.editShift.id}`, {
-                        method: 'DELETE',
-                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
-                    })
-                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
-                    .then(({ ok, data }) => {
-                        if (ok) {
-                            const event = this.calendar.getEventById(this.editShift.id);
-                            if (event) event.remove();
-                            this.showEditModal = false;
-                            toastr.info('Shift has been deleted.');
-                        } else {
-                            throw data;
-                        }
-                    }).catch(error => this.handleFormError(error));
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(res => res.json().then(data => ({
+                            ok: res.ok,
+                            data
+                        })))
+                        .then(({
+                            ok,
+                            data
+                        }) => {
+                            if (ok) {
+                                const event = this.calendar.getEventById(this.editShift.id);
+                                if (event) event.remove();
+                                this.showEditModal = false;
+                                toastr.info('Shift has been deleted.');
+                            } else {
+                                throw data;
+                            }
+                        }).catch(error => this.handleFormError(error));
                 },
 
                 handleFormError(error) {
