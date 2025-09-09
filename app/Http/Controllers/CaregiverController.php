@@ -176,35 +176,49 @@ class CaregiverController extends Controller
         return redirect()->route('caregivers.index')->with('success', 'Caregiver updated successfully!');
     }
 
+    /**
+     * ✅ DELETION FIX: This method now correctly handles deleting all associated data.
+     */
     public function destroy(Caregiver $caregiver)
     {
+        // Authorize the action first.
         $this->authorize('delete', $caregiver);
 
-        if ($caregiver->profile_picture_path) {
-            $this->firebaseStorageService->deleteFile($caregiver->profile_picture_path);
-        }
-        if ($caregiver->certifications_path) {
-            $this->firebaseStorageService->deleteFile($caregiver->certifications_path);
-        }
-        if ($caregiver->professional_licenses_path) {
-            $this->firebaseStorageService->deleteFile($caregiver->professional_licenses_path);
-        }
-        if ($caregiver->state_province_id_path) {
-            $this->firebaseStorageService->deleteFile($caregiver->state_province_id_path);
-        }
-        
-        // Use a transaction to ensure both deletions succeed or fail together.
-        DB::transaction(function() use ($caregiver) {
-            // Delete the associated user first to maintain data integrity
-            if ($caregiver->user) {
-                $caregiver->user->delete();
+        // Use a database transaction to ensure data integrity.
+        // If any step fails, all changes will be rolled back.
+        DB::transaction(function () use ($caregiver) {
+            // STEP 1: Get the associated user before we delete anything.
+            $user = $caregiver->user;
+
+            // STEP 2: Delete all associated files from Firebase Storage.
+            // This prevents orphaned files in cloud storage.
+            if ($caregiver->profile_picture_path) {
+                $this->firebaseStorageService->deleteFile($caregiver->profile_picture_path);
             }
-            // Then delete the caregiver record
+            if ($caregiver->certifications_path) {
+                $this->firebaseStorageService->deleteFile($caregiver->certifications_path);
+            }
+            if ($caregiver->professional_licenses_path) {
+                $this->firebaseStorageService->deleteFile($caregiver->professional_licenses_path);
+            }
+            if ($caregiver->state_province_id_path) {
+                $this->firebaseStorageService->deleteFile($caregiver->state_province_id_path);
+            }
+
+            // STEP 3: Delete the Caregiver record from the database.
             $caregiver->delete();
+
+            // STEP 4: Delete the associated User record.
+            // This is the crucial step to prevent orphaned user accounts.
+            if ($user) {
+                $user->delete();
+            }
         });
 
-        return redirect()->route('caregivers.index')->with('success', 'Caregiver deleted successfully.');
+        // Redirect back with a success message.
+        return redirect()->route('caregivers.index')->with('success', 'Caregiver and their associated user account have been deleted successfully.');
     }
+
 
     public function resendOnboardingLink(Caregiver $caregiver)
     {
@@ -223,11 +237,10 @@ class CaregiverController extends Controller
         ])->save();
 
         $setupUrl = route('password.setup.show', ['token' => $token]);
-        
+
         session()->flash('success', 'New onboarding link generated successfully!');
         session()->flash('setup_link', $setupUrl);
 
         return redirect()->route('caregivers.index');
     }
 }
-

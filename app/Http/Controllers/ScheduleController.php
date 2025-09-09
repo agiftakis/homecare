@@ -6,26 +6,55 @@ use App\Models\Client;
 use App\Models\Caregiver;
 use App\Models\Shift;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // ✅ SECURITY FIX: Import Auth facade
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class ScheduleController extends Controller
 {
+    /**
+     * ✅ SECURITY FIX: This method is now role-aware.
+     * It shows all shifts for an admin, but only assigned shifts for a caregiver.
+     */
     public function index()
     {
+        $user = Auth::user();
         $clients = Client::orderBy('first_name')->get();
         $caregivers = Caregiver::orderBy('first_name')->get();
-        
-        $shifts = Shift::whereNotNull('client_id')
-                       ->whereNotNull('caregiver_id')
-                       ->with(['client', 'caregiver'])
-                       ->get();
+        $is_admin = ($user->role === 'agency_admin');
 
-        return view('schedule.index', compact('clients', 'caregivers', 'shifts'));
+        $shiftsQuery = Shift::whereNotNull('client_id')
+            ->whereNotNull('caregiver_id')
+            ->with(['client', 'caregiver']);
+
+        // If the logged-in user is a caregiver, only show their shifts.
+        if ($user->role === 'caregiver') {
+            // Find the caregiver record associated with the logged-in user
+            $caregiverProfile = $user->caregiver;
+            if ($caregiverProfile) {
+                $shiftsQuery->where('caregiver_id', $caregiverProfile->id);
+            } else {
+                // If for some reason the user has no caregiver profile, show no shifts.
+                $shiftsQuery->where('caregiver_id', -1); // Failsafe
+            }
+        }
+        
+        $shifts = $shiftsQuery->get();
+
+        // Pass the new is_admin flag to the view.
+        return view('schedule.index', compact('clients', 'caregivers', 'shifts', 'is_admin'));
     }
 
+    /**
+     * ✅ SECURITY FIX: Only agency admins can create new shifts.
+     */
     public function store(Request $request)
     {
+        // Authorization check: Block anyone who is not an agency admin.
+        if (Auth::user()->role !== 'agency_admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'client_id' => 'required|exists:clients,id',
             'caregiver_id' => 'required|exists:caregivers,id',
@@ -56,8 +85,16 @@ class ScheduleController extends Controller
         return response()->json(['success' => true, 'shift' => $eventData]);
     }
 
+    /**
+     * ✅ SECURITY FIX: Only agency admins can update shifts.
+     */
     public function update(Request $request, Shift $shift)
     {
+        // Authorization check: Block anyone who is not an agency admin.
+        if (Auth::user()->role !== 'agency_admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'client_id' => 'required|exists:clients,id',
             'caregiver_id' => 'required|exists:caregivers,id',
@@ -88,8 +125,16 @@ class ScheduleController extends Controller
         return response()->json(['success' => true, 'shift' => $eventData]);
     }
 
+    /**
+     * ✅ SECURITY FIX: Only agency admins can delete shifts.
+     */
     public function destroy(Shift $shift)
     {
+        // Authorization check: Block anyone who is not an agency admin.
+        if (Auth::user()->role !== 'agency_admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
         $shift->delete();
         return response()->json(['success' => true]);
     }
