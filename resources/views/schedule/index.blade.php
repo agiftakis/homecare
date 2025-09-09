@@ -75,6 +75,15 @@
                 font-size: 1.1em !important;
             }
         }
+        /* ✅ NEW STYLE for shift notes */
+        .shift-notes {
+            font-size: 0.8em;
+            color: #d1d5db; /* Lighter text for dark mode */
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 
     <script>
@@ -123,6 +132,19 @@
                             }
                         })),
                         
+                        // ✅ --- START NOTES FIX ---
+                        // This new function customizes how each event's content is rendered.
+                        eventContent: function(arg) {
+                            let eventHtml = `<b>${arg.timeText}</b> <i>${arg.event.title}</i>`;
+                            const notes = arg.event.extendedProps.notes;
+                            if (notes) {
+                                // If notes exist, add them to the event's HTML.
+                                eventHtml += `<div class="shift-notes">Note: ${notes}</div>`;
+                            }
+                            return { html: eventHtml };
+                        },
+                        // ✅ --- END NOTES FIX ---
+
                         // ✅ SECURITY FIX: Make calendar read-only for non-admins
                         eventDidMount: (info) => {
                             if (!this.isAdmin) {
@@ -231,3 +253,4 @@
         }
     </script>
 </x-app-layout>
+
