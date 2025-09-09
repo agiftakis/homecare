@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Caregiver;
 use App\Models\Shift;
+use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; // ✅ SECURITY FIX: Import Auth facade
 use Illuminate\Support\Facades\Validator;
@@ -12,10 +13,18 @@ use Illuminate\Validation\Rule;
 
 class ScheduleController extends Controller
 {
+    protected $firebaseStorageService;
+
+    public function __construct(FirebaseStorageService $firebaseStorageService)
+    {
+        $this->firebaseStorageService = $firebaseStorageService;
+    }
+
     /**
      * ✅ SECURITY FIX: This method is now role-aware.
      * It shows all shifts for an admin, but only assigned shifts for a caregiver.
      * ✅ ENHANCEMENT: Now eager-loads visit data to show clock-in/out times.
+     * ✅ ENHANCEMENT: Now includes signature URLs for admins.
      */
     public function index()
     {
@@ -41,6 +50,22 @@ class ScheduleController extends Controller
         }
         
         $shifts = $shiftsQuery->get();
+
+        // ✅ ENHANCEMENT: Add signature URLs for admin users
+        if ($is_admin) {
+            $shifts->each(function ($shift) {
+                if ($shift->visit) {
+                    // Add signature URLs to the visit data
+                    $shift->visit->clock_in_signature_url = $shift->visit->signature_path 
+                        ? $this->firebaseStorageService->getPublicUrl($shift->visit->signature_path) 
+                        : null;
+                    
+                    $shift->visit->clock_out_signature_url = $shift->visit->clock_out_signature_path 
+                        ? $this->firebaseStorageService->getPublicUrl($shift->visit->clock_out_signature_path) 
+                        : null;
+                }
+            });
+        }
 
         // Pass the new is_admin flag to the view.
         return view('schedule.index', compact('clients', 'caregivers', 'shifts', 'is_admin'));
@@ -118,6 +143,17 @@ class ScheduleController extends Controller
         $shift->update($validator->validated());
         $shift->load(['client', 'caregiver', 'visit']); // ✅ ENHANCEMENT: Load visit data
 
+        // ✅ ENHANCEMENT: Add signature URLs if visit exists
+        if ($shift->visit) {
+            $shift->visit->clock_in_signature_url = $shift->visit->signature_path 
+                ? $this->firebaseStorageService->getPublicUrl($shift->visit->signature_path) 
+                : null;
+            
+            $shift->visit->clock_out_signature_url = $shift->visit->clock_out_signature_path 
+                ? $this->firebaseStorageService->getPublicUrl($shift->visit->clock_out_signature_path) 
+                : null;
+        }
+
         $eventData = [
             'id' => $shift->id,
             'title' => $shift->client->first_name . ' w/ ' . $shift->caregiver->first_name,
@@ -128,9 +164,11 @@ class ScheduleController extends Controller
                 'caregiver_id' => $shift->caregiver_id,
                 'notes' => $shift->notes,
                 'status' => $shift->status,
-                'visit' => $shift->visit ? [ // ✅ ENHANCEMENT: Include visit data
+                'visit' => $shift->visit ? [ // ✅ ENHANCEMENT: Include visit data with signature URLs
                     'clock_in_time' => $shift->visit->clock_in_time,
                     'clock_out_time' => $shift->visit->clock_out_time,
+                    'clock_in_signature_url' => $shift->visit->clock_in_signature_url,
+                    'clock_out_signature_url' => $shift->visit->clock_out_signature_url,
                 ] : null
             ]
         ];
