@@ -156,7 +156,7 @@ class VisitVerificationController extends Controller
 
         unlink($tempFilePath);
 
-        // ✅ FIXED: Store the current time and explicitly only update clock_out fields
+        // ✅ CRITICAL FIX: Store the current time and explicitly only update clock_out fields
         $clockOutTime = now();
         
         // ✅ CRITICAL FIX: Only update the clock_out_time and signature, preserve clock_in_time
