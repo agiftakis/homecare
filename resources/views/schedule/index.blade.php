@@ -19,7 +19,8 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100" x-data="schedule({{ $is_admin ? 'true' : 'false' }})" {{-- ✅ SECURITY FIX: Pass admin status to JS --}}
-                    x-init="initCalendar()">
+                    x-init="initCalendar();
+                    setupSignatureButtonHandlers()">
 
                     <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
 
@@ -81,27 +82,35 @@
                             @click.self="showSignaturesModal = false" style="display: none;">
                             <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
                                 @click.away="showSignaturesModal = false">
-                                <h3 class="text-lg font-medium mb-6 text-gray-900 dark:text-gray-100">Visit Verification Details</h3>
-                                
+                                <h3 class="text-lg font-medium mb-6 text-gray-900 dark:text-gray-100">Visit Verification
+                                    Details</h3>
+
                                 {{-- Visit Information --}}
                                 <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">Visit Information</h4>
+                                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">Visit Information
+                                    </h4>
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                         <div>
                                             <span class="font-medium text-gray-600 dark:text-gray-400">Client:</span>
-                                            <span x-text="selectedVisit.client_name" class="text-gray-900 dark:text-gray-100"></span>
+                                            <span x-text="selectedVisit.client_name"
+                                                class="text-gray-900 dark:text-gray-100"></span>
                                         </div>
                                         <div>
                                             <span class="font-medium text-gray-600 dark:text-gray-400">Caregiver:</span>
-                                            <span x-text="selectedVisit.caregiver_name" class="text-gray-900 dark:text-gray-100"></span>
+                                            <span x-text="selectedVisit.caregiver_name"
+                                                class="text-gray-900 dark:text-gray-100"></span>
                                         </div>
                                         <div>
-                                            <span class="font-medium text-gray-600 dark:text-gray-400">Clock-in Time:</span>
-                                            <span x-text="selectedVisit.clock_in_display" class="text-green-600 dark:text-green-400 font-medium"></span>
+                                            <span class="font-medium text-gray-600 dark:text-gray-400">Clock-in
+                                                Time:</span>
+                                            <span x-text="selectedVisit.clock_in_display"
+                                                class="text-green-600 dark:text-green-400 font-medium"></span>
                                         </div>
                                         <div>
-                                            <span class="font-medium text-gray-600 dark:text-gray-400">Clock-out Time:</span>
-                                            <span x-text="selectedVisit.clock_out_display" class="text-green-600 dark:text-green-400 font-medium"></span>
+                                            <span class="font-medium text-gray-600 dark:text-gray-400">Clock-out
+                                                Time:</span>
+                                            <span x-text="selectedVisit.clock_out_display"
+                                                class="text-green-600 dark:text-green-400 font-medium"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -110,16 +119,18 @@
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {{-- Clock-in Signature --}}
                                     <div class="text-center">
-                                        <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Clock-in Signature</h4>
-                                        <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                                        <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Clock-in
+                                            Signature</h4>
+                                        <div
+                                            class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
                                             <div x-show="selectedVisit.clock_in_signature_url">
-                                                <img :src="selectedVisit.clock_in_signature_url" 
-                                                     alt="Clock-in Signature" 
-                                                     class="max-w-full h-auto border border-gray-300 dark:border-gray-600 rounded"
-                                                     style="max-height: 200px; margin: 0 auto;">
+                                                <img :src="selectedVisit.clock_in_signature_url"
+                                                    alt="Clock-in Signature"
+                                                    class="max-w-full h-auto border border-gray-300 dark:border-gray-600 rounded"
+                                                    style="max-height: 200px; margin: 0 auto;">
                                             </div>
-                                            <div x-show="!selectedVisit.clock_in_signature_url" 
-                                                 class="text-gray-500 dark:text-gray-400 py-8">
+                                            <div x-show="!selectedVisit.clock_in_signature_url"
+                                                class="text-gray-500 dark:text-gray-400 py-8">
                                                 No signature available
                                             </div>
                                         </div>
@@ -127,16 +138,18 @@
 
                                     {{-- Clock-out Signature --}}
                                     <div class="text-center">
-                                        <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Clock-out Signature</h4>
-                                        <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                                        <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">Clock-out
+                                            Signature</h4>
+                                        <div
+                                            class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
                                             <div x-show="selectedVisit.clock_out_signature_url">
-                                                <img :src="selectedVisit.clock_out_signature_url" 
-                                                     alt="Clock-out Signature" 
-                                                     class="max-w-full h-auto border border-gray-300 dark:border-gray-600 rounded"
-                                                     style="max-height: 200px; margin: 0 auto;">
+                                                <img :src="selectedVisit.clock_out_signature_url"
+                                                    alt="Clock-out Signature"
+                                                    class="max-w-full h-auto border border-gray-300 dark:border-gray-600 rounded"
+                                                    style="max-height: 200px; margin: 0 auto;">
                                             </div>
-                                            <div x-show="!selectedVisit.clock_out_signature_url" 
-                                                 class="text-gray-500 dark:text-gray-400 py-8">
+                                            <div x-show="!selectedVisit.clock_out_signature_url"
+                                                class="text-gray-500 dark:text-gray-400 py-8">
                                                 No signature available
                                             </div>
                                         </div>
@@ -145,7 +158,8 @@
 
                                 {{-- Close Button --}}
                                 <div class="mt-8 flex justify-end">
-                                    <x-secondary-button type="button" @click="showSignaturesModal = false">Close</x-secondary-button>
+                                    <x-secondary-button type="button"
+                                        @click="showSignaturesModal = false">Close</x-secondary-button>
                                 </div>
                             </div>
                         </div>
@@ -176,9 +190,11 @@
         /* ✅ FIXED STYLE for visit times - Bold Red */
         .visit-times {
             font-size: 0.8em;
-            color: #ef4444 !important; /* Bright red color */
+            color: #ef4444 !important;
+            /* Bright red color */
             margin-top: 2px;
-            font-weight: bold !important; /* Bold font */
+            font-weight: bold !important;
+            /* Bold font */
         }
 
         /* ✅ NEW STYLE for completed shifts */
@@ -244,13 +260,13 @@
                 // ✅ ACTUALLY FIXED: Format time from UTC to user timezone (REMOVED + 'Z')
                 formatTimeInUserTimezone(utcDateTime) {
                     if (!utcDateTime) return '';
-                    
+
                     // Laravel already provides UTC timestamps with 'Z', so don't add it again
-                    const utcDate = new Date(utcDateTime); 
-                    const userTimezone = '{{ Auth::user()->agency?->timezone ?? "UTC" }}';
-                    
-                    return utcDate.toLocaleTimeString('en-US', { 
-                        hour: 'numeric', 
+                    const utcDate = new Date(utcDateTime);
+                    const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
+
+                    return utcDate.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
                         minute: '2-digit',
                         hour12: true,
                         timeZone: userTimezone
@@ -261,20 +277,37 @@
                 viewSignatures(shiftId) {
                     const shift = this.shifts.find(s => s.id == shiftId);
                     if (shift && shift.visit) {
+                        // ✅ NEW DEBUG LINES - Check raw visit data
+                        console.log('Raw shift.visit data:', shift.visit);
+                        console.log('Raw clock_in_time:', shift.visit.clock_in_time);
+                        console.log('Raw clock_out_time:', shift.visit.clock_out_time);
                         this.selectedVisit = {
                             client_name: `${shift.client.first_name} ${shift.client.last_name}`,
                             caregiver_name: `${shift.caregiver.first_name} ${shift.caregiver.last_name}`,
-                            clock_in_display: shift.visit.clock_in_time 
-                                ? this.formatTimeInUserTimezone(shift.visit.clock_in_time)
-                                : 'N/A',
-                            clock_out_display: shift.visit.clock_out_time 
-                                ? this.formatTimeInUserTimezone(shift.visit.clock_out_time)
-                                : 'N/A',
+                            clock_in_display: shift.visit.clock_in_time ?
+                                this.formatTimeInUserTimezone(shift.visit.clock_in_time) :
+                                'N/A',
+                            clock_out_display: shift.visit.clock_out_time ?
+                                this.formatTimeInUserTimezone(shift.visit.clock_out_time) :
+                                'N/A',
                             clock_in_signature_url: shift.visit.clock_in_signature_url || '',
                             clock_out_signature_url: shift.visit.clock_out_signature_url || ''
                         };
+                        console.log('Selected visit data:', this.selectedVisit); // ✅ DEBUG LINE ADDED
                         this.showSignaturesModal = true;
                     }
+                },
+
+                // ✅ FIXED: Event delegation for signature buttons
+                setupSignatureButtonHandlers() {
+                    document.addEventListener('click', (e) => {
+                        if (e.target.hasAttribute('data-view-signatures')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const shiftId = e.target.getAttribute('data-view-signatures');
+                            this.viewSignatures(shiftId);
+                        }
+                    });
                 },
 
                 initCalendar() {
@@ -320,7 +353,7 @@
                             };
                         }),
 
-                        // ✅ ENHANCED: Event content to show visit times and View Signatures button
+                        // ✅ FIXED: Event content with proper button delegation
                         eventContent: (arg) => {
                             let eventHtml = `<b>${arg.timeText}</b> <i>${arg.event.title}</i>`;
 
@@ -348,11 +381,11 @@
                                 visitTimesHtml += '</div>';
                                 eventHtml += visitTimesHtml;
 
-                                // ✅ NEW: Add "View Signatures" button for completed shifts with signatures
-                                if (this.isAdmin && arg.event.extendedProps.status === 'completed' && 
+                                // ✅ FIXED: Use data attribute for button handling
+                                if (this.isAdmin && arg.event.extendedProps.status === 'completed' &&
                                     (visit.clock_in_signature_url || visit.clock_out_signature_url)) {
                                     eventHtml += `<div class="mt-2">
-                                        <button onclick="viewSignatures('${arg.event.id}')" 
+                                        <button data-view-signatures="${arg.event.id}" 
                                                 class="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">
                                             View Signatures
                                         </button>
@@ -393,13 +426,16 @@
 
                         // ✅ SECURITY FIX: Only allow admins to click on events to edit them
                         eventClick: this.isAdmin ? (info) => {
-                            this.editShift.id = info.event.id;
-                            this.editShift.client_id = info.event.extendedProps.client_id;
-                            this.editShift.caregiver_id = info.event.extendedProps.caregiver_id;
-                            this.editShift.start_time = this.formatDateTimeLocal(info.event.start);
-                            this.editShift.end_time = this.formatDateTimeLocal(info.event.end);
-                            this.editShift.notes = info.event.extendedProps.notes;
-                            this.showEditModal = true;
+                            // ✅ FIXED: Only open edit modal if clicking on the event itself, not buttons
+                            if (!info.jsEvent.target.hasAttribute('data-view-signatures')) {
+                                this.editShift.id = info.event.id;
+                                this.editShift.client_id = info.event.extendedProps.client_id;
+                                this.editShift.caregiver_id = info.event.extendedProps.caregiver_id;
+                                this.editShift.start_time = this.formatDateTimeLocal(info.event.start);
+                                this.editShift.end_time = this.formatDateTimeLocal(info.event.end);
+                                this.editShift.notes = info.event.extendedProps.notes;
+                                this.showEditModal = true;
+                            }
                         } : null // Set to null for non-admins
                     });
                     this.calendar.render();
@@ -510,13 +546,6 @@
                     toastr.error(errorMessages);
                 }
             }
-        }
-
-        // ✅ NEW: Global function to handle View Signatures button clicks
-        function viewSignatures(shiftId) {
-            // Get the Alpine.js component instance
-            const scheduleComponent = document.querySelector('[x-data*="schedule"]').__x.$data;
-            scheduleComponent.viewSignatures(shiftId);
         }
     </script>
 </x-app-layout>

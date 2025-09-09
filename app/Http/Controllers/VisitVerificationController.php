@@ -46,6 +46,7 @@ class VisitVerificationController extends Controller
 
         return view('visits.show', compact('shift', 'visit', 'isShiftDateValid'));
     }
+    
     /**
      * Handle the clock-in action for a specific shift.
      */
@@ -92,11 +93,14 @@ class VisitVerificationController extends Controller
         // Clean up the temporary file
         unlink($tempFilePath);
 
+        // ✅ FIXED: Store the current time for clock-in
+        $clockInTime = now();
+
         // 3. Create the Visit record in the database
         $visit = Visit::create([
             'shift_id' => $shift->id,
             'agency_id' => $shift->agency_id, // Important for multi-tenancy
-            'clock_in_time' => now(),
+            'clock_in_time' => $clockInTime, // ✅ FIXED: Use stored time variable
             'signature_path' => $documentInfo['firebase_path'],
         ]);
 
@@ -152,11 +156,13 @@ class VisitVerificationController extends Controller
 
         unlink($tempFilePath);
 
-        // 3. Update the Visit record with the clock-out time and new signature path
-        $visit->update([
-            'clock_out_time' => now(),
-            'clock_out_signature_path' => $documentInfo['firebase_path'],
-        ]);
+        // ✅ FIXED: Store the current time and explicitly only update clock_out fields
+        $clockOutTime = now();
+        
+        // ✅ CRITICAL FIX: Only update the clock_out_time and signature, preserve clock_in_time
+        $visit->clock_out_time = $clockOutTime;
+        $visit->clock_out_signature_path = $documentInfo['firebase_path'];
+        $visit->save();
 
         // ✅ --- FIX: Update the shift status to 'completed' ---
         $visit->shift->update(['status' => 'completed']);
