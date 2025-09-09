@@ -14,10 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
             'superadmin' => \App\Http\Middleware\CheckSuperAdmin::class,
-            // ✅ --- FIX: Register the new middleware for checking the agency_admin role ---
             'agency_admin' => \App\Http\Middleware\CheckAgencyAdmin::class,
+            // ✅ TIMEZONE FIX: Register the new middleware for setting the timezone.
+            'timezone' => \App\Http\Middleware\SetTimezone::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+

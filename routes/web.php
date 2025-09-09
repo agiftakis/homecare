@@ -33,8 +33,9 @@ Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])-
 Route::get('/setup-password/{token}', [PasswordSetupController::class, 'show'])->name('password.setup.show');
 Route::post('/setup-password', [PasswordSetupController::class, 'store'])->name('password.setup.store');
 
+// ✅ TIMEZONE FIX: Apply the 'timezone' middleware to all authenticated routes.
 // Authenticated Routes
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'timezone'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -92,3 +93,4 @@ Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmi
 });
 
 require __DIR__ . '/auth.php';
+
