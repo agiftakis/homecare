@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class VisitVerificationController extends Controller
 {
@@ -32,16 +33,36 @@ class VisitVerificationController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        // ✅ DATE VALIDATION: Check if the shift date is today or in the past
+        $userTimezone = Auth::user()->agency?->timezone ?? 'UTC';
+        $today = Carbon::today($userTimezone);
+        $shiftDate = Carbon::parse($shift->start_time)->setTimezone($userTimezone)->startOfDay();
+        
+        // If shift is in the future, pass a flag to the view
+        $isShiftDateValid = $shiftDate->lessThanOrEqualTo($today);
+
         // Find the existing visit record for this shift, if one exists.
         $visit = Visit::where('shift_id', $shift->id)->first();
 
-        return view('visits.show', compact('shift', 'visit'));
+        return view('visits.show', compact('shift', 'visit', 'isShiftDateValid'));
     }
     /**
      * Handle the clock-in action for a specific shift.
      */
     public function clockIn(Request $request, Shift $shift)
     {
+        // ✅ DATE VALIDATION: Prevent clock-in for future shifts
+        $userTimezone = Auth::user()->agency?->timezone ?? 'UTC';
+        $today = Carbon::today($userTimezone);
+        $shiftDate = Carbon::parse($shift->start_time)->setTimezone($userTimezone)->startOfDay();
+        
+        if ($shiftDate->greaterThan($today)) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'The Scheduled Shift Date Has Not Arrived Yet!'
+            ], 422);
+        }
+
         // 1. Validate that the signature data is present
         $validator = Validator::make($request->all(), [
             'signature' => 'required|string',
@@ -95,6 +116,18 @@ class VisitVerificationController extends Controller
      */
     public function clockOut(Request $request, Visit $visit)
     {
+        // ✅ DATE VALIDATION: Prevent clock-out for future shifts
+        $userTimezone = Auth::user()->agency?->timezone ?? 'UTC';
+        $today = Carbon::today($userTimezone);
+        $shiftDate = Carbon::parse($visit->shift->start_time)->setTimezone($userTimezone)->startOfDay();
+        
+        if ($shiftDate->greaterThan($today)) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'The Scheduled Shift Date Has Not Arrived Yet!'
+            ], 422);
+        }
+
         // 1. Validate the signature data
         $validator = Validator::make($request->all(), [
             'signature' => 'required|string',
