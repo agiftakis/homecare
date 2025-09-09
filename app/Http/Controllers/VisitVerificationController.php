@@ -79,6 +79,10 @@ class VisitVerificationController extends Controller
             'signature_path' => $documentInfo['firebase_path'],
         ]);
 
+        // ✅ --- FIX: Update the shift status to 'in_progress' ---
+        $shift->update(['status' => 'in_progress']);
+        // ---------------------------------------------------------
+
         return response()->json([
             'success' => true,
             'message' => 'Clocked in successfully!',
@@ -120,6 +124,10 @@ class VisitVerificationController extends Controller
             'clock_out_time' => now(),
             'clock_out_signature_path' => $documentInfo['firebase_path'],
         ]);
+
+        // ✅ --- FIX: Update the shift status to 'completed' ---
+        $visit->shift->update(['status' => 'completed']);
+        // -----------------------------------------------------
 
         return response()->json([
             'success' => true,

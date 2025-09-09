@@ -13,29 +13,30 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    {{-- Only show Dashboard for non-SuperAdmin users --}}
+                    {{-- Links for Agency Admins and Caregivers --}}
                     @if (Auth::user()->role !== 'super_admin')
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                             {{ __('Dashboard') }}
                         </x-nav-link>
 
-                        {{-- Clients Link - Only for regular users --}}
-                        <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*') && !request()->routeIs('superadmin.clients.*')">
-                            {{ __('Clients') }}
-                        </x-nav-link>
+                        {{-- ✅ SECURITY FIX: These links are now ONLY visible to agency_admin --}}
+                        @if (Auth::user()->role === 'agency_admin')
+                            <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*') && !request()->routeIs('superadmin.clients.*')">
+                                {{ __('Clients') }}
+                            </x-nav-link>
 
-                        {{-- Caregivers Link - Only for regular users --}}
-                        <x-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*') && !request()->routeIs('superadmin.caregivers.*')">
-                            {{ __('Caregivers') }}
-                        </x-nav-link>
+                            <x-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*') && !request()->routeIs('superadmin.caregivers.*')">
+                                {{ __('Caregivers') }}
+                            </x-nav-link>
+                        @endif
 
-                        {{-- Schedule Link - Only for regular users --}}
+                        {{-- This link is visible to both agency_admin and caregiver --}}
                         <x-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.index')">
                             {{ __('Schedule') }}
                         </x-nav-link>
                     @endif
 
-                    {{-- SuperAdmin BLOCK --}}
+                    {{-- SuperAdmin BLOCK (No changes needed here) --}}
                     @if (Auth::user()->role === 'super_admin')
                         <x-nav-link :href="route('superadmin.dashboard')" :active="request()->routeIs('superadmin.dashboard')">
                             {{ __('Admin Dashboard') }}
@@ -138,12 +139,17 @@
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                     {{ __('Dashboard') }}
                 </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
-                    {{ __('Clients') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*')">
-                    {{ __('Caregivers') }}
-                </x-responsive-nav-link>
+
+                {{-- ✅ SECURITY FIX: Responsive links ONLY for agency_admin --}}
+                @if (Auth::user()->role === 'agency_admin')
+                    <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
+                        {{ __('Clients') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*')">
+                        {{ __('Caregivers') }}
+                    </x-responsive-nav-link>
+                @endif
+
                 <x-responsive-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.*')">
                     {{ __('Schedule') }}
                 </x-responsive-nav-link>
