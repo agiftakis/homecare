@@ -15,6 +15,7 @@ class ScheduleController extends Controller
     /**
      * ✅ SECURITY FIX: This method is now role-aware.
      * It shows all shifts for an admin, but only assigned shifts for a caregiver.
+     * ✅ ENHANCEMENT: Now eager-loads visit data to show clock-in/out times.
      */
     public function index()
     {
@@ -25,7 +26,7 @@ class ScheduleController extends Controller
 
         $shiftsQuery = Shift::whereNotNull('client_id')
             ->whereNotNull('caregiver_id')
-            ->with(['client', 'caregiver']);
+            ->with(['client', 'caregiver', 'visit']); // ✅ ENHANCEMENT: Added visit relationship
 
         // If the logged-in user is a caregiver, only show their shifts.
         if ($user->role === 'caregiver') {
@@ -47,6 +48,7 @@ class ScheduleController extends Controller
 
     /**
      * ✅ SECURITY FIX: Only agency admins can create new shifts.
+     * ✅ ENHANCEMENT: Now includes visit data in response.
      */
     public function store(Request $request)
     {
@@ -68,7 +70,7 @@ class ScheduleController extends Controller
         }
 
         $shift = Shift::create($validator->validated());
-        $shift->load(['client', 'caregiver']);
+        $shift->load(['client', 'caregiver', 'visit']); // ✅ ENHANCEMENT: Load visit data
 
         $eventData = [
             'id' => $shift->id,
@@ -79,6 +81,11 @@ class ScheduleController extends Controller
                 'client_id' => $shift->client_id,
                 'caregiver_id' => $shift->caregiver_id,
                 'notes' => $shift->notes,
+                'status' => $shift->status,
+                'visit' => $shift->visit ? [ // ✅ ENHANCEMENT: Include visit data
+                    'clock_in_time' => $shift->visit->clock_in_time,
+                    'clock_out_time' => $shift->visit->clock_out_time,
+                ] : null
             ]
         ];
 
@@ -87,6 +94,7 @@ class ScheduleController extends Controller
 
     /**
      * ✅ SECURITY FIX: Only agency admins can update shifts.
+     * ✅ ENHANCEMENT: Now includes visit data in response.
      */
     public function update(Request $request, Shift $shift)
     {
@@ -108,7 +116,7 @@ class ScheduleController extends Controller
         }
 
         $shift->update($validator->validated());
-        $shift->load(['client', 'caregiver']);
+        $shift->load(['client', 'caregiver', 'visit']); // ✅ ENHANCEMENT: Load visit data
 
         $eventData = [
             'id' => $shift->id,
@@ -119,6 +127,11 @@ class ScheduleController extends Controller
                 'client_id' => $shift->client_id,
                 'caregiver_id' => $shift->caregiver_id,
                 'notes' => $shift->notes,
+                'status' => $shift->status,
+                'visit' => $shift->visit ? [ // ✅ ENHANCEMENT: Include visit data
+                    'clock_in_time' => $shift->visit->clock_in_time,
+                    'clock_out_time' => $shift->visit->clock_out_time,
+                ] : null
             ]
         ];
 

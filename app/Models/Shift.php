@@ -37,4 +37,13 @@ class Shift extends Model
     {
         return $this->belongsTo(Caregiver::class);
     }
+
+    /**
+     * ✅ NEW RELATIONSHIP: Get the visit record for this shift
+     * A shift can have one visit (clock-in/out record)
+     */
+    public function visit()
+    {
+        return $this->hasOne(Visit::class);
+    }
 }

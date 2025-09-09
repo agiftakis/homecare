@@ -84,6 +84,23 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        /* ✅ NEW STYLE for visit times */
+        .visit-times {
+            font-size: 0.75em;
+            color: #10b981; /* Green color to indicate actual times */
+            margin-top: 2px;
+            font-weight: 600;
+        }
+        /* ✅ NEW STYLE for completed shifts */
+        .shift-completed {
+            background-color: #10b981 !important; /* Green background for completed shifts */
+            border-color: #059669 !important;
+        }
+        /* ✅ NEW STYLE for in-progress shifts */
+        .shift-in-progress {
+            background-color: #f59e0b !important; /* Orange background for in-progress shifts */
+            border-color: #d97706 !important;
+        }
     </style>
 
     <script>
@@ -109,6 +126,18 @@
                     return `${year}-${month}-${day}T${hours}:${minutes}`;
                 },
 
+                // ✅ NEW HELPER FUNCTION: Format time from UTC to user timezone
+                formatTimeInUserTimezone(utcDateTime) {
+                    if (!utcDateTime) return '';
+                    const date = new Date(utcDateTime);
+                    return date.toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true,
+                        timeZone: '{{ Auth::user()->agency?->timezone ?? "UTC" }}'
+                    });
+                },
+
                 initCalendar() {
                     const calendarEl = document.getElementById('calendar');
                     this.calendar = new FullCalendar.Calendar(calendarEl, {
@@ -118,32 +147,76 @@
                             center: 'title',
                             right: 'dayGridMonth,timeGridWeek,timeGridDay'
                         },
-                        events: this.shifts.map(shift => ({
-                            id: shift.id,
-                            title: `${shift.client.first_name} w/ ${shift.caregiver.first_name}`,
-                            start: shift.start_time,
-                            end: shift.end_time,
-                            backgroundColor: '#4f46e5',
-                            borderColor: '#4f46e5',
-                            extendedProps: {
-                                client_id: shift.client_id,
-                                caregiver_id: shift.caregiver_id,
-                                notes: shift.notes
+                        events: this.shifts.map(shift => {
+                            // ✅ ENHANCEMENT: Determine background color based on status
+                            let backgroundColor = '#4f46e5'; // Default blue
+                            let borderColor = '#4f46e5';
+                            let className = '';
+
+                            if (shift.status === 'completed') {
+                                backgroundColor = '#10b981'; // Green
+                                borderColor = '#059669';
+                                className = 'shift-completed';
+                            } else if (shift.status === 'in_progress') {
+                                backgroundColor = '#f59e0b'; // Orange
+                                borderColor = '#d97706';
+                                className = 'shift-in-progress';
                             }
-                        })),
+
+                            return {
+                                id: shift.id,
+                                title: `${shift.client.first_name} w/ ${shift.caregiver.first_name}`,
+                                start: shift.start_time,
+                                end: shift.end_time,
+                                backgroundColor: backgroundColor,
+                                borderColor: borderColor,
+                                className: className,
+                                extendedProps: {
+                                    client_id: shift.client_id,
+                                    caregiver_id: shift.caregiver_id,
+                                    notes: shift.notes,
+                                    status: shift.status,
+                                    visit: shift.visit || null
+                                }
+                            };
+                        }),
                         
-                        // ✅ --- START NOTES FIX ---
-                        // This new function customizes how each event's content is rendered.
-                        eventContent: function(arg) {
+                        // ✅ ENHANCEMENT: Enhanced event content to show visit times
+                        eventContent: (arg) => {
                             let eventHtml = `<b>${arg.timeText}</b> <i>${arg.event.title}</i>`;
+                            
                             const notes = arg.event.extendedProps.notes;
+                            const visit = arg.event.extendedProps.visit;
+                            
+                            // ✅ NEW: Show actual clock-in/out times if they exist
+                            if (visit) {
+                                let visitTimesHtml = '<div class="visit-times">';
+                                
+                                if (visit.clock_in_time) {
+                                    const clockInTime = this.formatTimeInUserTimezone(visit.clock_in_time);
+                                    visitTimesHtml += `In: ${clockInTime}`;
+                                }
+                                
+                                if (visit.clock_out_time) {
+                                    const clockOutTime = this.formatTimeInUserTimezone(visit.clock_out_time);
+                                    if (visit.clock_in_time) {
+                                        visitTimesHtml += ` | Out: ${clockOutTime}`;
+                                    } else {
+                                        visitTimesHtml += `Out: ${clockOutTime}`;
+                                    }
+                                }
+                                
+                                visitTimesHtml += '</div>';
+                                eventHtml += visitTimesHtml;
+                            }
+                            
                             if (notes) {
                                 // If notes exist, add them to the event's HTML.
                                 eventHtml += `<div class="shift-notes">Note: ${notes}</div>`;
                             }
+                            
                             return { html: eventHtml };
                         },
-                        // ✅ --- END NOTES FIX ---
 
                         // ✅ SECURITY FIX: Make calendar read-only for non-admins
                         eventDidMount: (info) => {
@@ -253,4 +326,3 @@
         }
     </script>
 </x-app-layout>
-
