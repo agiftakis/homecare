@@ -24,7 +24,7 @@
                         <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
                     </div>
 
-                    {{-- ✅ NEW: Daily Shift List View for Admins --}}
+                    {{-- ✅ ADMIN: Daily Shift List View --}}
                     <div x-show="isAdmin && viewMode === 'dayList'" x-cloak>
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-semibold" x-text="`Shifts for ${selectedDateFormatted}`"></h3>
@@ -79,6 +79,86 @@
                         </div>
                     </div>
 
+                    {{-- ✅ NEW: CAREGIVER Daily Shift List View (Read-Only) --}}
+                    <div x-show="!isAdmin && viewMode === 'dayList'" x-cloak>
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
+                            <h3 class="text-xl font-semibold" x-text="`My Shifts for ${selectedDateFormatted}`"></h3>
+                            <x-secondary-button @click="viewMode = 'calendar'" class="self-start sm:self-auto">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                Back to Calendar
+                            </x-secondary-button>
+                        </div>
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <template x-for="shift in shiftsForSelectedDay()" :key="shift.id">
+                                <div
+                                    class="caregiver-shift-item flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150 ease-in-out">
+                                    <div class="flex-grow mb-3 sm:mb-0">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
+                                            <div class="font-mono text-sm text-gray-600 dark:text-gray-400 sm:w-32">
+                                                <span x-text="formatTimeInUserTimezone(shift.start_time)"></span> -
+                                                <span x-text="formatTimeInUserTimezone(shift.end_time)"></span>
+                                            </div>
+                                            <div class="font-semibold text-gray-800 dark:text-gray-200">
+                                                <div class="flex items-center space-x-2">
+                                                    <span x-text="`Client: ${shift.client.first_name} ${shift.client.last_name}`"></span>
+                                                    <div x-show="shift.status === 'completed'" 
+                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                        Completed
+                                                    </div>
+                                                    <div x-show="shift.status === 'in_progress'" 
+                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                        In Progress
+                                                    </div>
+                                                    <div x-show="shift.status === 'pending'" 
+                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                        Pending
+                                                    </div>
+                                                </div>
+                                                <div x-show="shift.notes" class="text-xs text-gray-500 font-normal mt-1"
+                                                    x-text="`Note: ${shift.notes}`"></div>
+                                                <div x-show="shift.client.address" class="text-xs text-gray-500 font-normal mt-1"
+                                                    x-text="`Address: ${shift.client.address}`"></div>
+                                            </div>
+                                        </div>
+                                        <div x-show="shift.visit" class="mt-2 sm:pl-36 visit-times text-sm"
+                                            x-html="getVisitTimesHtml(shift.visit)">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-3 mt-2 sm:mt-0">
+                                        {{-- Clock In/Out Button --}}
+                                        <div x-show="shift.status === 'pending' || shift.status === 'in_progress'">
+                                            <a :href="`/visits/${shift.id}`"
+                                               class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span x-text="shift.status === 'pending' ? 'Clock In' : 'Clock Out'"></span>
+                                            </a>
+                                        </div>
+                                        {{-- Completed Badge --}}
+                                        <div x-show="shift.status === 'completed'" 
+                                             class="inline-flex items-center px-3 py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-medium rounded-md">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            Completed
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            <div x-show="shiftsForSelectedDay().length === 0"
+                                class="text-center p-8 text-gray-500 dark:text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                No shifts scheduled for this day.
+                            </div>
+                        </div>
+                    </div>
 
                     {{-- Modals for Admins --}}
                     @if ($is_admin)
@@ -203,12 +283,26 @@
         .fc-timegrid-future-event-harness-inset .fc-timegrid-event { padding: 2px 3px !important; font-size: 0.75em !important; }
         .fc-timegrid-event .fc-event-main { padding: 2px !important; }
 
-        /* ✅ NEW: Fix for list item hover background */
-        .daily-shift-item:hover {
-            background-color: rgba(107, 114, 128, 0.1); /* Lighter gray, works for both light/dark */
+        /* ✅ Enhanced hover effects for both admin and caregiver list items */
+        .daily-shift-item:hover,
+        .caregiver-shift-item:hover {
+            background-color: rgba(107, 114, 128, 0.1);
         }
-        [data-theme="dark"] .daily-shift-item:hover {
+        [data-theme="dark"] .daily-shift-item:hover,
+        [data-theme="dark"] .caregiver-shift-item:hover {
              background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* ✅ Mobile optimizations for caregiver view */
+        @media screen and (max-width: 640px) {
+            .caregiver-shift-item {
+                padding: 16px 12px;
+            }
+            
+            .caregiver-shift-item .visit-times {
+                padding-left: 0 !important;
+                margin-top: 8px;
+            }
         }
     </style>
 
@@ -271,7 +365,7 @@
                     });
                 },
 
-                // ✅ NEW: Logic for the daily list view
+                // ✅ Logic for the daily list view (works for both admin and caregiver)
                 shiftsForSelectedDay() {
                     if (!this.selectedDate) return [];
                     const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
@@ -280,6 +374,16 @@
                         const shiftDate = new Date(shift.start_time).toLocaleDateString('en-CA', { timeZone: userTimezone });
                         return shiftDate === this.selectedDate;
                     }).sort((a,b) => new Date(a.start_time) - new Date(b.start_time));
+                },
+
+                // ✅ NEW: Date click handler for caregivers 
+                caregiverDateClick(info) {
+                    this.selectedDate = info.dateStr; // YYYY-MM-DD
+                    const dateObj = new Date(this.selectedDate + 'T00:00:00');
+                    this.selectedDateFormatted = dateObj.toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+                    });
+                    this.viewMode = 'dayList';
                 },
 
                 viewShiftsForDay() {
@@ -316,7 +420,7 @@
                     this.showEditModal = true;
                 },
 
-                // ✅ MODIFIED: Calendar initialization is now role-based
+                // ✅ ENHANCED: Calendar initialization now supports caregiver clean month view
                 initCalendar() {
                     const calendarEl = document.getElementById('calendar');
                     let calendarConfig;
@@ -339,58 +443,21 @@
                             }
                         };
                     } else {
-                        // --- Caregiver Config: Shows their assigned shifts ---
+                        // --- ✅ NEW: Caregiver Config: Clean month view for date selection ---
                         calendarConfig = {
-                            initialView: 'timeGridWeek',
-                            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' },
-                            dayMaxEvents: true,
-                            navLinks: true,
-                            slotEventOverlap: false,
-                            events: this.shifts.map(shift => { 
-                                 let backgroundColor = '#4f46e5'; // Default blue
-                                let borderColor = '#4f46e5';
-                                let className = '';
-
-                                if (shift.status === 'completed') {
-                                    backgroundColor = '#10b981'; // Green
-                                    borderColor = '#059669';
-                                    className = 'shift-completed';
-                                } else if (shift.status === 'in_progress') {
-                                    backgroundColor = '#f59e0b'; // Orange
-                                    borderColor = '#d97706';
-                                    className = 'shift-in-progress';
-                                }
-
-                                return {
-                                    id: shift.id,
-                                    title: `${shift.client.first_name} w/ ${shift.caregiver.first_name}`,
-                                    start: shift.start_time,
-                                    end: shift.end_time,
-                                    backgroundColor: backgroundColor,
-                                    borderColor: borderColor,
-                                    className: className,
-                                    extendedProps: {
-                                        client_id: shift.client_id,
-                                        caregiver_id: shift.caregiver_id,
-                                        notes: shift.notes,
-                                        status: shift.status,
-                                        visit: shift.visit || null
-                                    }
-                                };
-                            }),
-                            eventContent: (arg) => { 
-                                let eventHtml = `<b>${arg.timeText}</b> <i>${arg.event.title}</i>`;
-                                const notes = arg.event.extendedProps.notes;
-                                const visit = arg.event.extendedProps.visit;
-                                if (visit) {
-                                    eventHtml += `<div class="visit-times">${this.getVisitTimesHtml(visit)}</div>`;
-                                }
-                                if (notes) {
-                                    eventHtml += `<div class="shift-notes">Note: ${notes}</div>`;
-                                }
-                                return { html: eventHtml };
-                             },
-                            eventDidMount: (info) => { if (!this.isAdmin) info.el.style.cursor = 'default'; }
+                            initialView: 'dayGridMonth',
+                            headerToolbar: { 
+                                left: 'prev,next today', 
+                                center: 'title', 
+                                right: 'dayGridMonth' 
+                            },
+                            events: [], // Clean calendar - no events shown, just for date selection
+                            dateClick: (info) => this.caregiverDateClick(info),
+                            dayMaxEvents: false,
+                            height: 'auto',
+                            // Add some visual indicators for days with shifts without cluttering
+                            dayHeaderClassNames: ['text-sm', 'font-medium'],
+                            dayCellClassNames: ['hover:bg-blue-50', 'dark:hover:bg-blue-900/20', 'cursor-pointer']
                         };
                     }
                     
@@ -400,7 +467,7 @@
                     toastr.options.positionClass = 'toast-bottom-right';
                 },
 
-                // ✅ MODIFIED: Refresh list view after form submissions
+                // ✅ Form submission methods for admins
                 submitAddForm() { 
                     fetch('{{ route('shifts.store') }}', {
                             method: 'POST',
