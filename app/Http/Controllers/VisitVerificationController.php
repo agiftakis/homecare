@@ -28,12 +28,11 @@ class VisitVerificationController extends Controller
     public function show(Shift $shift)
     {
         // Authorization: Ensure the logged-in user is the caregiver assigned to this shift.
-        // NOTE: In a real app with different user roles, you might use a formal Policy here.
         if (Auth::user()->id !== $shift->caregiver->user_id) {
             abort(403, 'Unauthorized action.');
         }
 
-        // ✅ DATE VALIDATION: Check if the shift date is today or in the past
+        // DATE VALIDATION: Check if the shift date is today or in the past
         $userTimezone = Auth::user()->agency?->timezone ?? 'UTC';
         $today = Carbon::today($userTimezone);
         $shiftDate = Carbon::parse($shift->start_time)->setTimezone($userTimezone)->startOfDay();
@@ -52,16 +51,13 @@ class VisitVerificationController extends Controller
      */
     public function clockIn(Request $request, Shift $shift)
     {
-        // ✅ DATE VALIDATION: Prevent clock-in for future shifts
+        // DATE VALIDATION: Prevent clock-in for future shifts
         $userTimezone = Auth::user()->agency?->timezone ?? 'UTC';
         $today = Carbon::today($userTimezone);
         $shiftDate = Carbon::parse($shift->start_time)->setTimezone($userTimezone)->startOfDay();
         
         if ($shiftDate->greaterThan($today)) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'The Scheduled Shift Date Has Not Arrived Yet!'
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'The Scheduled Shift Date Has Not Arrived Yet!'], 422);
         }
 
         // 1. Validate that the signature data is present
@@ -75,38 +71,24 @@ class VisitVerificationController extends Controller
 
         // 2. Decode the Base64 signature and save it to Firebase
         $signatureDataUrl = $request->input('signature');
-
-        // Remove the "data:image/png;base64," part
         $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $signatureDataUrl));
-
-        // Create a temporary file to upload
         $tempFilePath = tempnam(sys_get_temp_dir(), 'signature');
         file_put_contents($tempFilePath, $imageData);
-
-        // Create an UploadedFile instance from the temp file
         $file = new UploadedFile($tempFilePath, 'signature.png', 'image/png', null, true);
-
-        // Use our Firebase service to upload the signature
         $caregiverName = $shift->caregiver->full_name ?? 'caregiver';
         $documentInfo = $this->firebaseStorageService->uploadDocument($file, $caregiverName, 'Signature');
-
-        // Clean up the temporary file
         unlink($tempFilePath);
-
-        // ✅ FIXED: Store the current time for clock-in
-        $clockInTime = now();
 
         // 3. Create the Visit record in the database
         $visit = Visit::create([
             'shift_id' => $shift->id,
             'agency_id' => $shift->agency_id, // Important for multi-tenancy
-            'clock_in_time' => $clockInTime, // ✅ FIXED: Use stored time variable
+            'clock_in_time' => now(),
             'signature_path' => $documentInfo['firebase_path'],
         ]);
 
-        // ✅ --- FIX: Update the shift status to 'in_progress' ---
+        // --- Update the shift status to 'in_progress' ---
         $shift->update(['status' => 'in_progress']);
-        // ---------------------------------------------------------
 
         return response()->json([
             'success' => true,
@@ -120,16 +102,13 @@ class VisitVerificationController extends Controller
      */
     public function clockOut(Request $request, Visit $visit)
     {
-        // ✅ DATE VALIDATION: Prevent clock-out for future shifts
+        // DATE VALIDATION: Prevent clock-out for future shifts
         $userTimezone = Auth::user()->agency?->timezone ?? 'UTC';
         $today = Carbon::today($userTimezone);
         $shiftDate = Carbon::parse($visit->shift->start_time)->setTimezone($userTimezone)->startOfDay();
         
         if ($shiftDate->greaterThan($today)) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'The Scheduled Shift Date Has Not Arrived Yet!'
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'The Scheduled Shift Date Has Not Arrived Yet!'], 422);
         }
 
         // 1. Validate the signature data
@@ -144,29 +123,21 @@ class VisitVerificationController extends Controller
         // 2. Decode the Base64 signature and save it to Firebase
         $signatureDataUrl = $request->input('signature');
         $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $signatureDataUrl));
-
         $tempFilePath = tempnam(sys_get_temp_dir(), 'signature_out');
         file_put_contents($tempFilePath, $imageData);
-
         $file = new UploadedFile($tempFilePath, 'signature_out.png', 'image/png', null, true);
-
-        // Use our Firebase service to upload the clock-out signature
         $caregiverName = $visit->shift->caregiver->full_name ?? 'caregiver';
         $documentInfo = $this->firebaseStorageService->uploadDocument($file, $caregiverName, 'SignatureOut');
-
         unlink($tempFilePath);
-
-        // ✅ CRITICAL FIX: Store the current time and explicitly only update clock_out fields
-        $clockOutTime = now();
         
-        // ✅ CRITICAL FIX: Only update the clock_out_time and signature, preserve clock_in_time
-        $visit->clock_out_time = $clockOutTime;
+        // ✅ FINAL CLEAN CODE: With the database fixed, this clean Eloquent
+        // code will now work correctly without any side effects.
+        $visit->clock_out_time = now();
         $visit->clock_out_signature_path = $documentInfo['firebase_path'];
         $visit->save();
 
-        // ✅ --- FIX: Update the shift status to 'completed' ---
+        // Update the shift status to 'completed'
         $visit->shift->update(['status' => 'completed']);
-        // -----------------------------------------------------
 
         return response()->json([
             'success' => true,
@@ -174,3 +145,4 @@ class VisitVerificationController extends Controller
         ]);
     }
 }
+

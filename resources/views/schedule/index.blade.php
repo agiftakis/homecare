@@ -482,4 +482,3 @@
         }
     </script>
 </x-app-layout>
-
