@@ -65,8 +65,14 @@
                                                 <span x-text="formatTimeInUserTimezone(shift.end_time)"></span>
                                             </div>
                                             <div class="font-semibold text-gray-800 dark:text-gray-200">
-                                                <span x-text="shift.client.first_name"></span> w/ <span
-                                                    x-text="shift.caregiver.first_name"></span>
+                                                {{-- ✅ ORPHANED SHIFTS FIX: Handle null caregiver --}}
+                                                <span x-text="shift.client.first_name"></span> w/ 
+                                                <span x-text="shift.caregiver ? shift.caregiver.first_name : 'N/A'" 
+                                                      :class="!shift.caregiver ? 'text-red-500 dark:text-red-400' : ''"></span>
+                                                {{-- ✅ ORPHANED SHIFTS FIX: Show warning for unassigned shifts --}}
+                                                <span x-show="!shift.caregiver" class="text-xs text-red-500 dark:text-red-400 ml-2 font-normal">
+                                                    (Caregiver deleted - needs reassignment)
+                                                </span>
                                                 <div x-show="shift.notes" class="text-xs text-gray-500 font-normal"
                                                     x-text="`Note: ${shift.notes}`"></div>
                                             </div>
@@ -359,12 +365,13 @@
                         hour12: true,
                     });
                 },
+                // ✅ ORPHANED SHIFTS FIX: Updated viewSignatures to handle null caregiver
                 viewSignatures(shiftId) { 
                     const shift = this.shifts.find(s => s.id == shiftId);
                     if (shift && shift.visit) {
                         this.selectedVisit = {
                             client_name: `${shift.client.first_name} ${shift.client.last_name}`,
-                            caregiver_name: `${shift.caregiver.first_name} ${shift.caregiver.last_name}`,
+                            caregiver_name: shift.caregiver ? `${shift.caregiver.first_name} ${shift.caregiver.last_name}` : 'N/A (Caregiver Deleted)',
                             clock_in_display: shift.visit.clock_in_time ? this.formatTimeInUserTimezone(shift.visit.clock_in_time) : 'N/A',
                             clock_out_display: shift.visit.clock_out_time ? this.formatTimeInUserTimezone(shift.visit.clock_out_time) : 'N/A',
                             clock_in_signature_url: shift.visit.clock_in_signature_url || '',
@@ -395,7 +402,7 @@
                     }).sort((a,b) => new Date(a.start_time) - new Date(b.start_time));
                 },
                 
-                //NEW search filter function
+                // ✅ ORPHANED SHIFTS FIX: Updated search filter to handle null caregiver
                 filteredShiftsForSelectedDay() {
                     let dayShifts = this.allShiftsForSelectedDay();
 
@@ -406,7 +413,10 @@
                     const searchLower = this.searchTerm.toLowerCase();
                     return dayShifts.filter(shift => {
                         const clientName = `${shift.client.first_name || ''} ${shift.client.last_name || ''}`.toLowerCase();
-                        const caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`.toLowerCase();
+                        // ✅ ORPHANED SHIFTS FIX: Handle null caregiver in search
+                        const caregiverName = shift.caregiver ? 
+                            `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`.toLowerCase() : 
+                            'n/a';
                         return clientName.includes(searchLower) || caregiverName.includes(searchLower);
                     });
                 },
@@ -442,11 +452,12 @@
                     return html;
                 },
 
+                // ✅ ORPHANED SHIFTS FIX: Updated editShiftFromList to handle null caregiver
                 editShiftFromList(shift) {
                        this.editShift = {
                            id: shift.id,
                            client_id: shift.client_id,
-                           caregiver_id: shift.caregiver_id,
+                           caregiver_id: shift.caregiver_id || '', // ✅ Handle null caregiver_id
                            start_time: this.formatDateTimeLocal(new Date(shift.start_time)),
                            end_time: this.formatDateTimeLocal(new Date(shift.end_time)),
                            notes: shift.notes

@@ -7,7 +7,7 @@ use App\Models\Caregiver;
 use App\Models\Shift;
 use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // ✅ SECURITY FIX: Import Auth facade
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -21,6 +21,7 @@ class ScheduleController extends Controller
     }
 
     /**
+     * ✅ ORPHANED SHIFTS FIX: This method now shows orphaned shifts to admins.
      * ✅ SECURITY FIX: This method is now role-aware.
      * It shows all shifts for an admin, but only assigned shifts for a caregiver.
      * ✅ ENHANCEMENT: Now eager-loads visit data to show clock-in/out times.
@@ -33,12 +34,17 @@ class ScheduleController extends Controller
         $caregivers = Caregiver::orderBy('first_name')->get();
         $is_admin = ($user->role === 'agency_admin');
 
-        $shiftsQuery = Shift::whereNotNull('client_id')
-            ->whereNotNull('caregiver_id')
-            ->with(['client', 'caregiver', 'visit']); // ✅ ENHANCEMENT: Added visit relationship
-
-        // If the logged-in user is a caregiver, only show their shifts.
-        if ($user->role === 'caregiver') {
+        // ✅ ORPHANED SHIFTS FIX: Different query logic based on user role
+        if ($user->role === 'agency_admin') {
+            // For admins: Show ALL shifts including orphaned ones (where caregiver was deleted)
+            $shiftsQuery = Shift::whereNotNull('client_id')
+                ->with(['client', 'caregiver', 'visit']); // Don't filter by caregiver_id for admins
+        } else {
+            // For caregivers: Only show their assigned shifts (must have valid caregiver_id)
+            $shiftsQuery = Shift::whereNotNull('client_id')
+                ->whereNotNull('caregiver_id')
+                ->with(['client', 'caregiver', 'visit']);
+                
             // Find the caregiver record associated with the logged-in user
             $caregiverProfile = $user->caregiver;
             if ($caregiverProfile) {
@@ -99,7 +105,7 @@ class ScheduleController extends Controller
 
         $eventData = [
             'id' => $shift->id,
-            'title' => $shift->client->first_name . ' w/ ' . $shift->caregiver->first_name,
+            'title' => $shift->client->first_name . ' w/ ' . ($shift->caregiver ? $shift->caregiver->first_name : 'N/A'),
             'start' => $shift->start_time,
             'end' => $shift->end_time,
             'extendedProps' => [
@@ -118,6 +124,7 @@ class ScheduleController extends Controller
     }
 
     /**
+     * ✅ ORPHANED SHIFTS FIX: Allow updating shifts even if caregiver was deleted.
      * ✅ SECURITY FIX: Only agency admins can update shifts.
      * ✅ ENHANCEMENT: Now includes visit data in response.
      */
@@ -130,7 +137,7 @@ class ScheduleController extends Controller
 
         $validator = Validator::make($request->all(), [
             'client_id' => 'required|exists:clients,id',
-            'caregiver_id' => 'required|exists:caregivers,id',
+            'caregiver_id' => 'nullable|exists:caregivers,id', // ✅ ORPHANED SHIFTS FIX: Allow null caregiver for reassignment
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
             'notes' => 'nullable|string',
@@ -156,7 +163,7 @@ class ScheduleController extends Controller
 
         $eventData = [
             'id' => $shift->id,
-            'title' => $shift->client->first_name . ' w/ ' . $shift->caregiver->first_name,
+            'title' => $shift->client->first_name . ' w/ ' . ($shift->caregiver ? $shift->caregiver->first_name : 'N/A'),
             'start' => $shift->start_time,
             'end' => $shift->end_time,
             'extendedProps' => [
