@@ -19,14 +19,14 @@
                     x-init="initCalendar();
                     setupSignatureButtonHandlers()">
 
-                    {{-- ✅ MAIN VIEW: Conditionally show Calendar or Daily List View --}}
+                    {{-- MAIN VIEW: Conditionally show Calendar or Daily List View --}}
                     <div x-show="viewMode === 'calendar'">
                         <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
                     </div>
 
-                    {{-- ✅ ADMIN: Daily Shift List View --}}
+                    {{-- ADMIN: Daily Shift List View --}}
                     <div x-show="isAdmin && viewMode === 'dayList'" x-cloak>
-                        <div class="flex justify-between items-center mb-4">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                             <h3 class="text-xl font-semibold" x-text="`Shifts for ${selectedDateFormatted}`"></h3>
                             <x-secondary-button @click="viewMode = 'calendar'">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
@@ -37,8 +37,25 @@
                                 Back to Calendar
                             </x-secondary-button>
                         </div>
+                        
+                        {{-- SEARCH BAR ADDED --}}
+                        <div class="mb-4">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                                <input type="text" 
+                                       x-model="searchTerm"
+                                       placeholder="Search by client or caregiver name..." 
+                                       class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+
                         <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
-                            <template x-for="shift in shiftsForSelectedDay()" :key="shift.id">
+                            {{-- UPDATED to use filteredShiftsForSelectedDay() --}}
+                            <template x-for="shift in filteredShiftsForSelectedDay()" :key="shift.id">
                                 <div
                                     class="daily-shift-item flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150 ease-in-out">
                                     <div class="flex-grow">
@@ -72,9 +89,10 @@
                                     </div>
                                 </div>
                             </template>
-                            <div x-show="shiftsForSelectedDay().length === 0"
+                            {{-- ✅ UPDATED to use filteredShiftsForSelectedDay() --}}
+                            <div x-show="filteredShiftsForSelectedDay().length === 0"
                                 class="text-center p-8 text-gray-500 dark:text-gray-400">
-                                No shifts scheduled for this day.
+                                No shifts found for this day<span x-show="searchTerm" x-text="` matching your search`"></span>.
                             </div>
                         </div>
                     </div>
@@ -93,7 +111,7 @@
                             </x-secondary-button>
                         </div>
                         <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
-                            <template x-for="shift in shiftsForSelectedDay()" :key="shift.id">
+                            <template x-for="shift in allShiftsForSelectedDay()" :key="shift.id">
                                 <div
                                     class="caregiver-shift-item flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150 ease-in-out">
                                     <div class="flex-grow mb-3 sm:mb-0">
@@ -131,7 +149,7 @@
                                     <div class="flex items-center space-x-3 mt-2 sm:mt-0">
                                         {{-- Clock In/Out Button --}}
                                         <div x-show="shift.status === 'pending' || shift.status === 'in_progress'">
-                                            <a :href="`/visits/${shift.id}`"
+                                            <a :href="`/shifts/${shift.id}/verify`"
                                                class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -150,7 +168,7 @@
                                     </div>
                                 </div>
                             </template>
-                            <div x-show="shiftsForSelectedDay().length === 0"
+                            <div x-show="allShiftsForSelectedDay().length === 0"
                                 class="text-center p-8 text-gray-500 dark:text-gray-400">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -283,7 +301,7 @@
         .fc-timegrid-future-event-harness-inset .fc-timegrid-event { padding: 2px 3px !important; font-size: 0.75em !important; }
         .fc-timegrid-event .fc-event-main { padding: 2px !important; }
 
-        /* ✅ Enhanced hover effects for both admin and caregiver list items */
+        /* Enhanced hover effects for both admin and caregiver list items */
         .daily-shift-item:hover,
         .caregiver-shift-item:hover {
             background-color: rgba(107, 114, 128, 0.1);
@@ -293,7 +311,7 @@
              background-color: rgba(255, 255, 255, 0.05);
         }
 
-        /* ✅ Mobile optimizations for caregiver view */
+        /*  Mobile optimizations for caregiver view */
         @media screen and (max-width: 640px) {
             .caregiver-shift-item {
                 padding: 16px 12px;
@@ -312,6 +330,7 @@
                 viewMode: 'calendar', // 'calendar' or 'dayList'
                 selectedDate: null,
                 selectedDateFormatted: '',
+                searchTerm: '', // SEARCH TERM ADDED
                 showAddModal: false,
                 showEditModal: false,
                 showSignaturesModal: false,
@@ -330,7 +349,7 @@
                     const hours = date.getHours().toString().padStart(2, '0');
                     const minutes = date.getMinutes().toString().padStart(2, '0');
                     return `${year}-${month}-${day}T${hours}:${minutes}`;
-                 },
+                },
                 formatTimeInUserTimezone(utcDateTime) { 
                     if (!utcDateTime) return '';
                     const date = new Date(utcDateTime);
@@ -365,8 +384,8 @@
                     });
                 },
 
-                // ✅ Logic for the daily list view (works for both admin and caregiver)
-                shiftsForSelectedDay() {
+                // Renamed function
+                allShiftsForSelectedDay() {
                     if (!this.selectedDate) return [];
                     const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
                     
@@ -375,8 +394,23 @@
                         return shiftDate === this.selectedDate;
                     }).sort((a,b) => new Date(a.start_time) - new Date(b.start_time));
                 },
+                
+                //NEW search filter function
+                filteredShiftsForSelectedDay() {
+                    let dayShifts = this.allShiftsForSelectedDay();
 
-                // ✅ NEW: Date click handler for caregivers 
+                    if (!this.searchTerm.trim()) {
+                        return dayShifts;
+                    }
+
+                    const searchLower = this.searchTerm.toLowerCase();
+                    return dayShifts.filter(shift => {
+                        const clientName = `${shift.client.first_name || ''} ${shift.client.last_name || ''}`.toLowerCase();
+                        const caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`.toLowerCase();
+                        return clientName.includes(searchLower) || caregiverName.includes(searchLower);
+                    });
+                },
+
                 caregiverDateClick(info) {
                     this.selectedDate = info.dateStr; // YYYY-MM-DD
                     const dateObj = new Date(this.selectedDate + 'T00:00:00');
@@ -409,28 +443,26 @@
                 },
 
                 editShiftFromList(shift) {
-                     this.editShift = {
-                        id: shift.id,
-                        client_id: shift.client_id,
-                        caregiver_id: shift.caregiver_id,
-                        start_time: this.formatDateTimeLocal(new Date(shift.start_time)),
-                        end_time: this.formatDateTimeLocal(new Date(shift.end_time)),
-                        notes: shift.notes
-                    };
-                    this.showEditModal = true;
+                       this.editShift = {
+                           id: shift.id,
+                           client_id: shift.client_id,
+                           caregiver_id: shift.caregiver_id,
+                           start_time: this.formatDateTimeLocal(new Date(shift.start_time)),
+                           end_time: this.formatDateTimeLocal(new Date(shift.end_time)),
+                           notes: shift.notes
+                       };
+                       this.showEditModal = true;
                 },
 
-                // ✅ ENHANCED: Calendar initialization now supports caregiver clean month view
                 initCalendar() {
                     const calendarEl = document.getElementById('calendar');
                     let calendarConfig;
 
                     if (this.isAdmin) {
-                        // --- Admin Config: Simple month view for adding shifts ---
                         calendarConfig = {
                             initialView: 'dayGridMonth',
                             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
-                            events: [], // No events shown on the admin creation calendar
+                            events: [],
                             dateClick: (info) => {
                                 const startTime = new Date(info.dateStr + 'T09:00:00');
                                 const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
@@ -443,7 +475,6 @@
                             }
                         };
                     } else {
-                        // --- ✅ NEW: Caregiver Config: Clean month view for date selection ---
                         calendarConfig = {
                             initialView: 'dayGridMonth',
                             headerToolbar: { 
@@ -451,11 +482,10 @@
                                 center: 'title', 
                                 right: 'dayGridMonth' 
                             },
-                            events: [], // Clean calendar - no events shown, just for date selection
+                            events: [],
                             dateClick: (info) => this.caregiverDateClick(info),
                             dayMaxEvents: false,
                             height: 'auto',
-                            // Add some visual indicators for days with shifts without cluttering
                             dayHeaderClassNames: ['text-sm', 'font-medium'],
                             dayCellClassNames: ['hover:bg-blue-50', 'dark:hover:bg-blue-900/20', 'cursor-pointer']
                         };
@@ -467,7 +497,7 @@
                     toastr.options.positionClass = 'toast-bottom-right';
                 },
 
-                // ✅ Form submission methods for admins
+                // Form submission methods for admins
                 submitAddForm() { 
                     fetch('{{ route('shifts.store') }}', {
                             method: 'POST',
@@ -483,7 +513,7 @@
                                 toastr.success('New shift created successfully!');
                             } else { throw data; }
                         }).catch(error => this.handleFormError(error));
-                 },
+                },
                 submitEditForm() { 
                     fetch(`/shifts/${this.editShift.id}`, {
                             method: 'PUT',
@@ -499,7 +529,7 @@
                                 toastr.success('Shift updated successfully!');
                             } else { throw data; }
                         }).catch(error => this.handleFormError(error));
-                 },
+                },
                 deleteShift() { 
                     if (!confirm('Are you sure you want to delete this shift?')) return;
                     fetch(`/shifts/${this.editShift.id}`, {
@@ -514,7 +544,7 @@
                                 toastr.info('Shift has been deleted.');
                             } else { throw data; }
                         }).catch(error => this.handleFormError(error));
-                 },
+                },
                 handleFormError(error) { 
                     let errorMessages = 'An unexpected error occurred.';
                     if (error && error.errors) {
