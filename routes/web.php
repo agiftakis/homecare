@@ -12,6 +12,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\VisitVerificationController;
+// ✅ SETTINGS PAGE: Import the new controller we will create.
+use App\Http\Controllers\AgencySettingsController;
 
 
 /*
@@ -50,6 +52,10 @@ Route::middleware(['auth', 'timezone'])->group(function () {
         Route::resource('caregivers', CaregiverController::class);
         // This route is also protected as it is part of caregiver management.
         Route::post('/caregivers/{caregiver}/resend-onboarding', [CaregiverController::class, 'resendOnboardingLink'])->name('caregivers.resendOnboarding');
+
+        // ✅ SETTINGS PAGE: Add the new routes for the agency settings page.
+        Route::get('/settings', [AgencySettingsController::class, 'edit'])->name('settings.edit');
+        Route::patch('/settings', [AgencySettingsController::class, 'update'])->name('settings.update');
     });
     // ✅ --- END SECURITY FIX ---
 
@@ -93,4 +99,3 @@ Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmi
 });
 
 require __DIR__ . '/auth.php';
-
