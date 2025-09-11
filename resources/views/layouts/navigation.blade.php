@@ -28,6 +28,11 @@
                             <x-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*') && !request()->routeIs('superadmin.caregivers.*')">
                                 {{ __('Caregivers') }}
                             </x-nav-link>
+
+                            {{-- ✅ SETTINGS PAGE: Add link to the new agency settings page --}}
+                            <x-nav-link :href="route('settings.edit')" :active="request()->routeIs('settings.*')">
+                                {{ __('Settings') }}
+                            </x-nav-link>
                         @endif
 
                         {{-- This link is visible to both agency_admin and caregiver --}}
@@ -107,7 +112,7 @@
                             @csrf
 
                             <x-dropdown-link :href="route('logout')"
-                                onclick="event.preventDefault();
+                                    onclick="event.preventDefault();
                                                 this.closest('form').submit();">
                                 {{ __('Log Out') }}
                             </x-dropdown-link>
@@ -148,6 +153,11 @@
                     <x-responsive-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*')">
                         {{ __('Caregivers') }}
                     </x-responsive-nav-link>
+
+                    {{-- ✅ SETTINGS PAGE: Add responsive link to the new agency settings page --}}
+                    <x-responsive-nav-link :href="route('settings.edit')" :active="request()->routeIs('settings.*')">
+                        {{ __('Settings') }}
+                    </x-responsive-nav-link>
                 @endif
 
                 <x-responsive-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.*')">
@@ -187,7 +197,7 @@
                     @csrf
 
                     <x-responsive-nav-link :href="route('logout')"
-                        onclick="event.preventDefault();
+                            onclick="event.preventDefault();
                                         this.closest('form').submit();">
                         {{ __('Log Out') }}
                     </x-responsive-nav-link>
