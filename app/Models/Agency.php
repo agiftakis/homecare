@@ -20,11 +20,12 @@ class Agency extends Model
         'contact_email',
         'phone',
         'address',
+        'timezone', //THE FIX: Allow timezone to be mass-assigned.
         'subscription_plan',
         'subscription_status',
         'trial_ends_at',
         'subscription_ends_at',
-        'user_id', // This is the required addition
+        'user_id',
     ];
 
     /**

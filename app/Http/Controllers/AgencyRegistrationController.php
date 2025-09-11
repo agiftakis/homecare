@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\Events\Registered;
-// ✅ TIMEZONE FIX: Import the In validation rule to check against a list of valid timezones.
 use Illuminate\Validation\Rule;
-
+// Use DateTimeZone for timezone logic
+use DateTimeZone;
 
 class AgencyRegistrationController extends Controller
 {
@@ -21,7 +21,15 @@ class AgencyRegistrationController extends Controller
     public function create(Request $request)
     {
         $plan = $request->query('plan', 'basic');
-        return view('auth.register-agency', compact('plan'));
+
+        // ✅ REQUIREMENT: Filter timezones for North America only.
+        $allTimezones = DateTimeZone::listIdentifiers();
+        $northAmericaTimezones = array_filter($allTimezones, function ($timezone) {
+            return strpos($timezone, 'America/') === 0;
+        });
+
+        // Pass the filtered list to the view.
+        return view('auth.register-agency', compact('plan', 'northAmericaTimezones'));
     }
 
     /**
@@ -29,17 +37,21 @@ class AgencyRegistrationController extends Controller
      */
     public function store(Request $request)
     {
-        // ✅ START TIMEZONE FIX: Add validation for the new timezone field.
+        // ✅ REQUIREMENT: Generate the valid North American timezone list for validation.
+        $allTimezones = DateTimeZone::listIdentifiers();
+        $northAmericaTimezones = array_filter($allTimezones, function ($timezone) {
+            return strpos($timezone, 'America/') === 0;
+        });
+
         $validated = $request->validate([
             'agency_name' => 'required|string|max:255|unique:agencies,name',
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'plan' => 'required|in:basic,professional,premium,enterprise',
-            // Use Laravel's built-in timezone validation rule for robustness.
-            'timezone' => ['required', 'string', Rule::in(\DateTimeZone::listIdentifiers())],
+            // ✅ REQUIREMENT: Validate that the selected timezone is in our North America list.
+            'timezone' => ['required', 'string', Rule::in($northAmericaTimezones)],
         ]);
-        // ✅ END TIMEZONE FIX
 
         try {
             DB::transaction(function () use ($validated) {
@@ -57,14 +69,13 @@ class AgencyRegistrationController extends Controller
                     'contact_email' => $validated['email'],
                     'subscription_plan' => $validated['plan'],
                     'user_id' => $user->id,
-                    // ✅ TIMEZONE FIX: Save the validated timezone to the database.
                     'timezone' => $validated['timezone'],
                 ]);
 
                 // Now, link the user back to the agency.
                 $user->agency_id = $agency->id;
                 $user->save();
-                
+
                 $agency->createAsStripeCustomer();
 
                 // Login the new user
