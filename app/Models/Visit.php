@@ -21,6 +21,8 @@ class Visit extends Model
         'clock_out_time',
         'signature_path',
         'clock_out_signature_path',
+        'caregiver_first_name',  // ✅ ADDED: Preserve caregiver name at visit creation
+        'caregiver_last_name',   // ✅ ADDED: Preserve caregiver name at visit creation
     ];
 
     /**
@@ -47,5 +49,14 @@ class Visit extends Model
     public function agency()
     {
         return $this->belongsTo(Agency::class);
+    }
+
+    /**
+     * ✅ NEW: Get the full caregiver name from the visit record
+     * This preserves the caregiver information even if the caregiver is deleted
+     */
+    public function getCaregiverFullNameAttribute(): string
+    {
+        return trim($this->caregiver_first_name . ' ' . $this->caregiver_last_name);
     }
 }

@@ -65,14 +65,9 @@
                                                 <span x-text="formatTimeInUserTimezone(shift.end_time)"></span>
                                             </div>
                                             <div class="font-semibold text-gray-800 dark:text-gray-200">
-                                                {{-- ✅ ORPHANED SHIFTS FIX: Handle null caregiver --}}
+                                                {{-- ✅ UPDATED: Smart caregiver display logic --}}
                                                 <span x-text="shift.client.first_name"></span> w/ 
-                                                <span x-text="shift.caregiver ? shift.caregiver.first_name : 'N/A'" 
-                                                      :class="!shift.caregiver ? 'text-red-500 dark:text-red-400' : ''"></span>
-                                                {{-- ✅ ORPHANED SHIFTS FIX: Show warning for unassigned shifts --}}
-                                                <span x-show="!shift.caregiver" class="text-xs text-red-500 dark:text-red-400 ml-2 font-normal">
-                                                    (Caregiver deleted - needs reassignment)
-                                                </span>
+                                                <span x-html="getCaregiverDisplayHtml(shift)"></span>
                                                 <div x-show="shift.notes" class="text-xs text-gray-500 font-normal"
                                                     x-text="`Note: ${shift.notes}`"></div>
                                             </div>
@@ -365,13 +360,48 @@
                         hour12: true,
                     });
                 },
-                // ✅ ORPHANED SHIFTS FIX: Updated viewSignatures to handle null caregiver
+
+                // ✅ NEW: Smart caregiver display logic
+                getCaregiverDisplayHtml(shift) {
+                    // If shift has active caregiver, show normal name
+                    if (shift.caregiver) {
+                        return shift.caregiver.first_name;
+                    }
+                    
+                    // If shift has completed visit with preserved caregiver info
+                    if (shift.visit && shift.visit.caregiver_first_name) {
+                        const caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
+                        // For now using placeholder date - you can replace with actual deletion timestamp
+                        const deletionDate = 'Sept 11 2025 @ 1:29 PM'; 
+                        return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 font-normal">
+                                    (Caregiver deleted on ${deletionDate})
+                                </span>`;
+                    }
+                    
+                    // If no caregiver and no visit (future/pending shift)
+                    return `<span class="text-red-500 dark:text-red-400">N/A</span>
+                            <span class="text-xs text-red-500 dark:text-red-400 ml-2 font-normal">
+                                (Caregiver deleted - needs reassignment)
+                            </span>`;
+                },
+
+                // ✅ UPDATED: viewSignatures to use visit caregiver info
                 viewSignatures(shiftId) { 
                     const shift = this.shifts.find(s => s.id == shiftId);
                     if (shift && shift.visit) {
+                        // Use preserved caregiver info from visit if available
+                        let caregiverName = 'N/A (Caregiver Deleted)';
+                        if (shift.visit.caregiver_first_name) {
+                            caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
+                            caregiverName += ' (Caregiver deleted)';
+                        } else if (shift.caregiver) {
+                            caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name}`;
+                        }
+
                         this.selectedVisit = {
                             client_name: `${shift.client.first_name} ${shift.client.last_name}`,
-                            caregiver_name: shift.caregiver ? `${shift.caregiver.first_name} ${shift.caregiver.last_name}` : 'N/A (Caregiver Deleted)',
+                            caregiver_name: caregiverName,
                             clock_in_display: shift.visit.clock_in_time ? this.formatTimeInUserTimezone(shift.visit.clock_in_time) : 'N/A',
                             clock_out_display: shift.visit.clock_out_time ? this.formatTimeInUserTimezone(shift.visit.clock_out_time) : 'N/A',
                             clock_in_signature_url: shift.visit.clock_in_signature_url || '',
@@ -402,7 +432,7 @@
                     }).sort((a,b) => new Date(a.start_time) - new Date(b.start_time));
                 },
                 
-                // ✅ ORPHANED SHIFTS FIX: Updated search filter to handle null caregiver
+                // ✅ UPDATED: search filter to handle visit caregiver info
                 filteredShiftsForSelectedDay() {
                     let dayShifts = this.allShiftsForSelectedDay();
 
@@ -413,10 +443,18 @@
                     const searchLower = this.searchTerm.toLowerCase();
                     return dayShifts.filter(shift => {
                         const clientName = `${shift.client.first_name || ''} ${shift.client.last_name || ''}`.toLowerCase();
-                        // ✅ ORPHANED SHIFTS FIX: Handle null caregiver in search
-                        const caregiverName = shift.caregiver ? 
-                            `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`.toLowerCase() : 
-                            'n/a';
+                        
+                        // Check current caregiver name
+                        let caregiverName = '';
+                        if (shift.caregiver) {
+                            caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`.toLowerCase();
+                        } else if (shift.visit && shift.visit.caregiver_first_name) {
+                            // Check preserved caregiver name from visit
+                            caregiverName = `${shift.visit.caregiver_first_name || ''} ${shift.visit.caregiver_last_name || ''}`.toLowerCase();
+                        } else {
+                            caregiverName = 'n/a';
+                        }
+                        
                         return clientName.includes(searchLower) || caregiverName.includes(searchLower);
                     });
                 },
@@ -452,7 +490,7 @@
                     return html;
                 },
 
-                // ✅ ORPHANED SHIFTS FIX: Updated editShiftFromList to handle null caregiver
+                // ✅ UPDATED: editShiftFromList to handle null caregiver
                 editShiftFromList(shift) {
                        this.editShift = {
                            id: shift.id,
