@@ -47,14 +47,13 @@
                                     </svg>
                                 </div>
                                 <input type="text" 
-                                       x-model="searchTerm"
-                                       placeholder="Search by client or caregiver name..." 
-                                       class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                    x-model="searchTerm"
+                                    placeholder="Search by client or caregiver name..." 
+                                    class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                             </div>
                         </div>
 
                         <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
-                            {{-- UPDATED to use filteredShiftsForSelectedDay() --}}
                             <template x-for="shift in filteredShiftsForSelectedDay()" :key="shift.id">
                                 <div
                                     class="daily-shift-item flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition duration-150 ease-in-out">
@@ -65,7 +64,6 @@
                                                 <span x-text="formatTimeInUserTimezone(shift.end_time)"></span>
                                             </div>
                                             <div class="font-semibold text-gray-800 dark:text-gray-200">
-                                                {{-- ✅ UPDATED: Smart caregiver display logic --}}
                                                 <span x-text="shift.client.first_name"></span> w/ 
                                                 <span x-html="getCaregiverDisplayHtml(shift)"></span>
                                                 <div x-show="shift.notes" class="text-xs text-gray-500 font-normal"
@@ -74,6 +72,11 @@
                                         </div>
                                         <div x-show="shift.visit" class="pl-36 visit-times text-sm"
                                             x-html="getVisitTimesHtml(shift.visit)">
+                                        </div>
+                                        {{-- ✅ NEW: Missed Shift Notification --}}
+                                        <div x-show="isShiftMissed(shift)" x-cloak
+                                            class="pl-36 mt-1 text-red-600 dark:text-red-500 font-bold text-xs uppercase">
+                                            SHIFT NOT ATTENDED BY ASSIGNED CAREGIVER - please follow up
                                         </div>
                                     </div>
                                     <div class="flex items-center space-x-3">
@@ -90,7 +93,6 @@
                                     </div>
                                 </div>
                             </template>
-                            {{-- ✅ UPDATED to use filteredShiftsForSelectedDay() --}}
                             <div x-show="filteredShiftsForSelectedDay().length === 0"
                                 class="text-center p-8 text-gray-500 dark:text-gray-400">
                                 No shifts found for this day<span x-show="searchTerm" x-text="` matching your search`"></span>.
@@ -98,7 +100,7 @@
                         </div>
                     </div>
 
-                    {{-- ✅ NEW: CAREGIVER Daily Shift List View (Read-Only) --}}
+                    {{-- CAREGIVER Daily Shift List View (Read-Only) --}}
                     <div x-show="!isAdmin && viewMode === 'dayList'" x-cloak>
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
                             <h3 class="text-xl font-semibold" x-text="`My Shifts for ${selectedDateFormatted}`"></h3>
@@ -125,15 +127,15 @@
                                                 <div class="flex items-center space-x-2">
                                                     <span x-text="`Client: ${shift.client.first_name} ${shift.client.last_name}`"></span>
                                                     <div x-show="shift.status === 'completed'" 
-                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                                                         Completed
                                                     </div>
                                                     <div x-show="shift.status === 'in_progress'" 
-                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
                                                         In Progress
                                                     </div>
-                                                    <div x-show="shift.status === 'pending'" 
-                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                    <div x-show="shift.status === 'pending' && !isShiftMissed(shift)" 
+                                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                                                         Pending
                                                     </div>
                                                 </div>
@@ -146,10 +148,15 @@
                                         <div x-show="shift.visit" class="mt-2 sm:pl-36 visit-times text-sm"
                                             x-html="getVisitTimesHtml(shift.visit)">
                                         </div>
+                                        {{-- ✅ NEW: Missed Shift Notification --}}
+                                        <div x-show="isShiftMissed(shift)" x-cloak
+                                            class="mt-2 sm:pl-36 text-red-600 dark:text-red-500 font-bold text-sm uppercase">
+                                            SHIFT NOT ATTENDED - please follow up
+                                        </div>
                                     </div>
                                     <div class="flex items-center space-x-3 mt-2 sm:mt-0">
                                         {{-- Clock In/Out Button --}}
-                                        <div x-show="shift.status === 'pending' || shift.status === 'in_progress'">
+                                        <div x-show="(shift.status === 'pending' || shift.status === 'in_progress') && !isShiftMissed(shift)">
                                             <a :href="`/shifts/${shift.id}/verify`"
                                                class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -312,7 +319,7 @@
              background-color: rgba(255, 255, 255, 0.05);
         }
 
-        /*  Mobile optimizations for caregiver view */
+        /* Mobile optimizations for caregiver view */
         @media screen and (max-width: 640px) {
             .caregiver-shift-item {
                 padding: 16px 12px;
@@ -331,7 +338,7 @@
                 viewMode: 'calendar', // 'calendar' or 'dayList'
                 selectedDate: null,
                 selectedDateFormatted: '',
-                searchTerm: '', // SEARCH TERM ADDED
+                searchTerm: '',
                 showAddModal: false,
                 showEditModal: false,
                 showSignaturesModal: false,
@@ -344,13 +351,15 @@
                 
                 formatDateTimeLocal(date) { 
                     if (!date) return '';
-                    const year = date.getFullYear();
-                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                    const day = date.getDate().toString().padStart(2, '0');
-                    const hours = date.getHours().toString().padStart(2, '0');
-                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    const d = new Date(date);
+                    const year = d.getFullYear();
+                    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                    const day = d.getDate().toString().padStart(2, '0');
+                    const hours = d.getHours().toString().padStart(2, '0');
+                    const minutes = d.getMinutes().toString().padStart(2, '0');
                     return `${year}-${month}-${day}T${hours}:${minutes}`;
                 },
+
                 formatTimeInUserTimezone(utcDateTime) { 
                     if (!utcDateTime) return '';
                     const date = new Date(utcDateTime);
@@ -361,41 +370,72 @@
                     });
                 },
 
-                // ✅ NEW: Smart caregiver display logic
+                // ✅ NEW: Helper function to format the deletion timestamp
+                formatDeletionTimestamp(utcDateTime) {
+                    if (!utcDateTime) return '';
+                    const date = new Date(utcDateTime);
+                    return date.toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric'
+                    }) + ' @ ' + date.toLocaleTimeString('en-US', {
+                        hour: 'numeric', minute: '2-digit', hour12: true
+                    });
+                },
+
+                // ✅ MODIFIED: Now handles soft-deleted caregivers and uses the real deletion timestamp
                 getCaregiverDisplayHtml(shift) {
-                    // If shift has active caregiver, show normal name
+                    // Case 1: An active or soft-deleted caregiver is associated with the shift
                     if (shift.caregiver) {
+                        // Case 1a: The caregiver has been soft-deleted
+                        if (shift.caregiver.deleted_at) {
+                            const caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name || ''}`.trim();
+                            const deletionDate = this.formatDeletionTimestamp(shift.caregiver.deleted_at);
+                            return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 font-normal">
+                                        (Caregiver deleted on ${deletionDate})
+                                    </span>`;
+                        }
+                        // Case 1b: The caregiver is active
                         return shift.caregiver.first_name;
                     }
                     
-                    // If shift has completed visit with preserved caregiver info
+                    // Case 2: The caregiver was hard-deleted, but we have historical data from a completed visit
                     if (shift.visit && shift.visit.caregiver_first_name) {
                         const caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
-                        // For now using placeholder date - you can replace with actual deletion timestamp
-                        const deletionDate = 'Sept 11 2025 @ 1:29 PM'; 
                         return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 font-normal">
-                                    (Caregiver deleted on ${deletionDate})
+                                    (Caregiver deleted)
                                 </span>`;
                     }
                     
-                    // If no caregiver and no visit (future/pending shift)
+                    // Case 3: No caregiver and no visit data (future orphaned shift)
                     return `<span class="text-red-500 dark:text-red-400">N/A</span>
                             <span class="text-xs text-red-500 dark:text-red-400 ml-2 font-normal">
                                 (Caregiver deleted - needs reassignment)
                             </span>`;
                 },
 
-                // ✅ UPDATED: viewSignatures to use visit caregiver info
+                // ✅ NEW: Helper function to check for missed shifts
+                isShiftMissed(shift) {
+                    const shiftStartDate = new Date(shift.start_time);
+                    const now = new Date();
+                    // A shift is missed if its start time is in the past AND it has no visit record.
+                    return shiftStartDate < now && !shift.visit;
+                },
+
                 viewSignatures(shiftId) { 
                     const shift = this.shifts.find(s => s.id == shiftId);
                     if (shift && shift.visit) {
-                        // Use preserved caregiver info from visit if available
                         let caregiverName = 'N/A (Caregiver Deleted)';
-                        if (shift.visit.caregiver_first_name) {
+                        // Prefer the soft-deleted caregiver name if available
+                        if (shift.caregiver && shift.caregiver.deleted_at) {
+                            caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name} (Deleted)`;
+                        } 
+                        // Then check the historical visit data
+                        else if (shift.visit.caregiver_first_name) {
                             caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
-                            caregiverName += ' (Caregiver deleted)';
-                        } else if (shift.caregiver) {
+                        } 
+                        // Finally, use the active caregiver name
+                        else if (shift.caregiver) {
                             caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name}`;
                         }
 
@@ -410,6 +450,7 @@
                         this.showSignaturesModal = true;
                     }
                 },
+
                 setupSignatureButtonHandlers() { 
                     document.addEventListener('click', (e) => {
                         if (e.target.hasAttribute('data-view-signatures')) {
@@ -421,7 +462,6 @@
                     });
                 },
 
-                // Renamed function
                 allShiftsForSelectedDay() {
                     if (!this.selectedDate) return [];
                     const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
@@ -432,7 +472,6 @@
                     }).sort((a,b) => new Date(a.start_time) - new Date(b.start_time));
                 },
                 
-                // ✅ UPDATED: search filter to handle visit caregiver info
                 filteredShiftsForSelectedDay() {
                     let dayShifts = this.allShiftsForSelectedDay();
 
@@ -444,12 +483,10 @@
                     return dayShifts.filter(shift => {
                         const clientName = `${shift.client.first_name || ''} ${shift.client.last_name || ''}`.toLowerCase();
                         
-                        // Check current caregiver name
                         let caregiverName = '';
-                        if (shift.caregiver) {
+                        if (shift.caregiver) { // This now includes soft-deleted caregivers
                             caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`.toLowerCase();
                         } else if (shift.visit && shift.visit.caregiver_first_name) {
-                            // Check preserved caregiver name from visit
                             caregiverName = `${shift.visit.caregiver_first_name || ''} ${shift.visit.caregiver_last_name || ''}`.toLowerCase();
                         } else {
                             caregiverName = 'n/a';
@@ -490,14 +527,13 @@
                     return html;
                 },
 
-                // ✅ UPDATED: editShiftFromList to handle null caregiver
                 editShiftFromList(shift) {
                        this.editShift = {
                            id: shift.id,
                            client_id: shift.client_id,
-                           caregiver_id: shift.caregiver_id || '', // ✅ Handle null caregiver_id
-                           start_time: this.formatDateTimeLocal(new Date(shift.start_time)),
-                           end_time: this.formatDateTimeLocal(new Date(shift.end_time)),
+                           caregiver_id: shift.caregiver_id || '',
+                           start_time: this.formatDateTimeLocal(shift.start_time),
+                           end_time: this.formatDateTimeLocal(shift.end_time),
                            notes: shift.notes
                        };
                        this.showEditModal = true;
@@ -609,11 +645,12 @@
         // Duplicated functions to be accessible in the outer scope
         function formatDateTimeLocal(date) {
             if (!date) return '';
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = (d.getMonth() + 1).toString().padStart(2, '0');
+            const day = d.getDate().toString().padStart(2, '0');
+            const hours = d.getHours().toString().padStart(2, '0');
+            const minutes = d.getMinutes().toString().padStart(2, '0');
             return `${year}-${month}-${day}T${hours}:${minutes}`;
         }
         

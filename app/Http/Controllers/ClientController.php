@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agency;
 use App\Models\Client;
-use App\Models\Agency; // <-- Import the Agency model
-use Illuminate\Http\Request;
 use App\Services\FirebaseStorageService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ClientController extends Controller
@@ -25,8 +25,6 @@ class ClientController extends Controller
 
     public function create()
     {
-        // **THE FIX: Step 1**
-        // If the user is a super_admin, fetch all agencies to pass to the view.
         $agencies = [];
         if (Auth::user()->role === 'super_admin') {
             $agencies = Agency::orderBy('name')->get();
@@ -36,8 +34,6 @@ class ClientController extends Controller
 
     public function store(Request $request)
     {
-        // **THE FIX: Step 2**
-        // Add agency_id to validation rules ONLY for super_admin
         $validationRules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -62,7 +58,6 @@ class ClientController extends Controller
 
         $validated = $request->validate($validationRules);
 
-        // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
             $profilePicturePath = $this->firebaseStorageService->uploadProfilePicture(
                 $request->file('profile_picture'),
@@ -71,14 +66,11 @@ class ClientController extends Controller
             $validated['profile_picture_path'] = $profilePicturePath;
         }
 
-        // **THE FIX: Step 3**
-        // Assign agency_id based on user role
         if (Auth::user()->role === 'super_admin') {
             $validated['agency_id'] = $request->agency_id;
         } else {
             $validated['agency_id'] = Auth::user()->agency_id;
         }
-
 
         Client::create($validated);
 
@@ -128,16 +120,23 @@ class ClientController extends Controller
         return redirect()->route('clients.index')->with('success', 'Client updated successfully!');
     }
 
+    /**
+     * ✅ SOFT DELETE IMPLEMENTATION: This method now performs a soft delete
+     * and records which user performed the action. Associated files are NOT
+     * deleted from storage, allowing for future restoration.
+     */
     public function destroy(Client $client)
     {
         $this->authorize('delete', $client);
 
-        if ($client->profile_picture_path) {
-            $this->firebaseStorageService->deleteFile($client->profile_picture_path);
-        }
+        // Update the deleted_by field for the audit trail.
+        $client->update(['deleted_by' => Auth::id()]);
 
+        // This will now perform a soft delete because the trait is used in the model.
         $client->delete();
 
-        return redirect()->route('clients.index')->with('success', 'Client deleted successfully.');
+        // NOTE: We do NOT delete the profile picture on soft delete to allow for restoration.
+
+        return redirect()->route('clients.index')->with('success', 'Client has been deactivated and archived.');
     }
 }

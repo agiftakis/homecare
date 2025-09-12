@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Caregiver;
 use App\Models\Agency;
+use App\Models\Caregiver;
 use App\Models\User;
 use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CaregiverController extends Controller
 {
@@ -177,46 +176,36 @@ class CaregiverController extends Controller
     }
 
     /**
-     * ✅ DELETION FIX: This method now correctly handles deleting all associated data.
+     * ✅ SOFT DELETE IMPLEMENTATION: This method now performs a soft delete
+     * and records which user performed the action. Associated files are NOT
+     * deleted from storage, allowing for future restoration.
      */
     public function destroy(Caregiver $caregiver)
     {
         // Authorize the action first.
         $this->authorize('delete', $caregiver);
 
-        // Use a database transaction to ensure data integrity.
-        // If any step fails, all changes will be rolled back.
         DB::transaction(function () use ($caregiver) {
-            // STEP 1: Get the associated user before we delete anything.
+            $adminId = Auth::id();
             $user = $caregiver->user;
 
-            // STEP 2: Delete all associated files from Firebase Storage.
-            // This prevents orphaned files in cloud storage.
-            if ($caregiver->profile_picture_path) {
-                $this->firebaseStorageService->deleteFile($caregiver->profile_picture_path);
-            }
-            if ($caregiver->certifications_path) {
-                $this->firebaseStorageService->deleteFile($caregiver->certifications_path);
-            }
-            if ($caregiver->professional_licenses_path) {
-                $this->firebaseStorageService->deleteFile($caregiver->professional_licenses_path);
-            }
-            if ($caregiver->state_province_id_path) {
-                $this->firebaseStorageService->deleteFile($caregiver->state_province_id_path);
-            }
+            // STEP 1: Update the deleted_by field for the audit trail, then soft delete.
+            $caregiver->update(['deleted_by' => $adminId]);
+            $caregiver->delete(); // This is now a soft delete.
 
-            // STEP 3: Delete the Caregiver record from the database.
-            $caregiver->delete();
-
-            // STEP 4: Delete the associated User record.
-            // This is the crucial step to prevent orphaned user accounts.
+            // STEP 2: Soft delete the associated user account as well.
             if ($user) {
-                $user->delete();
+                $user->update(['deleted_by' => $adminId]);
+                $user->delete(); // This is now a soft delete.
             }
+
+            // NOTE: We do NOT delete files from Firebase storage on a soft delete.
+            // This ensures that if the caregiver is ever restored, their documents
+            // and profile picture will also be restored.
         });
 
-        // Redirect back with a success message.
-        return redirect()->route('caregivers.index')->with('success', 'Caregiver and their associated user account have been deleted successfully.');
+        // Redirect back with a more accurate success message.
+        return redirect()->route('caregivers.index')->with('success', 'Caregiver has been deactivated and archived.');
     }
 
 

@@ -3,16 +3,17 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToAgency;
+use App\Services\FirebaseStorageService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Services\FirebaseStorageService;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
+use Illuminate\Database\Eloquent\SoftDeletes; // Import the SoftDeletes trait
 
 class Caregiver extends Model
 {
-    use HasFactory, BelongsToAgency;
+    // ✅ ADDED: Use the SoftDeletes trait along with the others
+    use HasFactory, BelongsToAgency, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -27,7 +28,7 @@ class Caregiver extends Model
         'date_of_birth',
         'certifications',
         'agency_id',
-        'user_id', // ✅ ADDED: Make the user_id fillable
+        'user_id',
         'profile_picture_path',
         // Document Fields
         'certifications_filename',
@@ -36,6 +37,7 @@ class Caregiver extends Model
         'professional_licenses_path',
         'state_province_id_filename',
         'state_province_id_path',
+        'deleted_by', // ✅ ADDED: Allow mass assignment for the audit trail
     ];
 
     /**
@@ -119,7 +121,6 @@ class Caregiver extends Model
      */
     public function user(): BelongsTo
     {
-        // ✅ CORRECTED: This now correctly uses the user_id foreign key.
         return $this->belongsTo(User::class);
     }
 

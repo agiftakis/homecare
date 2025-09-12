@@ -3,13 +3,16 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToAgency;
+use App\Services\FirebaseStorageService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Services\FirebaseStorageService; // Added this import
+use Illuminate\Database\Eloquent\Relations\HasMany; // Added for best practice
+use Illuminate\Database\Eloquent\SoftDeletes; // ✅ ADDED: Import the SoftDeletes trait
 
 class Client extends Model
 {
-    use HasFactory, BelongsToAgency;
+    // ✅ ADDED: Use the SoftDeletes trait
+    use HasFactory, BelongsToAgency, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -25,7 +28,7 @@ class Client extends Model
         'date_of_birth',
         'care_plan',
         'agency_id',
-        'profile_picture_path', // This is now correctly in the array
+        'profile_picture_path',
         // Medical Fields
         'current_medications',
         'discontinued_medications',
@@ -34,6 +37,7 @@ class Client extends Model
         'designated_poa',
         'current_routines_am_pm',
         'fall_risk',
+        'deleted_by', // ✅ ADDED: Allow mass assignment for the audit trail
     ];
 
     /**
@@ -54,7 +58,7 @@ class Client extends Model
     {
         return "{$this->first_name} {$this->last_name}";
     }
-    
+
     /**
      * Get the public URL for the profile picture from its path.
      * This is the crucial new method.
@@ -110,9 +114,8 @@ class Client extends Model
         return ucfirst($this->fall_risk);
     }
 
-    public function shifts()
+    public function shifts(): HasMany
     {
         return $this->hasMany(Shift::class);
     }
 }
-
