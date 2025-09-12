@@ -370,7 +370,6 @@
                     });
                 },
 
-                // ✅ NEW: Helper function to format the deletion timestamp
                 formatDeletionTimestamp(utcDateTime) {
                     if (!utcDateTime) return '';
                     const date = new Date(utcDateTime);
@@ -381,40 +380,41 @@
                     });
                 },
 
-                // ✅ MODIFIED: Now handles soft-deleted caregivers and uses the real deletion timestamp
+                // ✅ BUG FIX: Logic updated to differentiate between past and future orphaned shifts.
                 getCaregiverDisplayHtml(shift) {
-                    // Case 1: An active or soft-deleted caregiver is associated with the shift
+                    const now = new Date();
+                    const shiftStartDate = new Date(shift.start_time);
+
+                    // Case 1: A caregiver is associated (active or soft-deleted)
                     if (shift.caregiver) {
-                        // Case 1a: The caregiver has been soft-deleted
+                        const caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name || ''}`.trim();
+                        
+                        // Case 1a: The caregiver is soft-deleted
                         if (shift.caregiver.deleted_at) {
-                            const caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name || ''}`.trim();
-                            const deletionDate = this.formatDeletionTimestamp(shift.caregiver.deleted_at);
-                            return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
-                                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 font-normal">
-                                        (Caregiver deleted on ${deletionDate})
-                                    </span>`;
+                            // For FUTURE shifts with a deleted caregiver, show reassignment message
+                            if (shiftStartDate > now) {
+                                return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
+                                        <span class="text-xs text-red-500 dark:text-red-400 ml-2 font-normal">
+                                            (Caregiver deleted - needs reassignment)
+                                        </span>`;
+                            }
+                            // For PAST shifts with a deleted caregiver, show historical info
+                            else {
+                                const deletionDate = this.formatDeletionTimestamp(shift.caregiver.deleted_at);
+                                return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 font-normal">
+                                            (Caregiver deleted on ${deletionDate})
+                                        </span>`;
+                            }
                         }
                         // Case 1b: The caregiver is active
                         return shift.caregiver.first_name;
                     }
                     
-                    // Case 2: The caregiver was hard-deleted, but we have historical data from a completed visit
-                    if (shift.visit && shift.visit.caregiver_first_name) {
-                        const caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
-                        return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
-                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 font-normal">
-                                    (Caregiver deleted)
-                                </span>`;
-                    }
-                    
-                    // Case 3: No caregiver and no visit data (future orphaned shift)
-                    return `<span class="text-red-500 dark:text-red-400">N/A</span>
-                            <span class="text-xs text-red-500 dark:text-red-400 ml-2 font-normal">
-                                (Caregiver deleted - needs reassignment)
-                            </span>`;
+                    // Case 2: No caregiver is assigned at all (caregiver_id was null from the start)
+                    return `<span class="text-blue-500 dark:text-blue-400">Unassigned</span>`;
                 },
 
-                // ✅ NEW: Helper function to check for missed shifts
                 isShiftMissed(shift) {
                     const shiftStartDate = new Date(shift.start_time);
                     const now = new Date();
@@ -425,18 +425,19 @@
                 viewSignatures(shiftId) { 
                     const shift = this.shifts.find(s => s.id == shiftId);
                     if (shift && shift.visit) {
-                        let caregiverName = 'N/A (Caregiver Deleted)';
-                        // Prefer the soft-deleted caregiver name if available
-                        if (shift.caregiver && shift.caregiver.deleted_at) {
-                            caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name} (Deleted)`;
+                        let caregiverName = 'N/A';
+                        
+                        // Prefer the caregiver object if it exists (even if soft-deleted)
+                        if (shift.caregiver) {
+                            caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name}`;
+                            if(shift.caregiver.deleted_at) {
+                                caregiverName += ' (Deleted)';
+                            }
                         } 
-                        // Then check the historical visit data
+                        // Fallback to historical visit data
                         else if (shift.visit.caregiver_first_name) {
                             caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
-                        } 
-                        // Finally, use the active caregiver name
-                        else if (shift.caregiver) {
-                            caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name}`;
+                            caregiverName += ' (Deleted)';
                         }
 
                         this.selectedVisit = {
@@ -489,7 +490,7 @@
                         } else if (shift.visit && shift.visit.caregiver_first_name) {
                             caregiverName = `${shift.visit.caregiver_first_name || ''} ${shift.visit.caregiver_last_name || ''}`.toLowerCase();
                         } else {
-                            caregiverName = 'n/a';
+                            caregiverName = 'unassigned';
                         }
                         
                         return clientName.includes(searchLower) || caregiverName.includes(searchLower);
