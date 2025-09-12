@@ -19,6 +19,13 @@
                     x-init="initCalendar();
                     setupSignatureButtonHandlers()">
 
+                    {{-- ✅ MODIFIED: This warning is now only triggered on form submission --}}
+                    <div x-show="pastDateError" x-cloak
+                         class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center"
+                         x-transition>
+                        <span class="font-bold text-lg">YOU ARE TRYING TO CREATE A NEW SHIFT ON A PAST DATE, THIS IS NOT ALLOWED!</span>
+                    </div>
+
                     {{-- MAIN VIEW: Conditionally show Calendar or Daily List View --}}
                     <div x-show="viewMode === 'calendar'">
                         <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
@@ -38,7 +45,6 @@
                             </x-secondary-button>
                         </div>
                         
-                        {{-- SEARCH BAR ADDED --}}
                         <div class="mb-4">
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -73,7 +79,6 @@
                                         <div x-show="shift.visit" class="pl-36 visit-times text-sm"
                                             x-html="getVisitTimesHtml(shift.visit)">
                                         </div>
-                                        {{-- ✅ NEW: Missed Shift Notification --}}
                                         <div x-show="isShiftMissed(shift)" x-cloak
                                             class="pl-36 mt-1 text-red-600 dark:text-red-500 font-bold text-xs uppercase">
                                             SHIFT NOT ATTENDED BY ASSIGNED CAREGIVER - please follow up
@@ -148,14 +153,12 @@
                                         <div x-show="shift.visit" class="mt-2 sm:pl-36 visit-times text-sm"
                                             x-html="getVisitTimesHtml(shift.visit)">
                                         </div>
-                                        {{-- ✅ NEW: Missed Shift Notification --}}
                                         <div x-show="isShiftMissed(shift)" x-cloak
                                             class="mt-2 sm:pl-36 text-red-600 dark:text-red-500 font-bold text-sm uppercase">
                                             SHIFT NOT ATTENDED - please follow up
                                         </div>
                                     </div>
                                     <div class="flex items-center space-x-3 mt-2 sm:mt-0">
-                                        {{-- Clock In/Out Button --}}
                                         <div x-show="(shift.status === 'pending' || shift.status === 'in_progress') && !isShiftMissed(shift)">
                                             <a :href="`/shifts/${shift.id}/verify`"
                                                class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
@@ -165,7 +168,6 @@
                                                 <span x-text="shift.status === 'pending' ? 'Clock In' : 'Clock Out'"></span>
                                             </a>
                                         </div>
-                                        {{-- Completed Badge --}}
                                         <div x-show="shift.status === 'completed'" 
                                              class="inline-flex items-center px-3 py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-medium rounded-md">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -308,8 +310,6 @@
         .fc-timegrid-event.fc-event-mirror,
         .fc-timegrid-future-event-harness-inset .fc-timegrid-event { padding: 2px 3px !important; font-size: 0.75em !important; }
         .fc-timegrid-event .fc-event-main { padding: 2px !important; }
-
-        /* Enhanced hover effects for both admin and caregiver list items */
         .daily-shift-item:hover,
         .caregiver-shift-item:hover {
             background-color: rgba(107, 114, 128, 0.1);
@@ -318,13 +318,10 @@
         [data-theme="dark"] .caregiver-shift-item:hover {
              background-color: rgba(255, 255, 255, 0.05);
         }
-
-        /* Mobile optimizations for caregiver view */
         @media screen and (max-width: 640px) {
             .caregiver-shift-item {
                 padding: 16px 12px;
             }
-            
             .caregiver-shift-item .visit-times {
                 padding-left: 0 !important;
                 margin-top: 8px;
@@ -335,7 +332,7 @@
     <script>
         function schedule(isAdmin) {
             return {
-                viewMode: 'calendar', // 'calendar' or 'dayList'
+                viewMode: 'calendar',
                 selectedDate: null,
                 selectedDateFormatted: '',
                 searchTerm: '',
@@ -348,6 +345,7 @@
                 newShift: { client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' },
                 editShift: { id: null, client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' },
                 isAdmin: isAdmin,
+                pastDateError: false,
                 
                 formatDateTimeLocal(date) { 
                     if (!date) return '';
@@ -359,7 +357,6 @@
                     const minutes = d.getMinutes().toString().padStart(2, '0');
                     return `${year}-${month}-${day}T${hours}:${minutes}`;
                 },
-
                 formatTimeInUserTimezone(utcDateTime) { 
                     if (!utcDateTime) return '';
                     const date = new Date(utcDateTime);
@@ -369,7 +366,6 @@
                         hour12: true,
                     });
                 },
-
                 formatDeletionTimestamp(utcDateTime) {
                     if (!utcDateTime) return '';
                     const date = new Date(utcDateTime);
@@ -379,26 +375,18 @@
                         hour: 'numeric', minute: '2-digit', hour12: true
                     });
                 },
-
-                // ✅ BUG FIX: Logic updated to differentiate between past and future orphaned shifts.
                 getCaregiverDisplayHtml(shift) {
                     const now = new Date();
                     const shiftStartDate = new Date(shift.start_time);
-
-                    // Case 1: A caregiver is associated (active or soft-deleted)
                     if (shift.caregiver) {
                         const caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name || ''}`.trim();
-                        
-                        // Case 1a: The caregiver is soft-deleted
                         if (shift.caregiver.deleted_at) {
-                            // For FUTURE shifts with a deleted caregiver, show reassignment message
                             if (shiftStartDate > now) {
                                 return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
                                         <span class="text-xs text-red-500 dark:text-red-400 ml-2 font-normal">
                                             (Caregiver deleted - needs reassignment)
                                         </span>`;
                             }
-                            // For PAST shifts with a deleted caregiver, show historical info
                             else {
                                 const deletionDate = this.formatDeletionTimestamp(shift.caregiver.deleted_at);
                                 return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
@@ -407,39 +395,36 @@
                                         </span>`;
                             }
                         }
-                        // Case 1b: The caregiver is active
                         return shift.caregiver.first_name;
                     }
-                    
-                    // Case 2: No caregiver is assigned at all (caregiver_id was null from the start)
+                    if (shift.visit && shift.visit.caregiver_first_name) {
+                        const caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
+                        return `<span class="text-orange-600 dark:text-orange-400">${caregiverName}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 font-normal">
+                                    (Caregiver deleted)
+                                </span>`;
+                    }
                     return `<span class="text-blue-500 dark:text-blue-400">Unassigned</span>`;
                 },
-
                 isShiftMissed(shift) {
                     const shiftStartDate = new Date(shift.start_time);
                     const now = new Date();
-                    // A shift is missed if its start time is in the past AND it has no visit record.
                     return shiftStartDate < now && !shift.visit;
                 },
-
                 viewSignatures(shiftId) { 
                     const shift = this.shifts.find(s => s.id == shiftId);
                     if (shift && shift.visit) {
                         let caregiverName = 'N/A';
-                        
-                        // Prefer the caregiver object if it exists (even if soft-deleted)
                         if (shift.caregiver) {
                             caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name}`;
                             if(shift.caregiver.deleted_at) {
                                 caregiverName += ' (Deleted)';
                             }
                         } 
-                        // Fallback to historical visit data
                         else if (shift.visit.caregiver_first_name) {
                             caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
                             caregiverName += ' (Deleted)';
                         }
-
                         this.selectedVisit = {
                             client_name: `${shift.client.first_name} ${shift.client.last_name}`,
                             caregiver_name: caregiverName,
@@ -451,7 +436,6 @@
                         this.showSignaturesModal = true;
                     }
                 },
-
                 setupSignatureButtonHandlers() { 
                     document.addEventListener('click', (e) => {
                         if (e.target.hasAttribute('data-view-signatures')) {
@@ -462,7 +446,6 @@
                         }
                     });
                 },
-
                 allShiftsForSelectedDay() {
                     if (!this.selectedDate) return [];
                     const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
@@ -472,42 +455,35 @@
                         return shiftDate === this.selectedDate;
                     }).sort((a,b) => new Date(a.start_time) - new Date(b.start_time));
                 },
-                
                 filteredShiftsForSelectedDay() {
                     let dayShifts = this.allShiftsForSelectedDay();
-
                     if (!this.searchTerm.trim()) {
                         return dayShifts;
                     }
-
                     const searchLower = this.searchTerm.toLowerCase();
                     return dayShifts.filter(shift => {
                         const clientName = `${shift.client.first_name || ''} ${shift.client.last_name || ''}`.toLowerCase();
-                        
                         let caregiverName = '';
-                        if (shift.caregiver) { // This now includes soft-deleted caregivers
+                        if (shift.caregiver) {
                             caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`.toLowerCase();
                         } else if (shift.visit && shift.visit.caregiver_first_name) {
                             caregiverName = `${shift.visit.caregiver_first_name || ''} ${shift.visit.caregiver_last_name || ''}`.toLowerCase();
                         } else {
                             caregiverName = 'unassigned';
                         }
-                        
                         return clientName.includes(searchLower) || caregiverName.includes(searchLower);
                     });
                 },
-
                 caregiverDateClick(info) {
-                    this.selectedDate = info.dateStr; // YYYY-MM-DD
+                    this.selectedDate = info.dateStr;
                     const dateObj = new Date(this.selectedDate + 'T00:00:00');
                     this.selectedDateFormatted = dateObj.toLocaleDateString('en-US', {
                         year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
                     });
                     this.viewMode = 'dayList';
                 },
-
                 viewShiftsForDay() {
-                    this.selectedDate = this.newShift.start_time.split('T')[0]; // YYYY-MM-DD
+                    this.selectedDate = this.newShift.start_time.split('T')[0];
                     const dateObj = new Date(this.selectedDate + 'T00:00:00');
                     this.selectedDateFormatted = dateObj.toLocaleDateString('en-US', {
                         year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
@@ -515,7 +491,6 @@
                     this.viewMode = 'dayList';
                     this.showAddModal = false;
                 },
-
                 getVisitTimesHtml(visit) {
                     let html = '';
                     if (visit.clock_in_time) {
@@ -527,7 +502,6 @@
                     }
                     return html;
                 },
-
                 editShiftFromList(shift) {
                        this.editShift = {
                            id: shift.id,
@@ -550,6 +524,10 @@
                             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
                             events: [],
                             dateClick: (info) => {
+                                // ✅ CORRECTED BEHAVIOR: Always allow viewing past dates, but warn on save.
+                                this.pastDateError = false; // Reset any previous error.
+                                
+                                // Set up the new shift object regardless of the date.
                                 const startTime = new Date(info.dateStr + 'T09:00:00');
                                 const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
                                 this.newShift = {
@@ -583,8 +561,20 @@
                     toastr.options.positionClass = 'toast-bottom-right';
                 },
 
-                // Form submission methods for admins
                 submitAddForm() { 
+                    // ✅ NEW VALIDATION: Check for past dates right before submitting.
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const shiftStartDate = new Date(this.newShift.start_time);
+                    shiftStartDate.setHours(0, 0, 0, 0);
+
+                    if (shiftStartDate < today) {
+                        this.showAddModal = false; // Close the modal first
+                        this.pastDateError = true; // Show the warning banner
+                        setTimeout(() => { this.pastDateError = false; }, 4000);
+                        return; // Stop the submission
+                    }
+
                     fetch('{{ route('shifts.store') }}', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
@@ -642,8 +632,6 @@
                 }
             }
         }
-
-        // Duplicated functions to be accessible in the outer scope
         function formatDateTimeLocal(date) {
             if (!date) return '';
             const d = new Date(date);
@@ -666,3 +654,4 @@
         }
     </script>
 </x-app-layout>
+
