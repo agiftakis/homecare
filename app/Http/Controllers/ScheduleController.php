@@ -20,23 +20,18 @@ class ScheduleController extends Controller
         $this->firebaseStorageService = $firebaseStorageService;
     }
 
-    /**
-     * ORPHANED SHIFTS FIX: This method now shows orphaned shifts to admins.
-     *  SECURITY FIX: This method is now role-aware.
-     * It shows all shifts for an admin, but only assigned shifts for a caregiver.
-     * ENHANCEMENT: Now eager-loads visit data to show clock-in/out times.
-     * ENHANCEMENT: Now includes signature URLs for admins.
-     */
     public function index()
     {
         $user = Auth::user();
         $clients = Client::orderBy('first_name')->get();
-        // MODIFIED: Also load soft-deleted caregivers so we can get their info in the view
-        $caregivers = Caregiver::withTrashed()->orderBy('first_name')->get();
+        
+        // ✅ BUG FIX: This list populates the dropdowns and should ONLY contain active caregivers.
+        $caregivers = Caregiver::orderBy('first_name')->get();
+        
         $is_admin = ($user->role === 'agency_admin');
 
         if ($user->role === 'agency_admin') {
-            //  MODIFIED: Eager load the caregiver relationship even if it's soft-deleted
+            // MODIFIED: Eager load the caregiver relationship even if it's soft-deleted
             $shiftsQuery = Shift::with([
                 'client',
                 'visit',
@@ -72,13 +67,9 @@ class ScheduleController extends Controller
 
         return view('schedule.index', compact('clients', 'caregivers', 'shifts', 'is_admin'));
     }
-    /**
-     * SECURITY FIX: Only agency admins can create new shifts.
-     * ENHANCEMENT: Now includes visit data in response.
-     */
+    
     public function store(Request $request)
     {
-        // Authorization check: Block anyone who is not an agency admin.
         if (Auth::user()->role !== 'agency_admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
@@ -96,7 +87,7 @@ class ScheduleController extends Controller
         }
 
         $shift = Shift::create($validator->validated());
-        $shift->load(['client', 'caregiver', 'visit']); // ✅ ENHANCEMENT: Load visit data
+        $shift->load(['client', 'caregiver', 'visit']);
 
         $eventData = [
             'id' => $shift->id,
@@ -108,7 +99,7 @@ class ScheduleController extends Controller
                 'caregiver_id' => $shift->caregiver_id,
                 'notes' => $shift->notes,
                 'status' => $shift->status,
-                'visit' => $shift->visit ? [ // ✅ ENHANCEMENT: Include visit data
+                'visit' => $shift->visit ? [
                     'clock_in_time' => $shift->visit->clock_in_time,
                     'clock_out_time' => $shift->visit->clock_out_time,
                 ] : null
@@ -118,21 +109,15 @@ class ScheduleController extends Controller
         return response()->json(['success' => true, 'shift' => $eventData]);
     }
 
-    /**
-     * ORPHANED SHIFTS FIX: Allow updating shifts even if caregiver was deleted.
-     * SECURITY FIX: Only agency admins can update shifts.
-     * ENHANCEMENT: Now includes visit data in response.
-     */
     public function update(Request $request, Shift $shift)
     {
-        // Authorization check: Block anyone who is not an agency admin.
         if (Auth::user()->role !== 'agency_admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
         $validator = Validator::make($request->all(), [
             'client_id' => 'required|exists:clients,id',
-            'caregiver_id' => 'nullable|exists:caregivers,id', // ✅ ORPHANED SHIFTS FIX: Allow null caregiver for reassignment
+            'caregiver_id' => 'nullable|exists:caregivers,id',
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
             'notes' => 'nullable|string',
@@ -143,9 +128,8 @@ class ScheduleController extends Controller
         }
 
         $shift->update($validator->validated());
-        $shift->load(['client', 'caregiver', 'visit']); //ENHANCEMENT: Load visit data
+        $shift->load(['client', 'caregiver', 'visit']);
 
-        // ENHANCEMENT: Add signature URLs if visit exists
         if ($shift->visit) {
             $shift->visit->clock_in_signature_url = $shift->visit->signature_path
                 ? $this->firebaseStorageService->getPublicUrl($shift->visit->signature_path)
@@ -166,7 +150,7 @@ class ScheduleController extends Controller
                 'caregiver_id' => $shift->caregiver_id,
                 'notes' => $shift->notes,
                 'status' => $shift->status,
-                'visit' => $shift->visit ? [ //  ENHANCEMENT: Include visit data with signature URLs
+                'visit' => $shift->visit ? [
                     'clock_in_time' => $shift->visit->clock_in_time,
                     'clock_out_time' => $shift->visit->clock_out_time,
                     'clock_in_signature_url' => $shift->visit->clock_in_signature_url,
@@ -178,12 +162,8 @@ class ScheduleController extends Controller
         return response()->json(['success' => true, 'shift' => $eventData]);
     }
 
-    /**
-     * SECURITY FIX: Only agency admins can delete shifts.
-     */
     public function destroy(Shift $shift)
     {
-        // Authorization check: Block anyone who is not an agency admin.
         if (Auth::user()->role !== 'agency_admin') {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
