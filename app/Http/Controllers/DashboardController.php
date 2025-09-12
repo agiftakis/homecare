@@ -31,7 +31,6 @@ class DashboardController extends Controller
                 abort(403, 'Your caregiver profile is not accessible.');
             }
 
-            // ✅ FIX: Changed where('date', ...) to whereDate('start_time', ...) to match the database schema.
             $upcoming_shifts = Shift::with('client')
                 ->where('caregiver_id', $caregiver->id)
                 ->whereDate('start_time', '>=', Carbon::today())
@@ -39,7 +38,6 @@ class DashboardController extends Controller
                 ->orderBy('start_time', 'asc')
                 ->get();
 
-            // ✅ FIX: Changed where('date', ...) to whereDate('start_time', ...) to match the database schema.
             $all_past_shifts = Shift::with('client')
                 ->where('caregiver_id', $caregiver->id)
                 ->where('status', 'Completed')
@@ -63,8 +61,14 @@ class DashboardController extends Controller
         $clientCount = Client::where('agency_id', $user->agency_id)->count();
         $caregiverCount = Caregiver::where('agency_id', $user->agency_id)->count();
 
-        // ✅ FIX: Changed where('date', ...) to whereDate('start_time', ...) to match the database schema.
-        $todaysShifts = Shift::with(['client', 'caregiver'])
+        // ✅ FIX: The query for today's shifts now includes soft-deleted caregivers,
+        // which prevents the 'N/A' issue on the dashboard view.
+        $todaysShifts = Shift::with([
+                'client', 
+                'caregiver' => function ($query) {
+                    $query->withTrashed();
+                }
+            ])
             ->where('agency_id', $user->agency_id)
             ->whereDate('start_time', Carbon::today())
             ->orderBy('start_time')
@@ -78,4 +82,3 @@ class DashboardController extends Controller
         ]);
     }
 }
-

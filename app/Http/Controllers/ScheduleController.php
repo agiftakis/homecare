@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Caregiver;
 use App\Models\Shift;
 use App\Services\FirebaseStorageService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -25,13 +26,11 @@ class ScheduleController extends Controller
         $user = Auth::user();
         $clients = Client::orderBy('first_name')->get();
         
-        // ✅ BUG FIX: This list populates the dropdowns and should ONLY contain active caregivers.
         $caregivers = Caregiver::orderBy('first_name')->get();
         
         $is_admin = ($user->role === 'agency_admin');
 
         if ($user->role === 'agency_admin') {
-            // MODIFIED: Eager load the caregiver relationship even if it's soft-deleted
             $shiftsQuery = Shift::with([
                 'client',
                 'visit',
@@ -74,10 +73,12 @@ class ScheduleController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
+        // ✅ FIX: Added server-side validation to prevent creating shifts in the past.
+        // 'today' is timezone-aware based on the application's config.
         $validator = Validator::make($request->all(), [
             'client_id' => 'required|exists:clients,id',
             'caregiver_id' => 'required|exists:caregivers,id',
-            'start_time' => 'required|date',
+            'start_time' => 'required|date|after_or_equal:today',
             'end_time' => 'required|date|after:start_time',
             'notes' => 'nullable|string',
         ]);
