@@ -604,7 +604,7 @@
                                 this.showEditModal = false;
                                 
                                 // Show success message with longer duration
-                                toastr.success('Shift updated successfully! Refreshing to show updated view...', 'Success', {
+                                toastr.success('Shift updated successfully! Refreshing to show updated calander view...', 'Success', {
                                     timeOut: 2500,
                                     extendedTimeOut: 1000
                                 });
