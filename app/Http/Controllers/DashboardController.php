@@ -31,19 +31,48 @@ class DashboardController extends Controller
                 abort(403, 'Your caregiver profile is not accessible.');
             }
 
-            $upcoming_shifts = Shift::with('client')
+            // ✅ ENHANCED: Load clients with soft-deleted ones and filter based on deletion logic
+            $allUpcomingShifts = Shift::with([
+                    'client' => function ($query) {
+                        $query->withTrashed(); // Include deleted clients for proper filtering
+                    }
+                ])
                 ->where('caregiver_id', $caregiver->id)
                 ->whereDate('start_time', '>=', Carbon::today())
                 ->where('status', '!=', 'Completed')
                 ->orderBy('start_time', 'asc')
                 ->get();
 
-            $all_past_shifts = Shift::with('client')
+            // ✅ ENHANCED: Filter out future shifts with deleted clients
+            $upcoming_shifts = $allUpcomingShifts->filter(function ($shift) {
+                // If client exists and is not deleted, always show
+                if ($shift->client && !$shift->client->deleted_at) {
+                    return true;
+                }
+                
+                // If client is deleted, apply the enhanced logic
+                if ($shift->client && $shift->client->deleted_at) {
+                    $clientDeletionDate = Carbon::parse($shift->client->deleted_at);
+                    $shiftDate = Carbon::parse($shift->start_time);
+                    
+                    // Only show shifts that occurred before or on the deletion date
+                    return $shiftDate->lte($clientDeletionDate);
+                }
+                
+                // If no client at all (shouldn't happen but safety check)
+                return false;
+            });
+
+            // ✅ ENHANCED: Load past shifts with deleted clients for historical accuracy
+            $all_past_shifts = Shift::with([
+                    'client' => function ($query) {
+                        $query->withTrashed(); // Include deleted clients for historical accuracy
+                    }
+                ])
                 ->where('caregiver_id', $caregiver->id)
                 ->where('status', 'Completed')
                 ->orderBy('start_time', 'desc')
                 ->get();
-
 
             return view('dashboard', [
                 'upcoming_shifts' => $upcoming_shifts,
@@ -58,15 +87,22 @@ class DashboardController extends Controller
             abort(403, 'You are not associated with an agency.');
         }
 
-        $clientCount = Client::where('agency_id', $user->agency_id)->count();
-        $caregiverCount = Caregiver::where('agency_id', $user->agency_id)->count();
+        // ✅ ENHANCED: Only count active (non-deleted) clients and caregivers
+        $clientCount = Client::where('agency_id', $user->agency_id)
+                           ->whereNull('deleted_at')
+                           ->count();
+        
+        $caregiverCount = Caregiver::where('agency_id', $user->agency_id)
+                                 ->whereNull('deleted_at')
+                                 ->count();
 
-        // ✅ FIX: The query for today's shifts now includes soft-deleted caregivers,
-        // which prevents the 'N/A' issue on the dashboard view.
+        // ✅ ENHANCED: Load today's shifts with both deleted clients and caregivers for proper display
         $todaysShifts = Shift::with([
-                'client', 
+                'client' => function ($query) {
+                    $query->withTrashed(); // Include deleted clients
+                },
                 'caregiver' => function ($query) {
-                    $query->withTrashed();
+                    $query->withTrashed(); // Include deleted caregivers
                 }
             ])
             ->where('agency_id', $user->agency_id)
