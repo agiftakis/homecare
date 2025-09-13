@@ -599,10 +599,20 @@
                         .then(res => res.json().then(data => ({ ok: res.ok, data })))
                         .then(({ ok, data }) => {
                             if (ok) {
-                                const index = this.shifts.findIndex(s => s.id == this.editShift.id);
-                                if (index !== -1) this.shifts[index] = data.shift;
+                                // ✅ BUG FIX: Instead of updating local data that causes display issues,
+                                // show success message and auto-refresh the page
                                 this.showEditModal = false;
-                                toastr.success('Shift updated successfully!');
+                                
+                                // Show success message with longer duration
+                                toastr.success('Shift updated successfully! Refreshing to show updated view...', 'Success', {
+                                    timeOut: 2500,
+                                    extendedTimeOut: 1000
+                                });
+                                
+                                // Auto-refresh after brief delay to show the message
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 2000);
                             } else { throw data; }
                         }).catch(error => this.handleFormError(error));
                 },
@@ -654,4 +664,3 @@
         }
     </script>
 </x-app-layout>
-
