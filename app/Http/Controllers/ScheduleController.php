@@ -24,10 +24,11 @@ class ScheduleController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $clients = Client::orderBy('first_name')->get();
-        
-        $caregivers = Caregiver::orderBy('first_name')->get();
-        
+        // ✅ CRITICAL FIX: Only show active (non-deleted) clients and caregivers in dropdowns
+        $clients = Client::whereNull('deleted_at')->orderBy('first_name')->get();
+
+        $caregivers = Caregiver::whereNull('deleted_at')->orderBy('first_name')->get();
+
         $is_admin = ($user->role === 'agency_admin');
 
         if ($user->role === 'agency_admin') {
@@ -47,10 +48,10 @@ class ScheduleController extends Controller
                 'client' => function ($query) {
                     $query->withTrashed(); // Include deleted clients for historical accuracy
                 },
-                'visit', 
+                'visit',
                 'caregiver'
             ]);
-            
+
             $caregiverProfile = $user->caregiver;
             if ($caregiverProfile) {
                 $shiftsQuery->where('caregiver_id', $caregiverProfile->id);
@@ -67,24 +68,24 @@ class ScheduleController extends Controller
             if ($shift->client && !$shift->client->deleted_at) {
                 return true;
             }
-            
+
             // If client is deleted, apply the enhanced logic
             if ($shift->client && $shift->client->deleted_at) {
                 $clientDeletionDate = Carbon::parse($shift->client->deleted_at);
                 $shiftDate = Carbon::parse($shift->start_time);
-                
+
                 // For admin view: Show all shifts but mark them appropriately
                 if ($is_admin) {
                     return true;
                 }
-                
+
                 // For caregiver view: Only show past shifts, hide future ones
                 if (!$is_admin) {
                     // Show shifts that occurred before or on the deletion date
                     return $shiftDate->lte($clientDeletionDate);
                 }
             }
-            
+
             // If no client at all (shouldn't happen but safety check)
             return false;
         });
@@ -94,7 +95,7 @@ class ScheduleController extends Controller
             if ($shift->client && $shift->client->deleted_at) {
                 $clientDeletionDate = Carbon::parse($shift->client->deleted_at);
                 $shiftDate = Carbon::parse($shift->start_time);
-                
+
                 // Determine if this is a past or future shift relative to deletion
                 $shift->client_deletion_status = [
                     'is_deleted' => true,
@@ -108,7 +109,7 @@ class ScheduleController extends Controller
                     'is_deleted' => false
                 ];
             }
-            
+
             return $shift;
         });
 
@@ -128,7 +129,7 @@ class ScheduleController extends Controller
 
         return view('schedule.index', compact('clients', 'caregivers', 'shifts', 'is_admin'))->with('shifts', $enhancedShifts->values());
     }
-    
+
     public function store(Request $request)
     {
         if (Auth::user()->role !== 'agency_admin') {
