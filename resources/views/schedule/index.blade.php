@@ -70,7 +70,7 @@
                                                 <span x-text="formatTimeInUserTimezone(shift.end_time)"></span>
                                             </div>
                                             <div class="font-semibold text-gray-800 dark:text-gray-200">
-                                                <span x-text="shift.client.first_name"></span> w/ 
+                                                <span x-html="getClientDisplayHtml(shift)"></span> w/ 
                                                 <span x-html="getCaregiverDisplayHtml(shift)"></span>
                                                 <div x-show="shift.notes" class="text-xs text-gray-500 font-normal"
                                                     x-text="`Note: ${shift.notes}`"></div>
@@ -82,6 +82,11 @@
                                         <div x-show="isShiftMissed(shift)" x-cloak
                                             class="pl-36 mt-1 text-red-600 dark:text-red-500 font-bold text-xs uppercase">
                                             SHIFT NOT ATTENDED BY ASSIGNED CAREGIVER - please follow up
+                                        </div>
+                                        {{-- ✅ NEW: Client deletion status message --}}
+                                        <div x-show="shift.client_deletion_status && shift.client_deletion_status.is_deleted" x-cloak
+                                            class="pl-36 mt-1 text-red-600 dark:text-red-500 font-bold text-xs"
+                                            x-html="getClientDeletionMessage(shift)">
                                         </div>
                                     </div>
                                     <div class="flex items-center space-x-3">
@@ -100,7 +105,16 @@
                             </template>
                             <div x-show="filteredShiftsForSelectedDay().length === 0"
                                 class="text-center p-8 text-gray-500 dark:text-gray-400">
-                                No shifts found for this day<span x-show="searchTerm" x-text="` matching your search`"></span>.
+                                {{-- ✅ NEW: Check for archived client message --}}
+                                <div x-show="hasArchivedClientMessage()" x-cloak>
+                                    <div class="mb-4 p-4 bg-orange-100 border border-orange-400 text-orange-700 rounded-lg">
+                                        <span class="font-bold">CLIENT HAS BEEN DELETED AND ARCHIVED</span>
+                                        <div class="text-sm mt-1">Previously scheduled shifts for this date have been hidden.</div>
+                                    </div>
+                                </div>
+                                <div x-show="!hasArchivedClientMessage()">
+                                    No shifts found for this day<span x-show="searchTerm" x-text="` matching your search`"></span>.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -130,7 +144,7 @@
                                             </div>
                                             <div class="font-semibold text-gray-800 dark:text-gray-200">
                                                 <div class="flex items-center space-x-2">
-                                                    <span x-text="`Client: ${shift.client.first_name} ${shift.client.last_name}`"></span>
+                                                    <span x-html="getCaregiverClientDisplayHtml(shift)"></span>
                                                     <div x-show="shift.status === 'completed'" 
                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                                                         Completed
@@ -146,7 +160,7 @@
                                                 </div>
                                                 <div x-show="shift.notes" class="text-xs text-gray-500 font-normal mt-1"
                                                     x-text="`Note: ${shift.notes}`"></div>
-                                                <div x-show="shift.client.address" class="text-xs text-gray-500 font-normal mt-1"
+                                                <div x-show="shift.client.address && !shift.client_deletion_status?.is_deleted" class="text-xs text-gray-500 font-normal mt-1"
                                                     x-text="`Address: ${shift.client.address}`"></div>
                                             </div>
                                         </div>
@@ -157,9 +171,14 @@
                                             class="mt-2 sm:pl-36 text-red-600 dark:text-red-500 font-bold text-sm uppercase">
                                             SHIFT NOT ATTENDED - please follow up
                                         </div>
+                                        {{-- ✅ NEW: Client deletion status message for caregivers --}}
+                                        <div x-show="shift.client_deletion_status && shift.client_deletion_status.is_deleted" x-cloak
+                                            class="mt-2 sm:pl-36 text-red-600 dark:text-red-500 font-bold text-sm"
+                                            x-html="getClientDeletionMessage(shift)">
+                                        </div>
                                     </div>
                                     <div class="flex items-center space-x-3 mt-2 sm:mt-0">
-                                        <div x-show="(shift.status === 'pending' || shift.status === 'in_progress') && !isShiftMissed(shift)">
+                                        <div x-show="(shift.status === 'pending' || shift.status === 'in_progress') && !isShiftMissed(shift) && !shift.client_deletion_status?.is_deleted">
                                             <a :href="`/shifts/${shift.id}/verify`"
                                                class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,10 +199,19 @@
                             </template>
                             <div x-show="allShiftsForSelectedDay().length === 0"
                                 class="text-center p-8 text-gray-500 dark:text-gray-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                No shifts scheduled for this day.
+                                {{-- ✅ NEW: Check for archived client message (caregiver view) --}}
+                                <div x-show="hasArchivedClientMessage()" x-cloak>
+                                    <div class="mb-4 p-4 bg-orange-100 border border-orange-400 text-orange-700 rounded-lg">
+                                        <span class="font-bold">CLIENT HAS BEEN DELETED AND ARCHIVED</span>
+                                        <div class="text-sm mt-1">Your previously scheduled shift for this date has been cancelled.</div>
+                                    </div>
+                                </div>
+                                <div x-show="!hasArchivedClientMessage()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    No shifts scheduled for this day.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -375,6 +403,71 @@
                         hour: 'numeric', minute: '2-digit', hour12: true
                     });
                 },
+                
+                // ✅ NEW: Display client name with deletion status
+                getClientDisplayHtml(shift) {
+                    const clientName = shift.client.first_name;
+                    
+                    if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
+                        return `<span class="text-red-600 dark:text-red-400">${clientName}</span>`;
+                    }
+                    
+                    return clientName;
+                },
+                
+                // ✅ NEW: Display client deletion messages
+                getClientDeletionMessage(shift) {
+                    if (!shift.client_deletion_status || !shift.client_deletion_status.is_deleted) {
+                        return '';
+                    }
+                    
+                    const deletionDate = shift.client_deletion_status.formatted_deletion_date;
+                    
+                    if (shift.client_deletion_status.is_past_shift) {
+                        return `CLIENT DELETED ON ${deletionDate}`;
+                    } else if (shift.client_deletion_status.is_future_shift) {
+                        return `CLIENT HAS BEEN DELETED AND ARCHIVED`;
+                    }
+                    
+                    return `CLIENT DELETED ON ${deletionDate}`;
+                },
+                
+                // ✅ NEW: Caregiver view client display
+                getCaregiverClientDisplayHtml(shift) {
+                    const clientName = `${shift.client.first_name} ${shift.client.last_name || ''}`.trim();
+                    
+                    if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
+                        return `<span class="text-red-600 dark:text-red-400">Client: ${clientName}</span>`;
+                    }
+                    
+                    return `Client: ${clientName}`;
+                },
+                
+                // ✅ NEW: Check if there are archived client messages to show
+                hasArchivedClientMessage() {
+                    if (!this.selectedDate) return false;
+                    
+                    // Check if there are any shifts with deleted clients that would be hidden
+                    const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
+                    
+                    const potentialShifts = this.shifts.filter(shift => {
+                        const shiftDate = new Date(shift.start_time).toLocaleDateString('en-CA', { timeZone: userTimezone });
+                        return shiftDate === this.selectedDate;
+                    });
+                    
+                    // For caregivers: check if there are future shifts with deleted clients that would be hidden
+                    if (!this.isAdmin) {
+                        return potentialShifts.some(shift => 
+                            shift.client_deletion_status && 
+                            shift.client_deletion_status.is_deleted && 
+                            shift.client_deletion_status.is_future_shift
+                        );
+                    }
+                    
+                    // For admins: we show all shifts, so only show archived message if no visible shifts
+                    return false;
+                },
+
                 getCaregiverDisplayHtml(shift) {
                     const now = new Date();
                     const shiftStartDate = new Date(shift.start_time);
@@ -425,8 +518,15 @@
                             caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
                             caregiverName += ' (Deleted)';
                         }
+                        
+                        // ✅ ENHANCED: Handle deleted clients in signature view
+                        let clientName = `${shift.client.first_name} ${shift.client.last_name}`;
+                        if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
+                            clientName += ' (Deleted)';
+                        }
+                        
                         this.selectedVisit = {
-                            client_name: `${shift.client.first_name} ${shift.client.last_name}`,
+                            client_name: clientName,
                             caregiver_name: caregiverName,
                             clock_in_display: shift.visit.clock_in_time ? this.formatTimeInUserTimezone(shift.visit.clock_in_time) : 'N/A',
                             clock_out_display: shift.visit.clock_out_time ? this.formatTimeInUserTimezone(shift.visit.clock_out_time) : 'N/A',
@@ -503,15 +603,21 @@
                     return html;
                 },
                 editShiftFromList(shift) {
-                       this.editShift = {
-                           id: shift.id,
-                           client_id: shift.client_id,
-                           caregiver_id: shift.caregiver_id || '',
-                           start_time: this.formatDateTimeLocal(shift.start_time),
-                           end_time: this.formatDateTimeLocal(shift.end_time),
-                           notes: shift.notes
-                       };
-                       this.showEditModal = true;
+                    // ✅ ENHANCED: Prevent editing shifts with deleted clients
+                    if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
+                        toastr.warning('Cannot edit shifts for deleted clients. Please create a new shift if needed.');
+                        return;
+                    }
+                    
+                    this.editShift = {
+                        id: shift.id,
+                        client_id: shift.client_id,
+                        caregiver_id: shift.caregiver_id || '',
+                        start_time: this.formatDateTimeLocal(shift.start_time),
+                        end_time: this.formatDateTimeLocal(shift.end_time),
+                        notes: shift.notes
+                    };
+                    this.showEditModal = true;
                 },
 
                 initCalendar() {
@@ -604,7 +710,7 @@
                                 this.showEditModal = false;
                                 
                                 // Show success message with longer duration
-                                toastr.success('Shift updated successfully! Refreshing to show updated calander view...', 'Success', {
+                                toastr.success('Shift updated successfully! Refreshing to show updated calendar view...', 'Success', {
                                     timeOut: 2500,
                                     extendedTimeOut: 1000
                                 });
