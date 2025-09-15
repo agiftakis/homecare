@@ -1,0 +1,198 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+            {{ __('My Schedule') }}
+        </h2>
+    </x-slot>
+
+    <x-slot name="scripts">
+        <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    </x-slot>
+
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 dark:text-gray-100" x-data="clientSchedule()" x-init="initCalendar()">
+
+                    {{-- MAIN VIEW: Conditionally show Calendar or Daily List View --}}
+                    <div x-show="viewMode === 'calendar'">
+                        <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
+                    </div>
+
+                    {{-- Daily Shift List View (Read-Only) --}}
+                    <div x-show="viewMode === 'dayList'" x-cloak>
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
+                            <h3 class="text-xl font-semibold" x-text="`My Shifts for ${selectedDateFormatted}`"></h3>
+                            <x-secondary-button @click="viewMode = 'calendar'" class="self-start sm:self-auto">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                </svg>
+                                Back to Calendar
+                            </x-secondary-button>
+                        </div>
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <template x-for="shift in shiftsForSelectedDay()" :key="shift.id">
+                                <div
+                                    class="client-shift-item flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+                                    <div class="flex-grow mb-3 sm:mb-0">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
+                                            <div class="font-mono text-sm text-gray-600 dark:text-gray-400 sm:w-32">
+                                                <span x-text="formatTimeInUserTimezone(shift.start_time)"></span> -
+                                                <span x-text="formatTimeInUserTimezone(shift.end_time)"></span>
+                                            </div>
+                                            <div class="font-semibold text-gray-800 dark:text-gray-200">
+                                                <div class="flex items-center space-x-2">
+                                                    <span x-html="getCaregiverDisplayHtml(shift)"></span>
+                                                    {{-- Status Badges --}}
+                                                    <div x-show="shift.status === 'completed'" 
+                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                        Completed
+                                                    </div>
+                                                    <div x-show="shift.status === 'in_progress'" 
+                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                        In Progress
+                                                    </div>
+                                                    <div x-show="shift.status === 'pending' && !isShiftMissed(shift)" 
+                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                        Pending
+                                                    </div>
+                                                </div>
+                                                <div x-show="shift.notes" class="text-xs text-gray-500 font-normal mt-1"
+                                                    x-text="`Note: ${shift.notes}`"></div>
+                                            </div>
+                                        </div>
+                                        <div x-show="shift.visit" class="mt-2 sm:pl-36 visit-times text-sm"
+                                            x-html="getVisitTimesHtml(shift.visit)">
+                                        </div>
+                                        <div x-show="isShiftMissed(shift)" x-cloak
+                                            class="mt-2 sm:pl-36 text-red-600 dark:text-red-500 font-bold text-sm">
+                                            MISSED VISIT
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            <div x-show="shiftsForSelectedDay().length === 0"
+                                class="text-center p-8 text-gray-500 dark:text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                No shifts scheduled for this day.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .visit-times { font-size: 0.8em; color: #ef4444 !important; margin-top: 2px; font-weight: bold !important; }
+        @media screen and (max-width: 640px) {
+            .client-shift-item .visit-times { padding-left: 0 !important; margin-top: 8px; }
+        }
+    </style>
+
+    <script>
+        function clientSchedule() {
+            return {
+                viewMode: 'calendar',
+                selectedDate: null,
+                selectedDateFormatted: '',
+                calendar: null,
+                shifts: @json($shifts),
+                
+                initCalendar() {
+                    const calendarEl = document.getElementById('calendar');
+                    const calendarConfig = {
+                        initialView: 'dayGridMonth',
+                        headerToolbar: { 
+                            left: 'prev,next today', 
+                            center: 'title', 
+                            right: 'dayGridMonth' 
+                        },
+                        events: this.shifts.map(shift => ({
+                            id: shift.id,
+                            title: `Visit with ${shift.caregiver ? shift.caregiver.first_name : 'Unassigned'}`,
+                            start: shift.start_time,
+                            end: shift.end_time,
+                            backgroundColor: shift.status === 'completed' ? '#10b981' : (shift.status === 'in_progress' ? '#f59e0b' : '#3b82f6'),
+                            borderColor: shift.status === 'completed' ? '#059669' : (shift.status === 'in_progress' ? '#d97706' : '#2563eb'),
+                        })),
+                        dateClick: (info) => this.viewDayList(info),
+                        dayMaxEvents: true,
+                        height: 'auto',
+                    };
+                    
+                    this.calendar = new FullCalendar.Calendar(calendarEl, calendarConfig);
+                    this.calendar.render();
+                },
+
+                viewDayList(info) {
+                    this.selectedDate = info.dateStr;
+                    const dateObj = new Date(this.selectedDate + 'T00:00:00');
+                    this.selectedDateFormatted = dateObj.toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+                    });
+                    this.viewMode = 'dayList';
+                },
+
+                shiftsForSelectedDay() {
+                    if (!this.selectedDate) return [];
+                    const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
+                    
+                    return this.shifts.filter(shift => {
+                        const shiftDate = new Date(shift.start_time).toLocaleDateString('en-CA', { timeZone: userTimezone });
+                        return shiftDate === this.selectedDate;
+                    }).sort((a,b) => new Date(a.start_time) - new Date(b.start_time));
+                },
+
+                formatTimeInUserTimezone(utcDateTime) {
+                    if (!utcDateTime) return '';
+                    const date = new Date(utcDateTime);
+                    return date.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                    });
+                },
+
+                getCaregiverDisplayHtml(shift) {
+                    if (shift.caregiver) {
+                        const caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name || ''}`.trim();
+                        // Check if the caregiver was soft-deleted
+                        if (shift.caregiver.deleted_at) {
+                            return `<span>Caregiver: ${caregiverName} <span class="text-xs text-gray-500 font-normal">(No longer with agency)</span></span>`;
+                        }
+                        return `Caregiver: ${caregiverName}`;
+                    }
+                    if (shift.visit && shift.visit.caregiver_first_name) {
+                        const caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`.trim();
+                        return `<span>Caregiver: ${caregiverName} <span class="text-xs text-gray-500 font-normal">(No longer with agency)</span></span>`;
+                    }
+                    return `<span class="text-gray-500">Caregiver: Unassigned</span>`;
+                },
+                
+                getVisitTimesHtml(visit) {
+                    let html = '';
+                    if (visit.clock_in_time) {
+                        html += `ACTUAL: In ${this.formatTimeInUserTimezone(visit.clock_in_time)}`;
+                    }
+                    if (visit.clock_out_time) {
+                        if (html) html += ' | ';
+                        html += `Out ${this.formatTimeInUserTimezone(visit.clock_out_time)}`;
+                    }
+                    return html;
+                },
+
+                isShiftMissed(shift) {
+                    const shiftStartDate = new Date(shift.start_time);
+                    const now = new Date();
+                    return shiftStartDate < now && !shift.visit;
+                },
+            }
+        }
+    </script>
+</x-app-layout>

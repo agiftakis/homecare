@@ -24,6 +24,12 @@ class ScheduleController extends Controller
     public function index()
     {
         $user = Auth::user();
+
+        // Redirect clients to their dedicated schedule view
+        if ($user->role === 'client') {
+            return redirect()->route('schedule.client');
+        }
+        
         // ✅ CRITICAL FIX: Only show active (non-deleted) clients and caregivers in dropdowns
         $clients = Client::whereNull('deleted_at')->orderBy('first_name')->get();
 
@@ -42,7 +48,7 @@ class ScheduleController extends Controller
                     $query->withTrashed();
                 }
             ]);
-        } else {
+        } else { // This else now implicitly handles the 'caregiver' role
             // ✅ ENHANCED: Caregiver view with deleted client handling
             $shiftsQuery = Shift::with([
                 'client' => function ($query) {
@@ -128,6 +134,33 @@ class ScheduleController extends Controller
         }
 
         return view('schedule.index', compact('clients', 'caregivers', 'shifts', 'is_admin'))->with('shifts', $enhancedShifts->values());
+    }
+
+    /**
+     * ✅ NEW: Display a read-only schedule for the authenticated client.
+     */
+    public function clientSchedule()
+    {
+        $user = Auth::user();
+        $clientProfile = $user->client;
+
+        if (!$clientProfile) {
+            // Or handle this scenario appropriately, maybe redirect with an error.
+            return view('schedule.client-schedule', ['shifts' => collect()]);
+        }
+        
+        // Fetch shifts for the specific client
+        // CRITICAL: Include withTrashed() for caregivers to show historical data correctly
+        $shifts = Shift::where('client_id', $clientProfile->id)
+            ->with([
+                'caregiver' => function ($query) {
+                    $query->withTrashed();
+                },
+                'visit'
+            ])
+            ->get();
+            
+        return view('schedule.client-schedule', compact('shifts'));
     }
 
     public function store(Request $request)

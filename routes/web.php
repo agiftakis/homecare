@@ -60,8 +60,10 @@ Route::middleware(['auth', 'timezone'])->group(function () {
     // ✅ --- END SECURITY FIX ---
 
 
-    // Scheduling Routes (Accessible to both Admins and Caregivers)
+    // Scheduling Routes (Accessible to Admins, Caregivers, and now Clients)
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
+    // ✅ NEW: Client-specific read-only schedule route
+    Route::get('/my-schedule', [ScheduleController::class, 'clientSchedule'])->name('schedule.client');
     Route::resource('shifts', ScheduleController::class)->only(['store', 'show', 'update', 'destroy']);
 
     // Subscription Routes
