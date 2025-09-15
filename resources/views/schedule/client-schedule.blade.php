@@ -6,6 +6,9 @@
     </x-slot>
 
     <x-slot name="scripts">
+        {{--This is the missing script tag that was added --}}
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
         <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     </x-slot>
@@ -15,7 +18,6 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100" x-data="clientSchedule()" x-init="initCalendar(); listenForUpdates();">
 
-                    {{-- ✅ STEP 4.1: The Notification Banner (Initially hidden) --}}
                     <div x-show="showUpdateNotification" x-cloak
                          class="mb-4 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 rounded-lg flex items-center justify-between"
                          x-transition>
@@ -26,12 +28,10 @@
                         </button>
                     </div>
 
-                    {{-- MAIN VIEW: Conditionally show Calendar or Daily List View --}}
                     <div x-show="viewMode === 'calendar'">
                         <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
                     </div>
 
-                    {{-- Daily Shift List View (Read-Only) --}}
                     <div x-show="viewMode === 'dayList'" x-cloak>
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
                             <h3 class="text-xl font-semibold" x-text="`My Shifts for ${selectedDateFormatted}`"></h3>
@@ -57,7 +57,6 @@
                                             <div class="font-semibold text-gray-800 dark:text-gray-200">
                                                 <div class="flex items-center space-x-2">
                                                     <span x-html="getCaregiverDisplayHtml(shift)"></span>
-                                                    {{-- Status Badges --}}
                                                     <div x-show="shift.status === 'completed'" 
                                                          class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                                                         Completed
@@ -114,7 +113,7 @@
                 selectedDateFormatted: '',
                 calendar: null,
                 shifts: @json($shifts),
-                showUpdateNotification: false, // ✅ STEP 4.2: Alpine.js state for the banner
+                showUpdateNotification: false,
                 
                 initCalendar() {
                     const calendarEl = document.getElementById('calendar');
@@ -142,7 +141,6 @@
                     this.calendar.render();
                 },
 
-                // ✅ STEP 4.3: Function to listen for real-time updates
                 listenForUpdates() {
                     const clientId = {{ Auth::user()->client?->id ?? 'null' }};
                     if (clientId) {

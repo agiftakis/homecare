@@ -22,10 +22,18 @@ class Shift extends Model
         'end_time',
         'status',
         'notes',
-        'clock_in_time',
-        'clock_out_time',
-        'clock_in_signature',
-        'clock_out_signature',
+    ];
+
+    /**
+     * ✅ NEW: The attributes that should be cast.
+     * This tells Laravel to treat these columns as proper date objects
+     * and format them correctly when sending them to the browser.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
     ];
 
     public function client()
