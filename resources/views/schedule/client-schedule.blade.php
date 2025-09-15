@@ -30,6 +30,16 @@
                         </button>
                     </div>
 
+                    <div x-show="showStatusChangeNotification" x-cloak
+                        class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded-lg flex items-center justify-between"
+                        x-transition>
+                        <span class="font-bold" x-text="statusChangeMessage"></span>
+                        <button @click="showStatusChangeNotification = false"
+                            class="ml-4 px-2 py-1 text-green-700 hover:text-green-900 focus:outline-none">
+                            ×
+                        </button>
+                    </div>
+
                     <div x-show="viewMode === 'calendar'">
                         <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
                     </div>
@@ -94,7 +104,7 @@
                                     class="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                                 No shifts scheduled for this day.
                             </div>
@@ -130,6 +140,8 @@
                 calendar: null,
                 shifts: @json($shifts),
                 showUpdateNotification: false,
+                showStatusChangeNotification: false,
+                statusChangeMessage: '',
 
                 initCalendar() {
                     const calendarEl = document.getElementById('calendar');
@@ -145,10 +157,8 @@
                             title: `Visit with ${shift.caregiver ? shift.caregiver.first_name : 'Unassigned'}`,
                             start: shift.start_time,
                             end: shift.end_time,
-                            backgroundColor: shift.status === 'completed' ? '#10b981' : (shift.status ===
-                                'in_progress' ? '#f59e0b' : '#3b82f6'),
-                            borderColor: shift.status === 'completed' ? '#059669' : (shift.status ===
-                                'in_progress' ? '#d97706' : '#2563eb'),
+                            backgroundColor: this.getEventColor(shift.status),
+                            borderColor: this.getEventBorderColor(shift.status),
                         })),
                         dateClick: (info) => this.viewDayList(info),
                         dayMaxEvents: true,
@@ -166,7 +176,68 @@
                             .listen('ShiftUpdated', (e) => {
                                 console.log('ShiftUpdated event received!', e);
                                 this.showUpdateNotification = true;
+                            })
+                            .listen('VisitStatusChanged', (e) => {
+                                console.log('VisitStatusChanged event received!', e);
+                                this.handleStatusChange(e);
                             });
+                    }
+                },
+
+                handleStatusChange(eventData) {
+                    // Find and update the shift in our local data
+                    const shiftIndex = this.shifts.findIndex(shift => shift.id === eventData.shift_id);
+                    if (shiftIndex !== -1) {
+                        // Update the shift status
+                        this.shifts[shiftIndex].status = eventData.new_status;
+                        
+                        // Update visit data if provided
+                        if (eventData.visit_data) {
+                            this.shifts[shiftIndex].visit = {
+                                ...this.shifts[shiftIndex].visit,
+                                ...eventData.visit_data
+                            };
+                        }
+
+                        // Update calendar event color if calendar is visible
+                        if (this.calendar) {
+                            const calendarEvent = this.calendar.getEventById(eventData.shift_id);
+                            if (calendarEvent) {
+                                calendarEvent.setProp('backgroundColor', this.getEventColor(eventData.new_status));
+                                calendarEvent.setProp('borderColor', this.getEventBorderColor(eventData.new_status));
+                            }
+                        }
+
+                        // Show status change notification
+                        const statusMessages = {
+                            'in_progress': 'Your caregiver has arrived and clocked in!',
+                            'completed': 'Your visit has been completed. Your caregiver has clocked out.',
+                            'pending': 'Your visit status has been updated to pending.'
+                        };
+                        
+                        this.statusChangeMessage = statusMessages[eventData.new_status] || 'Your visit status has been updated.';
+                        this.showStatusChangeNotification = true;
+
+                        // Auto-hide the notification after 5 seconds
+                        setTimeout(() => {
+                            this.showStatusChangeNotification = false;
+                        }, 5000);
+                    }
+                },
+
+                getEventColor(status) {
+                    switch(status) {
+                        case 'completed': return '#10b981';
+                        case 'in_progress': return '#f59e0b';
+                        default: return '#3b82f6';
+                    }
+                },
+
+                getEventBorderColor(status) {
+                    switch(status) {
+                        case 'completed': return '#059669';
+                        case 'in_progress': return '#d97706';
+                        default: return '#2563eb';
                     }
                 },
 
