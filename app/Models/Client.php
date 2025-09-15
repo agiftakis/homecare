@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToAgency;
 use App\Services\FirebaseStorageService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany; // Added for best practice
 use Illuminate\Database\Eloquent\SoftDeletes; // ✅ ADDED: Import the SoftDeletes trait
 
@@ -117,5 +118,13 @@ class Client extends Model
     public function shifts(): HasMany
     {
         return $this->hasMany(Shift::class);
+    }
+
+    /**
+     * Get the user account associated with the client.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }
