@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\VisitStatusChanged;
 use App\Models\Shift;
 use App\Models\Visit;
 use App\Services\FirebaseStorageService;
@@ -90,6 +91,9 @@ class VisitVerificationController extends Controller
         // --- Update the shift status to 'in_progress' ---
         $shift->update(['status' => 'in_progress']);
 
+        // ✅ NEW: Dispatch real-time event to notify the client
+        VisitStatusChanged::dispatch($shift, 'in_progress', $visit);
+
         return response()->json([
             'success' => true,
             'message' => 'Clocked in successfully!',
@@ -139,10 +143,12 @@ class VisitVerificationController extends Controller
         // Update the shift status to 'completed'
         $visit->shift->update(['status' => 'completed']);
 
+        // ✅ NEW: Dispatch real-time event to notify the client  
+        VisitStatusChanged::dispatch($visit->shift, 'completed', $visit);
+
         return response()->json([
             'success' => true,
             'message' => 'Clocked out successfully!'
         ]);
     }
 }
-
