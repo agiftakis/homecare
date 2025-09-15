@@ -13,7 +13,18 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100" x-data="clientSchedule()" x-init="initCalendar()">
+                <div class="p-6 text-gray-900 dark:text-gray-100" x-data="clientSchedule()" x-init="initCalendar(); listenForUpdates();">
+
+                    {{-- ✅ STEP 4.1: The Notification Banner (Initially hidden) --}}
+                    <div x-show="showUpdateNotification" x-cloak
+                         class="mb-4 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 rounded-lg flex items-center justify-between"
+                         x-transition>
+                        <span class="font-bold">Your schedule has been updated. Please refresh to see the latest changes.</span>
+                        <button @click="window.location.reload()" 
+                                class="ml-4 px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                            Refresh
+                        </button>
+                    </div>
 
                     {{-- MAIN VIEW: Conditionally show Calendar or Daily List View --}}
                     <div x-show="viewMode === 'calendar'">
@@ -103,6 +114,7 @@
                 selectedDateFormatted: '',
                 calendar: null,
                 shifts: @json($shifts),
+                showUpdateNotification: false, // ✅ STEP 4.2: Alpine.js state for the banner
                 
                 initCalendar() {
                     const calendarEl = document.getElementById('calendar');
@@ -128,6 +140,18 @@
                     
                     this.calendar = new FullCalendar.Calendar(calendarEl, calendarConfig);
                     this.calendar.render();
+                },
+
+                // ✅ STEP 4.3: Function to listen for real-time updates
+                listenForUpdates() {
+                    const clientId = {{ Auth::user()->client?->id ?? 'null' }};
+                    if (clientId) {
+                        window.Echo.private(`client-schedule.${clientId}`)
+                            .listen('ShiftUpdated', (e) => {
+                                console.log('ShiftUpdated event received!', e);
+                                this.showUpdateNotification = true;
+                            });
+                    }
                 },
 
                 viewDayList(info) {
@@ -162,7 +186,6 @@
                 getCaregiverDisplayHtml(shift) {
                     if (shift.caregiver) {
                         const caregiverName = `${shift.caregiver.first_name} ${shift.caregiver.last_name || ''}`.trim();
-                        // Check if the caregiver was soft-deleted
                         if (shift.caregiver.deleted_at) {
                             return `<span>Caregiver: ${caregiverName} <span class="text-xs text-gray-500 font-normal">(No longer with agency)</span></span>`;
                         }
