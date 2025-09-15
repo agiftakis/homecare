@@ -65,6 +65,7 @@
                                     <p><span class="font-semibold text-gray-600 dark:text-gray-400">Email:</span> {{ $client->email }}</p>
                                     <p><span class="font-semibold text-gray-600 dark:text-gray-400">Phone:</span> {{ $client->phone_number }}</p>
                                 </div>
+                                <!-- DEBUG: {{ $client->first_name }} - User: {{ $client->user ? 'EXISTS' : 'NULL' }} - Token: {{ $client->user && $client->user->password_setup_token ? 'HAS TOKEN' : 'NO TOKEN' }} -->
                                 <div class="mt-4 flex justify-between items-center">
                                     @if($client->user && $client->user->password_setup_token)
                                         <form action="{{ route('clients.resendOnboarding', $client) }}" method="POST" class="inline">
@@ -128,6 +129,7 @@
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm text-gray-500 dark:text-gray-400">{{ $client->phone_number }}</div>
                                         </td>
+                                        <!-- DEBUG: {{ $client->first_name }} - User: {{ $client->user ? 'EXISTS' : 'NULL' }} - Token: {{ $client->user && $client->user->password_setup_token ? 'HAS TOKEN' : 'NO TOKEN' }} -->
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                             @if($client->user && $client->user->password_setup_token)
                                                 <form action="{{ route('clients.resendOnboarding', $client) }}" method="POST" class="inline">
