@@ -52,6 +52,8 @@ Route::middleware(['auth', 'timezone'])->group(function () {
         Route::resource('caregivers', CaregiverController::class);
         // This route is also protected as it is part of caregiver management.
         Route::post('/caregivers/{caregiver}/resend-onboarding', [CaregiverController::class, 'resendOnboardingLink'])->name('caregivers.resendOnboarding');
+        // ✅ NEW: Client onboarding resend route
+        Route::post('/clients/{client}/resend-onboarding', [ClientController::class, 'resendOnboardingLink'])->name('clients.resendOnboarding');
 
         // ✅ SETTINGS PAGE: Add the new routes for the agency settings page.
         Route::get('/settings', [AgencySettingsController::class, 'edit'])->name('settings.edit');
