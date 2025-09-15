@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+// ✅ STEP 3.1: Import the ShiftUpdated event class we created.
+use App\Events\ShiftUpdated;
 use App\Models\Client;
 use App\Models\Caregiver;
 use App\Models\Shift;
@@ -186,6 +188,9 @@ class ScheduleController extends Controller
         $shift = Shift::create($validator->validated());
         $shift->load(['client', 'caregiver', 'visit']);
 
+        // After creating a new shift, we should also notify the client.
+        ShiftUpdated::dispatch($shift);
+
         $eventData = [
             'id' => $shift->id,
             'title' => $shift->client->first_name . ' w/ ' . ($shift->caregiver ? $shift->caregiver->first_name : 'N/A'),
@@ -227,6 +232,9 @@ class ScheduleController extends Controller
         $shift->update($validator->validated());
         $shift->load(['client', 'caregiver', 'visit']);
 
+        // ✅ STEP 3.2: Dispatch the event to notify the client in real-time.
+        ShiftUpdated::dispatch($shift);
+
         if ($shift->visit) {
             $shift->visit->clock_in_signature_url = $shift->visit->signature_path
                 ? $this->firebaseStorageService->getPublicUrl($shift->visit->signature_path)
@@ -265,7 +273,14 @@ class ScheduleController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
+        // Before deleting, we capture the client_id to notify them.
+        $clientId = $shift->client_id;
+        
         $shift->delete();
+        
+        // We can't dispatch the event with the shift data anymore, but we can make a new event
+        // or re-use ShiftUpdated if we modify it to handle deletes. For now, we'll skip notifying on delete.
+
         return response()->json(['success' => true]);
     }
 }
