@@ -29,6 +29,7 @@ class Client extends Model
         'date_of_birth',
         'care_plan',
         'agency_id',
+        'user_id', // ✅ FIXED: Added user_id to the fillable array
         'profile_picture_path',
         // Medical Fields
         'current_medications',
