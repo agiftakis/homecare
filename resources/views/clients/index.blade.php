@@ -78,18 +78,33 @@
                                     <p><span class="font-semibold text-gray-600 dark:text-gray-400">Phone:</span>
                                         {{ $client->phone_number }}</p>
                                 </div>
-                                <!-- DEBUG: {{ $client->first_name }} - User: {{ $client->user ? 'EXISTS' : 'NULL' }} - Token: {{ $client->user && $client->user->password_setup_token ? 'HAS TOKEN' : 'NO TOKEN' }} -->
+                                
                                 <div class="mt-4 flex justify-between items-center">
-                                    @if($client->user && $client->user->password_setup_token)
+                                    @if($client->user && $client->user->email_verified_at)
+                                        {{-- ✅ STATE 1: Actually Active (completed onboarding) --}}
+                                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                            Active Client
+                                        </span>
+                                    @elseif($client->user && $client->user->password_setup_token)
+                                        {{-- ✅ STATE 2: Pending (has valid token) --}}
                                         <form action="{{ route('clients.resendOnboarding', $client) }}" method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-black uppercase tracking-widest hover:bg-yellow-400 focus:bg-yellow-600 active:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                                                 Get Client Link
                                             </button>
                                         </form>
+                                    @elseif($client->user)
+                                        {{-- ✅ STATE 3: Token Expired (has user but no token and no completion) --}}
+                                        <form action="{{ route('clients.resendOnboarding', $client) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="inline-flex items-center px-3 py-1.5 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-400 focus:bg-red-600 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                                                Link Expired - Regenerate
+                                            </button>
+                                        </form>
                                     @else
-                                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                            Active Client
+                                        {{-- ✅ FALLBACK: No user account (shouldn't happen but safety net) --}}
+                                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                            Setup Required
                                         </span>
                                     @endif
                                     <a href="{{ route('clients.edit', $client) }}"
@@ -159,18 +174,33 @@
                                             <div class="text-sm text-gray-500 dark:text-gray-400">
                                                 {{ $client->phone_number }}</div>
                                         </td>
-                                        <!-- DEBUG: {{ $client->first_name }} - User: {{ $client->user ? 'EXISTS' : 'NULL' }} - Token: {{ $client->user && $client->user->password_setup_token ? 'HAS TOKEN' : 'NO TOKEN' }} -->
+                                        
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                            @if($client->user && $client->user->password_setup_token)
+                                            @if($client->user && $client->user->email_verified_at)
+                                                {{-- ✅ STATE 1: Actually Active (completed onboarding) --}}
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                    Active
+                                                </span>
+                                            @elseif($client->user && $client->user->password_setup_token)
+                                                {{-- ✅ STATE 2: Pending (has valid token) --}}
                                                 <form action="{{ route('clients.resendOnboarding', $client) }}" method="POST" class="inline">
                                                     @csrf
                                                     <button type="submit" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-1 px-3 rounded text-xs">
                                                         Get Client Onboarding Link
                                                     </button>
                                                 </form>
+                                            @elseif($client->user)
+                                                {{-- ✅ STATE 3: Token Expired (has user but no token and no completion) --}}
+                                                <form action="{{ route('clients.resendOnboarding', $client) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    <button type="submit" class="bg-red-500 hover:bg-red-400 text-white font-bold py-1 px-3 rounded text-xs">
+                                                        Link Expired - Regenerate
+                                                    </button>
+                                                </form>
                                             @else
-                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                                    Active
+                                                {{-- ✅ FALLBACK: No user account (shouldn't happen but safety net) --}}
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                                    Setup Required
                                                 </span>
                                             @endif
                                             <a href="{{ route('clients.edit', $client) }}"
@@ -243,8 +273,8 @@
                                     <strong>Instructions:</strong><br>
                                     • Click the link above to copy it to your clipboard<br>
                                     • Email the link directly to the client securely<br>
-                                    • <strong>If the link expires in 48 hours</strong>, click the yellow <strong>"Get Client Onboarding Link"</strong> button next to "Edit/View Profile" to automatically generate a new 48-hour link<br>
-                                    • Once the client successfully sets up their password, the onboarding button will automatically disappear and their status will change to Active
+                                    • <strong>If the link expires in 48 hours</strong>, click the red <strong>"Link Expired - Regenerate"</strong> button to create a new 48-hour link<br>
+                                    • Once the client successfully sets up their password, the button will automatically disappear and their status will change to Active
                                 </p>
                             </div>
                         </div>
