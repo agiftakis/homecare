@@ -1,14 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('My Schedule') }}
+            {{ __('Your Care Schedule') }}
         </h2>
     </x-slot>
 
     <x-slot name="scripts">
-        {{-- This is the missing script tag that was added --}}
         <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-
         <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     </x-slot>
@@ -47,7 +45,7 @@
                     <div x-show="viewMode === 'dayList'" x-cloak>
                         <div
                             class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
-                            <h3 class="text-xl font-semibold" x-text="`My Shifts for ${selectedDateFormatted}`"></h3>
+                            <h3 class="text-xl font-semibold" x-text="`Your Care Appointments for ${selectedDateFormatted}`"></h3>
                             <x-secondary-button @click="viewMode = 'calendar'" class="self-start sm:self-auto">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
@@ -81,7 +79,7 @@
                                                     </div>
                                                     <div x-show="shift.status === 'pending' && !isShiftMissed(shift)"
                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                                        Pending
+                                                        Scheduled
                                                     </div>
                                                 </div>
                                                 <div x-show="shift.notes" class="text-xs text-gray-500 font-normal mt-1"
@@ -93,7 +91,7 @@
                                         </div>
                                         <div x-show="isShiftMissed(shift)" x-cloak
                                             class="mt-2 sm:pl-36 text-red-600 dark:text-red-500 font-bold text-sm">
-                                            MISSED VISIT
+                                            MISSED APPOINTMENT
                                         </div>
                                     </div>
                                 </div>
@@ -106,7 +104,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                No shifts scheduled for this day.
+                                No appointments scheduled for this day.
                             </div>
                         </div>
                     </div>
@@ -154,7 +152,7 @@
                         },
                         events: this.shifts.map(shift => ({
                             id: shift.id,
-                            title: `Visit with ${shift.caregiver ? shift.caregiver.first_name : 'Unassigned'}`,
+                            title: `Care Visit with ${shift.caregiver ? shift.caregiver.first_name : 'Caregiver'}`,
                             start: shift.start_time,
                             end: shift.end_time,
                             backgroundColor: this.getEventColor(shift.status),
@@ -171,8 +169,11 @@
 
                 listenForUpdates() {
                     const clientId = {{ Auth::user()->client?->id ?? 'null' }};
+                    console.log('Setting up WebSocket listener for client ID:', clientId);
+                    
                     if (clientId) {
-                        window.Echo.private(`client-schedule.${clientId}`)
+                        // FIXED: Use correct channel name that matches VisitStatusChanged event
+                        window.Echo.private(`client.${clientId}`)
                             .listen('ShiftUpdated', (e) => {
                                 console.log('ShiftUpdated event received!', e);
                                 this.showUpdateNotification = true;
@@ -181,10 +182,16 @@
                                 console.log('VisitStatusChanged event received!', e);
                                 this.handleStatusChange(e);
                             });
+                            
+                        console.log('WebSocket listener established for channel: client.' + clientId);
+                    } else {
+                        console.error('No client ID found - WebSocket listener not established');
                     }
                 },
 
                 handleStatusChange(eventData) {
+                    console.log('Processing status change:', eventData);
+                    
                     // Find and update the shift in our local data
                     const shiftIndex = this.shifts.findIndex(shift => shift.id === eventData.shift_id);
                     if (shiftIndex !== -1) {
@@ -210,18 +217,22 @@
 
                         // Show status change notification
                         const statusMessages = {
-                            'in_progress': 'Your caregiver has arrived and clocked in!',
-                            'completed': 'Your visit has been completed. Your caregiver has clocked out.',
-                            'pending': 'Your visit status has been updated to pending.'
+                            'in_progress': 'Your caregiver has arrived and started your care session!',
+                            'completed': 'Your care session has been completed. Your caregiver has finished.',
+                            'pending': 'Your appointment status has been updated.'
                         };
                         
-                        this.statusChangeMessage = statusMessages[eventData.new_status] || 'Your visit status has been updated.';
+                        this.statusChangeMessage = statusMessages[eventData.new_status] || 'Your appointment status has been updated.';
                         this.showStatusChangeNotification = true;
 
                         // Auto-hide the notification after 5 seconds
                         setTimeout(() => {
                             this.showStatusChangeNotification = false;
                         }, 5000);
+                        
+                        console.log('Status change processed successfully');
+                    } else {
+                        console.error('Shift not found for ID:', eventData.shift_id);
                     }
                 },
 
@@ -288,17 +299,17 @@
                             .trim();
                         return `<span>Caregiver: ${caregiverName} <span class="text-xs text-gray-500 font-normal">(No longer with agency)</span></span>`;
                     }
-                    return `<span class="text-gray-500">Caregiver: Unassigned</span>`;
+                    return `<span class="text-gray-500">Caregiver: To be assigned</span>`;
                 },
 
                 getVisitTimesHtml(visit) {
                     let html = '';
                     if (visit.clock_in_time) {
-                        html += `ACTUAL: In ${this.formatTimeInUserTimezone(visit.clock_in_time)}`;
+                        html += `ACTUAL: Started ${this.formatTimeInUserTimezone(visit.clock_in_time)}`;
                     }
                     if (visit.clock_out_time) {
                         if (html) html += ' | ';
-                        html += `Out ${this.formatTimeInUserTimezone(visit.clock_out_time)}`;
+                        html += `Completed ${this.formatTimeInUserTimezone(visit.clock_out_time)}`;
                     }
                     return html;
                 },
