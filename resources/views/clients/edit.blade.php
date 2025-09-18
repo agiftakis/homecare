@@ -177,10 +177,11 @@
                 </div>
             </div>
 
-            <!-- ✅ CORRECTED: Caregiver Progress Notes Section -->
+            <!-- Caregiver Progress Notes Section -->
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <!-- ✅ MOVED ALPINE COMPONENT: Manages state for all modals -->
-                <div class="p-6 md:p-8 text-gray-900 dark:text-gray-100" x-data="careNotesManager({{ $visitsWithNotes->mapWithKeys(fn($visit) => [$visit->id => $visit->progress_notes])->toJson() }})">
+                <!-- ✅ CSP FIX: Component now reads data from a data-* attribute -->
+                <div class="p-6 md:p-8 text-gray-900 dark:text-gray-100" x-data="careNotesManager()"
+                    data-notes="{{ $visitsWithNotes->mapWithKeys(fn($visit) => [$visit->id => $visit->progress_notes])->toJson() }}">
                     <h3
                         class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
                         Caregiver Progress Notes
@@ -188,7 +189,6 @@
 
                     <div class="space-y-6 mt-4">
                         @forelse ($visitsWithNotes as $visit)
-                            <!-- ✅ REMOVED: No more per-item x-data -->
                             <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg shadow">
                                 <div class="flex justify-between items-start">
                                     <div>
@@ -208,7 +208,6 @@
                                         </p>
                                     </div>
                                     <div class="flex space-x-2">
-                                        <!-- ✅ CORRECTED: Buttons now call the central manager -->
                                         <button @click="startEdit({{ $visit->id }})"
                                             class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
@@ -242,7 +241,7 @@
                         @endforelse
                     </div>
 
-                    <!-- ✅ MOVED MODAL: Edit Note Modal is now outside the loop -->
+                    <!-- Edit Note Modal -->
                     <div x-show="showEditModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto"
                         aria-labelledby="modal-title" role="dialog" aria-modal="true">
                         <div
@@ -285,7 +284,7 @@
                         </div>
                     </div>
 
-                    <!-- ✅ MOVED MODAL: Delete Note Modal is now outside the loop -->
+                    <!-- Delete Note Modal -->
                     <div x-show="showDeleteModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto"
                         aria-labelledby="modal-title" role="dialog" aria-modal="true">
                         <div
@@ -369,17 +368,21 @@
         </form>
     </x-modal>
 
-    <!-- ✅ ADDED SCRIPT: The robust Alpine component to manage all modal states -->
+    <!-- ✅ CSP FIX SCRIPT: The robust Alpine component to manage all modal states -->
     @push('scripts')
         <script>
-            function careNotesManager(initialNotes) {
+            function careNotesManager() {
                 return {
-                    notes: initialNotes,
+                    notes: {},
                     editingVisitId: null,
                     editingText: '',
                     deletingVisitId: null,
                     showEditModal: false,
                     showDeleteModal: false,
+
+                    init() {
+                        this.notes = JSON.parse(this.$el.dataset.notes);
+                    },
 
                     startEdit(visitId) {
                         this.editingVisitId = visitId;
