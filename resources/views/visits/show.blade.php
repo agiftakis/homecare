@@ -43,7 +43,9 @@
                 <div x-data="visitVerification(
                     {{ $shift->id }},
                     {{ $visit->id ?? 'null' }},
-                    '{{ $visit && $visit->clock_out_time ? 'completed' : ($visit ? 'in_progress' : 'pending') }}'
+                    '{{ $visit && $visit->clock_out_time ? 'completed' : ($visit ? 'in_progress' : 'pending') }}',
+                    '{{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') : '' }}',
+                    `{{ $visit && $visit->progress_notes ? addslashes($visit->progress_notes) : '' }}`
                 )">
 
                     {{-- On-screen Error Message Display --}}
@@ -74,23 +76,34 @@
                     </div>
 
                     <div x-show="status === 'in_progress'"
-                        class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
+                        class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6 space-y-6">
                         <div
-                            class="mb-6 bg-green-100 dark:bg-green-900/50 border border-green-500 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
+                            class="bg-green-100 dark:bg-green-900/50 border border-green-500 text-green-800 dark:text-green-200 px-4 py-3 rounded-lg">
                             <p class="font-bold">Shift In Progress</p>
-                            <p>Clocked in at:
-                                {{ $visit? \Carbon\Carbon::parse($visit->clock_in_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A'): '' }}
+                            <p>Clocked in at: <span x-text="clockInTimeDisplay"></span></p>
+                        </div>
+                        
+                        {{-- ✅ STEP 1: ADD NOTES TEXTAREA --}}
+                        <div>
+                            <label for="progress_notes" class="block text-lg font-semibold mb-2 text-gray-900 dark:text-blue-200">Progress Notes</label>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Add any notes about the visit. These will be saved when you clock out.
                             </p>
+                            <textarea id="progress_notes" x-model="progressNotes" rows="6"
+                                class="block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                placeholder="Enter care notes here..."></textarea>
                         </div>
 
-                        {{-- ✅ CORRECTED: Added dark mode text color for better visibility --}}
-                        <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-blue-200">Clock-Out Signature</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member
-                            sign below to confirm you are ending your shift.</p>
-                        <div
-                            class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
-                            <canvas x-ref="signaturePadOut" class="w-full h-48"></canvas>
+                        <div>
+                           <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-blue-200">Clock-Out Signature</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member
+                                sign below to confirm you are ending your shift.</p>
+                            <div
+                                class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
+                                <canvas x-ref="signaturePadOut" class="w-full h-48"></canvas>
+                            </div>
                         </div>
+
                         <div class="mt-4 flex justify-between items-center">
                             <button @click="clearSignature('out')"
                                 class="text-sm text-gray-600 dark:text-gray-400 hover:underline">Clear</button>
@@ -113,6 +126,7 @@
                             </p>
                         </div>
                         <p class="text-gray-600 dark:text-gray-400">Thank you for your work!</p>
+                         <a href="{{ route('schedule.index') }}" class="mt-4 inline-block text-blue-500 hover:underline">Return to Schedule</a>
                     </div>
                 </div>
             @endif
@@ -121,7 +135,7 @@
 
     @if ($isShiftDateValid)
         <script>
-            function visitVerification(shiftId, visitId, initialStatus) {
+            function visitVerification(shiftId, visitId, initialStatus, initialClockInTime, initialNotes) {
                 return {
                     shiftId: shiftId,
                     visitId: visitId,
@@ -130,17 +144,26 @@
                     errorMessage: '',
                     signaturePadIn: null,
                     signaturePadOut: null,
+                    clockInTimeDisplay: initialClockInTime,
+                    // ✅ STEP 2: Add Alpine property for notes
+                    progressNotes: initialNotes,
 
                     init() {
+                        this.$watch('status', (newStatus) => {
+                             this.$nextTick(() => {
+                                if (newStatus === 'pending' && !this.signaturePadIn) {
+                                    this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn, { penColor: '#60A5FA' });
+                                } else if (newStatus === 'in_progress' && !this.signaturePadOut) {
+                                    this.signaturePadOut = new SignaturePad(this.$refs.signaturePadOut, { penColor: '#60A5FA' });
+                                }
+                            });
+                        });
+                        // Fire the watcher manually on init to set up the correct pad
                         this.$nextTick(() => {
                             if (this.status === 'pending') {
-                                this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn, {
-                                    penColor: '#60A5FA' // Light blue color for clock-in signature
-                                });
+                                this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn, { penColor: '#60A5FA' });
                             } else if (this.status === 'in_progress') {
-                                this.signaturePadOut = new SignaturePad(this.$refs.signaturePadOut, {
-                                    penColor: '#60A5FA' // Light blue color for clock-out signature
-                                });
+                                this.signaturePadOut = new SignaturePad(this.$refs.signaturePadOut, { penColor: '#60A5FA' });
                             }
                         });
                     },
@@ -155,10 +178,8 @@
                             this.errorMessage = 'Please provide a signature first.';
                             return;
                         }
-
                         this.loading = true;
                         const signatureData = this.signaturePadIn.toDataURL('image/png');
-
                         try {
                             const response = await fetch(`/shifts/${this.shiftId}/clock-in`, {
                                 method: 'POST',
@@ -170,18 +191,24 @@
                                     signature: signatureData
                                 })
                             });
-
-                            const data = await response.json();
-
+                           
                             if (!response.ok) {
+                                const data = await response.json();
                                 throw new Error(data.message || 'An error occurred.');
                             }
-
-                            window.location.reload();
+                            
+                            const data = await response.json();
+                           
+                            // ✅ NO MORE PAGE RELOAD
+                            this.visitId = data.visit_id; // Get new visit ID from the response
+                            // Set the time for display
+                            this.clockInTimeDisplay = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+                            this.status = 'in_progress'; // Switch to clock-out view
 
                         } catch (error) {
                             this.errorMessage = error.message;
-                            this.loading = false;
+                        } finally {
+                           this.loading = false;
                         }
                     },
 
@@ -191,10 +218,8 @@
                             this.errorMessage = 'Please provide a signature first.';
                             return;
                         }
-
                         this.loading = true;
                         const signatureData = this.signaturePadOut.toDataURL('image/png');
-
                         try {
                             const response = await fetch(`/visits/${this.visitId}/clock-out`, {
                                 method: 'POST',
@@ -202,21 +227,22 @@
                                     'Content-Type': 'application/json',
                                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                                 },
+                                // ✅ STEP 3: Send notes along with the signature
                                 body: JSON.stringify({
-                                    signature: signatureData
+                                    signature: signatureData,
+                                    progress_notes: this.progressNotes 
                                 })
                             });
-
-                            const data = await response.json();
-
-                            if (!response.ok) {
+                             if (!response.ok) {
+                                const data = await response.json();
                                 throw new Error(data.message || 'An error occurred.');
                             }
-
-                            window.location.reload();
-
+                            const data = await response.json();
+                            // ✅ NO MORE PAGE RELOAD
+                            this.status = 'completed'; // Switch to completed view
                         } catch (error) {
                             this.errorMessage = error.message;
+                        } finally {
                             this.loading = false;
                         }
                     }

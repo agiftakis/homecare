@@ -58,6 +58,10 @@ Route::middleware(['auth', 'timezone'])->group(function () {
         // ✅ SETTINGS PAGE: Add the new routes for the agency settings page.
         Route::get('/settings', [AgencySettingsController::class, 'edit'])->name('settings.edit');
         Route::patch('/settings', [AgencySettingsController::class, 'update'])->name('settings.update');
+
+        // ✅ NEW: Routes for managing caregiver notes
+        Route::patch('/visits/{visit}/note', [ClientController::class, 'updateNote'])->name('clients.notes.update');
+        Route::delete('/visits/{visit}/note', [ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
     });
     // ✅ --- END SECURITY FIX ---
 

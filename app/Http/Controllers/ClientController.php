@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Agency;
 use App\Models\Client;
 use App\Models\User;
+// ✅ 1. Import the Visit model to access care notes.
+use App\Models\Visit;
 use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -121,7 +123,23 @@ class ClientController extends Controller
     public function edit(Client $client)
     {
         $this->authorize('update', $client);
-        return view('clients.edit', compact('client'));
+
+        // ✅ 2. FETCH NOTES
+        // Fetch all visits for this client that have progress notes.
+        // Order them by the most recent first.
+        // Eager load the caregiver, including those who might have been soft-deleted.
+        $visitsWithNotes = Visit::whereHas('shift', function ($query) use ($client) {
+            $query->where('client_id', $client->id);
+        })
+        ->whereNotNull('progress_notes')
+        ->where('progress_notes', '!=', '')
+        ->with(['shift.caregiver' => function ($query) {
+            $query->withTrashed(); // Get caregiver's name even if they are soft-deleted
+        }])
+        ->orderBy('clock_out_time', 'desc')
+        ->get();
+
+        return view('clients.edit', compact('client', 'visitsWithNotes'));
     }
 
     public function update(Request $request, Client $client)
@@ -231,5 +249,41 @@ class ClientController extends Controller
         session()->flash('setup_link', $setupUrl);
 
         return redirect()->route('clients.index');
+    }
+    
+    // ✅ 3. ADD NEW METHODS FOR MANAGING NOTES
+
+    /**
+     * Update a specific progress note.
+     */
+    public function updateNote(Request $request, Visit $visit)
+    {
+        // Use the client policy to authorize this action.
+        // Ensures the admin belongs to the same agency as the client.
+        $this->authorize('update', $visit->shift->client);
+
+        $validated = $request->validate([
+            'progress_notes' => 'required|string',
+        ]);
+
+        $visit->update([
+            'progress_notes' => $validated['progress_notes'],
+        ]);
+
+        return redirect()->back()->with('success', 'Care note updated successfully.');
+    }
+
+    /**
+     * Delete a specific progress note.
+     */
+    public function destroyNote(Visit $visit)
+    {
+        // Use the client policy to authorize this action.
+        $this->authorize('delete', $visit->shift->client);
+        
+        // We don't delete the visit, just the notes associated with it.
+        $visit->update(['progress_notes' => null]);
+
+        return redirect()->back()->with('success', 'Care note deleted successfully.');
     }
 }

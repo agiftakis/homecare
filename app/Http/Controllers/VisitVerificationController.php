@@ -37,7 +37,7 @@ class VisitVerificationController extends Controller
         $userTimezone = Auth::user()->agency?->timezone ?? 'UTC';
         $today = Carbon::today($userTimezone);
         $shiftDate = Carbon::parse($shift->start_time)->setTimezone($userTimezone)->startOfDay();
-        
+
         // If shift is in the future, pass a flag to the view
         $isShiftDateValid = $shiftDate->lessThanOrEqualTo($today);
 
@@ -46,7 +46,7 @@ class VisitVerificationController extends Controller
 
         return view('visits.show', compact('shift', 'visit', 'isShiftDateValid'));
     }
-    
+
     /**
      * Handle the clock-in action for a specific shift.
      */
@@ -56,7 +56,7 @@ class VisitVerificationController extends Controller
         $userTimezone = Auth::user()->agency?->timezone ?? 'UTC';
         $today = Carbon::today($userTimezone);
         $shiftDate = Carbon::parse($shift->start_time)->setTimezone($userTimezone)->startOfDay();
-        
+
         if ($shiftDate->greaterThan($today)) {
             return response()->json(['success' => false, 'message' => 'The Scheduled Shift Date Has Not Arrived Yet!'], 422);
         }
@@ -110,14 +110,16 @@ class VisitVerificationController extends Controller
         $userTimezone = Auth::user()->agency?->timezone ?? 'UTC';
         $today = Carbon::today($userTimezone);
         $shiftDate = Carbon::parse($visit->shift->start_time)->setTimezone($userTimezone)->startOfDay();
-        
+
         if ($shiftDate->greaterThan($today)) {
             return response()->json(['success' => false, 'message' => 'The Scheduled Shift Date Has Not Arrived Yet!'], 422);
         }
 
-        // 1. Validate the signature data
+        // ✅ STEP 1: VALIDATION - Add 'progress_notes' to the validation rules.
+        // It's 'nullable' so caregivers aren't forced to enter notes.
         $validator = Validator::make($request->all(), [
             'signature' => 'required|string',
+            'progress_notes' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -133,9 +135,9 @@ class VisitVerificationController extends Controller
         $caregiverName = $visit->shift->caregiver->full_name ?? 'caregiver';
         $documentInfo = $this->firebaseStorageService->uploadDocument($file, $caregiverName, 'SignatureOut');
         unlink($tempFilePath);
-        
-        // ✅ FINAL CLEAN CODE: With the database fixed, this clean Eloquent
-        // code will now work correctly without any side effects.
+
+        // ✅ STEP 2: SAVE NOTES - Update the visit record with the notes from the request.
+        $visit->progress_notes = $request->input('progress_notes');
         $visit->clock_out_time = now();
         $visit->clock_out_signature_path = $documentInfo['firebase_path'];
         $visit->save();
