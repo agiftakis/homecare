@@ -254,26 +254,64 @@ class ClientController extends Controller
         return redirect()->route('clients.index');
     }
 
-    // ✅ NEW METHODS FOR MANAGING NOTES
+    // ✅ NEW METHODS FOR MANAGING NOTES WITH DEBUGGING
 
     /**
      * Update a specific progress note.
      */
     public function updateNote(Request $request, Visit $visit)
     {
-        // Use the client policy to authorize this action.
-        // Ensures the admin belongs to the same agency as the client.
-        $this->authorize('update', $visit->shift->client);
-
-        $validated = $request->validate([
-            'progress_notes' => 'required|string',
+        // ✅ DEBUG: Log the incoming request
+        Log::info('UpdateNote called', [
+            'visit_id' => $visit->id,
+            'request_data' => $request->all(),
+            'user_id' => Auth::id(),
         ]);
 
-        $visit->update([
-            'progress_notes' => $validated['progress_notes'],
-        ]);
+        try {
+            // Use the client policy to authorize this action.
+            // Ensures the admin belongs to the same agency as the client.
+            $this->authorize('update', $visit->shift->client);
 
-        return redirect()->back()->with('success', 'Care note updated successfully.');
+            // ✅ DEBUG: Log successful authorization
+            Log::info('Authorization passed for visit', ['visit_id' => $visit->id]);
+
+            $validated = $request->validate([
+                'progress_notes' => 'required|string',
+            ]);
+
+            // ✅ DEBUG: Log validation success
+            Log::info('Validation passed', ['validated_data' => $validated]);
+
+            // ✅ DEBUG: Log before update
+            Log::info('Before update', [
+                'visit_id' => $visit->id,
+                'old_progress_notes' => $visit->progress_notes,
+                'new_progress_notes' => $validated['progress_notes']
+            ]);
+
+            $visit->update([
+                'progress_notes' => $validated['progress_notes'],
+            ]);
+
+            // ✅ DEBUG: Log after update
+            $visit->refresh(); // Reload from database
+            Log::info('After update', [
+                'visit_id' => $visit->id,
+                'current_progress_notes' => $visit->progress_notes
+            ]);
+
+            return redirect()->back()->with('success', 'Care note updated successfully.');
+        } catch (\Exception $e) {
+            // ✅ DEBUG: Log any errors
+            Log::error('UpdateNote failed', [
+                'visit_id' => $visit->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()->with('error', 'Failed to update care note: ' . $e->getMessage());
+        }
     }
 
     /**

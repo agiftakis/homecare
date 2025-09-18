@@ -59,9 +59,9 @@ Route::middleware(['auth', 'timezone'])->group(function () {
         Route::get('/settings', [AgencySettingsController::class, 'edit'])->name('settings.edit');
         Route::patch('/settings', [AgencySettingsController::class, 'update'])->name('settings.update');
 
-        // ✅ NEW: Routes for managing caregiver notes
-        Route::patch('/visits/{visit}/note', [ClientController::class, 'updateNote'])->name('clients.notes.update');
-        Route::delete('/visits/{visit}/note', [ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
+        // ✅ FIXED: Routes for managing caregiver notes - corrected URL structure
+        Route::patch('/clients/notes/{visit}', [ClientController::class, 'updateNote'])->name('clients.notes.update');
+        Route::delete('/clients/notes/{visit}', [ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
     });
     // ✅ --- END SECURITY FIX ---
 
