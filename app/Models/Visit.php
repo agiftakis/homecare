@@ -21,8 +21,9 @@ class Visit extends Model
         'clock_out_time',
         'signature_path',
         'clock_out_signature_path',
-        'caregiver_first_name',  // ✅ ADDED: Preserve caregiver name at visit creation
-        'caregiver_last_name',   // ✅ ADDED: Preserve caregiver name at visit creation
+        'progress_notes',           // ✅ ADDED: Allow mass assignment of progress notes
+        'caregiver_first_name',     // ✅ ADDED: Preserve caregiver name at visit creation
+        'caregiver_last_name',      // ✅ ADDED: Preserve caregiver name at visit creation
     ];
 
     /**
