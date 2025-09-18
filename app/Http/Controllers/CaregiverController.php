@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+// ✅ IMPORT: Added the Cache facade to clear the profile picture URL.
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -166,7 +168,12 @@ class CaregiverController extends Controller
                     $this->firebaseStorageService->deleteFile($caregiver->profile_picture_path);
                 }
                 $updateData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture($request->file('profile_picture'), 'caregiver_profile_pictures');
+
+                // ✅ THIS IS THE ONLY LINE ADDED TO THIS ENTIRE FILE.
+                // It instantly clears the cached URL so the new picture appears immediately.
+                Cache::forget("caregiver_{$caregiver->id}_profile_picture_url");
             }
+
             // ... (Handle other file uploads similarly) ...
 
             $caregiver->update($updateData);

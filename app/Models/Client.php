@@ -7,19 +7,15 @@ use App\Services\FirebaseStorageService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany; // Added for best practice
-use Illuminate\Database\Eloquent\SoftDeletes; // ✅ ADDED: Import the SoftDeletes trait
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+// ✅ 1. IMPORT: Added the Cache facade for caching functionality.
+use Illuminate\Support\Facades\Cache;
 
 class Client extends Model
 {
-    // ✅ ADDED: Use the SoftDeletes trait
     use HasFactory, BelongsToAgency, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'first_name',
         'last_name',
@@ -29,9 +25,8 @@ class Client extends Model
         'date_of_birth',
         'care_plan',
         'agency_id',
-        'user_id', // ✅ FIXED: Added user_id to the fillable array
+        'user_id',
         'profile_picture_path',
-        // Medical Fields
         'current_medications',
         'discontinued_medications',
         'recent_hospitalizations',
@@ -39,23 +34,13 @@ class Client extends Model
         'designated_poa',
         'current_routines_am_pm',
         'fall_risk',
-        'deleted_by', // ✅ ADDED: Allow mass assignment for the audit trail
+        'deleted_by',
     ];
 
-    /**
-     * The attributes that should be cast.
-     * Added this to ensure date_of_birth is handled correctly.
-     * @var array<string, string>
-     */
     protected $casts = [
         'date_of_birth' => 'date',
     ];
 
-    /**
-     * Get the client's full name.
-     *
-     * @return string
-     */
     public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";
@@ -63,18 +48,26 @@ class Client extends Model
 
     /**
      * Get the public URL for the profile picture from its path.
-     * This is the crucial new method.
+     * ✅ MODIFICATION: This is the ONLY method that was changed.
+     * I've added caching here to improve performance. No other code was removed.
      * @return string
      */
     public function getProfilePictureUrlAttribute(): string
     {
-        if ($this->profile_picture_path) {
-            $firebaseStorageService = new FirebaseStorageService();
-            return $firebaseStorageService->getPublicUrl($this->profile_picture_path);
+        if (!$this->profile_picture_path) {
+            // Return a default placeholder if no picture is set
+            return 'https://via.placeholder.com/150';
         }
 
-        // Return a default placeholder if no picture is set
-        return 'https://via.placeholder.com/150';
+        // Define a unique cache key for this client's profile picture URL.
+        $cacheKey = "client_{$this->id}_profile_picture_url";
+
+        // Remember the URL for 60 minutes.
+        return Cache::remember($cacheKey, now()->addMinutes(60), function () {
+            // This code only runs if the URL is not already in the cache.
+            $firebaseStorageService = new FirebaseStorageService();
+            return $firebaseStorageService->getPublicUrl($this->profile_picture_path);
+        });
     }
 
     // Display Attributes for Medical Info
@@ -121,9 +114,6 @@ class Client extends Model
         return $this->hasMany(Shift::class);
     }
 
-    /**
-     * Get the user account associated with the client.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

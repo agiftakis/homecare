@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Agency;
 use App\Models\Client;
 use App\Models\User;
-// ✅ 1. Import the Visit model to access care notes.
 use App\Models\Visit;
 use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+// ✅ IMPORT: Added the Cache facade to clear the profile picture URL.
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -124,20 +125,19 @@ class ClientController extends Controller
     {
         $this->authorize('update', $client);
 
-        // ✅ 2. FETCH NOTES
         // Fetch all visits for this client that have progress notes.
         // Order them by the most recent first.
         // Eager load the caregiver, including those who might have been soft-deleted.
         $visitsWithNotes = Visit::whereHas('shift', function ($query) use ($client) {
             $query->where('client_id', $client->id);
         })
-        ->whereNotNull('progress_notes')
-        ->where('progress_notes', '!=', '')
-        ->with(['shift.caregiver' => function ($query) {
-            $query->withTrashed(); // Get caregiver's name even if they are soft-deleted
-        }])
-        ->orderBy('clock_out_time', 'desc')
-        ->get();
+            ->whereNotNull('progress_notes')
+            ->where('progress_notes', '!=', '')
+            ->with(['shift.caregiver' => function ($query) {
+                $query->withTrashed(); // Get caregiver's name even if they are soft-deleted
+            }])
+            ->orderBy('clock_out_time', 'desc')
+            ->get();
 
         return view('clients.edit', compact('client', 'visitsWithNotes'));
     }
@@ -188,6 +188,9 @@ class ClientController extends Controller
                     $request->file('profile_picture'),
                     'client_profile_pictures'
                 );
+
+                // ✅ CACHE FIX: Instantly forget the old URL so the new one can be fetched.
+                Cache::forget("client_{$client->id}_profile_picture_url");
             }
 
             $client->update($updateData);
@@ -250,8 +253,8 @@ class ClientController extends Controller
 
         return redirect()->route('clients.index');
     }
-    
-    // ✅ 3. ADD NEW METHODS FOR MANAGING NOTES
+
+    // ✅ NEW METHODS FOR MANAGING NOTES
 
     /**
      * Update a specific progress note.
@@ -280,7 +283,7 @@ class ClientController extends Controller
     {
         // Use the client policy to authorize this action.
         $this->authorize('delete', $visit->shift->client);
-        
+
         // We don't delete the visit, just the notes associated with it.
         $visit->update(['progress_notes' => null]);
 
