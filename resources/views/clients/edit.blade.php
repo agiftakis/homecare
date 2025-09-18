@@ -179,7 +179,6 @@
 
             <!-- Caregiver Progress Notes Section -->
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <!-- ✅ CSP FIX: Component now reads data from a data-* attribute -->
                 <div class="p-6 md:p-8 text-gray-900 dark:text-gray-100" x-data="careNotesManager()"
                     data-notes="{{ $visitsWithNotes->mapWithKeys(fn($visit) => [$visit->id => $visit->progress_notes])->toJson() }}">
                     <h3
@@ -246,15 +245,20 @@
                         aria-labelledby="modal-title" role="dialog" aria-modal="true">
                         <div
                             class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                            <div x-show="showEditModal" @click.away="cancelEdit()"
-                                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
-                                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
-                                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                                class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true">
+                            <!-- Background overlay - FIXED: Removed @click.away from here -->
+                            <div x-show="showEditModal" x-transition:enter="ease-out duration-300"
+                                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
+                                x-transition:leave-end="opacity-0"
+                                class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+                                @click="cancelEdit()">
                             </div>
+
                             <span class="hidden sm:inline-block sm:align-middle sm:h-screen"
                                 aria-hidden="true">&#8203;</span>
-                            <div x-show="showEditModal" x-transition:enter="ease-out duration-300"
+
+                            <!-- Modal panel - FIXED: Added @click.stop to prevent event bubbling -->
+                            <div x-show="showEditModal" @click.stop x-transition:enter="ease-out duration-300"
                                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
                                 x-transition:leave="ease-in duration-200"
@@ -289,15 +293,20 @@
                         aria-labelledby="modal-title" role="dialog" aria-modal="true">
                         <div
                             class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                            <div x-show="showDeleteModal" @click.away="closeDeleteModal()"
-                                x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
-                                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
-                                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                                class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true">
+                            <!-- Background overlay - FIXED: Removed @click.away from here -->
+                            <div x-show="showDeleteModal" x-transition:enter="ease-out duration-300"
+                                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
+                                x-transition:leave-end="opacity-0"
+                                class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+                                @click="closeDeleteModal()">
                             </div>
+
                             <span class="hidden sm:inline-block sm:align-middle sm:h-screen"
                                 aria-hidden="true">&#8203;</span>
-                            <div x-show="showDeleteModal" x-transition:enter="ease-out duration-300"
+
+                            <!-- Modal panel - FIXED: Added @click.stop to prevent event bubbling -->
+                            <div x-show="showDeleteModal" @click.stop x-transition:enter="ease-out duration-300"
                                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
                                 x-transition:leave="ease-in duration-200"
@@ -368,7 +377,6 @@
         </form>
     </x-modal>
 
-    <!-- ✅ CSP FIX SCRIPT: The robust Alpine component to manage all modal states -->
     @push('scripts')
         <script>
             function careNotesManager() {
