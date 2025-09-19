@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\ShiftUpdated;
+use App\Models\Agency;
 use App\Models\Client;
 use App\Models\Caregiver;
 use App\Models\Shift;
@@ -22,56 +23,60 @@ class ScheduleController extends Controller
         $this->firebaseStorageService = $firebaseStorageService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $userRole = $user->role;
 
-        // Redirect clients to their dedicated schedule view
         if ($userRole === 'client') {
             return redirect()->route('schedule.client');
         }
 
-        // ✅ SUPER ADMIN UPDATE: Determine if the user is any kind of admin
         $is_admin = in_array($userRole, ['agency_admin', 'super_admin']);
 
-        // Base queries for dropdowns
+        // ✅ SUPER ADMIN UPDATE: Prepare variables for agency filtering
+        $agencies = collect();
+        $agencyFilterId = $request->query('agency');
+
         $clientQuery = Client::query();
         $caregiverQuery = Caregiver::query();
         $shiftsQuery = Shift::query();
 
-        // ✅ SUPER ADMIN UPDATE: Modify queries based on user role
         if ($userRole === 'super_admin') {
-            // Super admins see all active clients/caregivers from all agencies for the dropdowns
+            // Super admins get a list of all agencies for the filter dropdown
+            $agencies = Agency::orderBy('name')->get();
+
             $clientQuery->withoutGlobalScope('agencyScope');
             $caregiverQuery->withoutGlobalScope('agencyScope');
-            // Super admins see all shifts from all agencies
             $shiftsQuery->withoutGlobalScope('agencyScope');
+
+            // ✅ SUPER ADMIN UPDATE: Apply the agency filter if one is selected
+            if ($agencyFilterId) {
+                $clientQuery->where('agency_id', $agencyFilterId);
+                $caregiverQuery->where('agency_id', $agencyFilterId);
+                $shiftsQuery->where('agency_id', $agencyFilterId);
+            }
         } elseif ($userRole === 'caregiver') {
-            // Caregivers only see shifts assigned to them
             $caregiverProfile = $user->caregiver;
             if ($caregiverProfile) {
                 $shiftsQuery->where('caregiver_id', $caregiverProfile->id);
             } else {
-                $shiftsQuery->where('caregiver_id', -1); // No shifts if no profile
+                $shiftsQuery->where('caregiver_id', -1);
             }
         }
-        // For agency_admin, the default global scope applies to all queries correctly.
 
         $clients = $clientQuery->whereNull('deleted_at')->orderBy('first_name')->get();
         $caregivers = $caregiverQuery->whereNull('deleted_at')->orderBy('first_name')->get();
 
-        // Eager load relationships with soft-deleted models for historical accuracy
         $shiftsQuery->with([
             'client' => fn($query) => $query->withTrashed(),
             'visit',
             'caregiver' => fn($query) => $query->withTrashed(),
-            'agency' // ✅ SUPER ADMIN UPDATE: Eager load agency for display
+            'agency'
         ]);
 
         $shifts = $shiftsQuery->get();
 
-        // Filter shifts based on client deletion logic (this logic is the same for both admin types)
         $filteredShifts = $shifts->filter(function ($shift) use ($is_admin) {
             if ($shift->client && !$shift->client->deleted_at) {
                 return true;
@@ -87,7 +92,6 @@ class ScheduleController extends Controller
             return false;
         });
 
-        // Add client deletion status to each shift
         $enhancedShifts = $filteredShifts->map(function ($shift) {
             if ($shift->client && $shift->client->deleted_at) {
                 $clientDeletionDate = Carbon::parse($shift->client->deleted_at);
@@ -105,7 +109,6 @@ class ScheduleController extends Controller
             return $shift;
         });
 
-        // Fetch signature URLs for admins
         if ($is_admin) {
             $enhancedShifts->each(function ($shift) {
                 if ($shift->visit) {
@@ -117,12 +120,11 @@ class ScheduleController extends Controller
             });
         }
 
-        return view('schedule.index', compact('clients', 'caregivers', 'is_admin'))->with('shifts', $enhancedShifts->values());
+        // ✅ SUPER ADMIN UPDATE: Pass the new agency variables to the view
+        return view('schedule.index', compact('clients', 'caregivers', 'is_admin', 'agencies', 'agencyFilterId'))
+            ->with('shifts', $enhancedShifts->values());
     }
 
-    /**
-     * Display a read-only schedule for the authenticated client.
-     */
     public function clientSchedule()
     {
         $user = Auth::user();
@@ -144,7 +146,6 @@ class ScheduleController extends Controller
 
     public function store(Request $request)
     {
-        // ✅ SUPER ADMIN UPDATE: Allow both admin types to create shifts
         if (!in_array(Auth::user()->role, ['agency_admin', 'super_admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
@@ -163,13 +164,11 @@ class ScheduleController extends Controller
 
         $validated = $validator->validated();
 
-        // ✅ SUPER ADMIN UPDATE: Determine agency_id from the selected client
-        // This ensures the shift is correctly associated with an agency.
-        $client = Client::find($validated['client_id']);
+        $client = Client::withoutGlobalScope('agencyScope')->find($validated['client_id']);
         $validated['agency_id'] = $client->agency_id;
 
         $shift = Shift::create($validated);
-        $shift->load(['client', 'caregiver', 'visit']);
+        $shift->load(['client', 'caregiver', 'visit', 'agency']);
 
         ShiftUpdated::dispatch($shift);
 
@@ -183,6 +182,7 @@ class ScheduleController extends Controller
                 'caregiver_id' => $shift->caregiver_id,
                 'notes' => $shift->notes,
                 'status' => $shift->status,
+                'agency_name' => $shift->agency?->name,
                 'visit' => $shift->visit ? [
                     'clock_in_time' => $shift->visit->clock_in_time,
                     'clock_out_time' => $shift->visit->clock_out_time,
@@ -195,7 +195,6 @@ class ScheduleController extends Controller
 
     public function update(Request $request, Shift $shift)
     {
-        // ✅ SUPER ADMIN UPDATE: Allow both admin types to update shifts
         if (!in_array(Auth::user()->role, ['agency_admin', 'super_admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
@@ -213,7 +212,7 @@ class ScheduleController extends Controller
         }
 
         $shift->update($validator->validated());
-        $shift->load(['client', 'caregiver', 'visit']);
+        $shift->load(['client', 'caregiver', 'visit', 'agency']);
 
         ShiftUpdated::dispatch($shift);
 
@@ -234,6 +233,7 @@ class ScheduleController extends Controller
                 'caregiver_id' => $shift->caregiver_id,
                 'notes' => $shift->notes,
                 'status' => $shift->status,
+                'agency_name' => $shift->agency?->name,
                 'visit' => $shift->visit ? [
                     'clock_in_time' => $shift->visit->clock_in_time,
                     'clock_out_time' => $shift->visit->clock_out_time,
@@ -248,7 +248,6 @@ class ScheduleController extends Controller
 
     public function destroy(Shift $shift)
     {
-        // ✅ SUPER ADMIN UPDATE: Allow both admin types to delete shifts
         if (!in_array(Auth::user()->role, ['agency_admin', 'super_admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }

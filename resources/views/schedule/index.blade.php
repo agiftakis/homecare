@@ -19,19 +19,32 @@
                     x-init="initCalendar();
                     setupSignatureButtonHandlers()">
 
-                    {{-- ✅ MODIFIED: This warning is now only triggered on form submission --}}
+                    {{-- ✅ SUPER ADMIN UPDATE: Agency Filter Dropdown --}}
+                    @if (Auth::user()->role === 'super_admin')
+                        <div class="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                            <label for="agency_filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Filter by Agency</label>
+                            <select id="agency_filter" name="agency_filter" @change="filterByAgency($event)"
+                                class="mt-1 block w-full md:w-1/3 pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="">All Agencies</option>
+                                @foreach ($agencies as $agency)
+                                    <option value="{{ $agency->id }}" @if ($agency->id == $agencyFilterId) selected @endif>
+                                        {{ $agency->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
+
                     <div x-show="pastDateError" x-cloak
-                         class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center"
-                         x-transition>
+                        class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center"
+                        x-transition>
                         <span class="font-bold text-lg">YOU ARE TRYING TO CREATE A NEW SHIFT ON A PAST DATE, THIS IS NOT ALLOWED!</span>
                     </div>
 
-                    {{-- MAIN VIEW: Conditionally show Calendar or Daily List View --}}
                     <div x-show="viewMode === 'calendar'">
                         <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
                     </div>
 
-                    {{-- ADMIN: Daily Shift List View --}}
                     <div x-show="isAdmin && viewMode === 'dayList'" x-cloak>
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                             <h3 class="text-xl font-semibold" x-text="`Shifts for ${selectedDateFormatted}`"></h3>
@@ -54,7 +67,7 @@
                                 </div>
                                 <input type="text" 
                                     x-model="searchTerm"
-                                    placeholder="Search by client or caregiver name..." 
+                                    placeholder="Search by client, caregiver, or agency name..." 
                                     class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                             </div>
                         </div>
@@ -72,6 +85,10 @@
                                             <div class="font-semibold text-gray-800 dark:text-gray-200">
                                                 <span x-html="getClientDisplayHtml(shift)"></span> w/ 
                                                 <span x-html="getCaregiverDisplayHtml(shift)"></span>
+                                                {{-- ✅ SUPER ADMIN UPDATE: Display agency name in the shift list --}}
+                                                <template x-if="isSuperAdmin && shift.agency">
+                                                    <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400" x-text="`(${shift.agency.name})`"></span>
+                                                </template>
                                                 <div x-show="shift.notes" class="text-xs text-gray-500 font-normal"
                                                     x-text="`Note: ${shift.notes}`"></div>
                                             </div>
@@ -83,7 +100,6 @@
                                             class="pl-36 mt-1 text-red-600 dark:text-red-500 font-bold text-xs uppercase">
                                             SHIFT NOT ATTENDED BY ASSIGNED CAREGIVER - please follow up
                                         </div>
-                                        {{-- ✅ NEW: Client deletion status message --}}
                                         <div x-show="shift.client_deletion_status && shift.client_deletion_status.is_deleted" x-cloak
                                             class="pl-36 mt-1 text-red-600 dark:text-red-500 font-bold text-xs"
                                             x-html="getClientDeletionMessage(shift)">
@@ -105,7 +121,6 @@
                             </template>
                             <div x-show="filteredShiftsForSelectedDay().length === 0"
                                 class="text-center p-8 text-gray-500 dark:text-gray-400">
-                                {{-- ✅ NEW: Check for archived client message --}}
                                 <div x-show="hasArchivedClientMessage()" x-cloak>
                                     <div class="mb-4 p-4 bg-orange-100 border border-orange-400 text-orange-700 rounded-lg">
                                         <span class="font-bold">CLIENT HAS BEEN DELETED AND ARCHIVED</span>
@@ -119,7 +134,6 @@
                         </div>
                     </div>
 
-                    {{-- CAREGIVER Daily Shift List View (Read-Only) --}}
                     <div x-show="!isAdmin && viewMode === 'dayList'" x-cloak>
                         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
                             <h3 class="text-xl font-semibold" x-text="`My Shifts for ${selectedDateFormatted}`"></h3>
@@ -171,7 +185,6 @@
                                             class="mt-2 sm:pl-36 text-red-600 dark:text-red-500 font-bold text-sm uppercase">
                                             SHIFT NOT ATTENDED - please follow up
                                         </div>
-                                        {{-- ✅ NEW: Client deletion status message for caregivers --}}
                                         <div x-show="shift.client_deletion_status && shift.client_deletion_status.is_deleted" x-cloak
                                             class="mt-2 sm:pl-36 text-red-600 dark:text-red-500 font-bold text-sm"
                                             x-html="getClientDeletionMessage(shift)">
@@ -188,7 +201,7 @@
                                             </a>
                                         </div>
                                         <div x-show="shift.status === 'completed'" 
-                                             class="inline-flex items-center px-3 py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-medium rounded-md">
+                                            class="inline-flex items-center px-3 py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-medium rounded-md">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                             </svg>
@@ -199,7 +212,6 @@
                             </template>
                             <div x-show="allShiftsForSelectedDay().length === 0"
                                 class="text-center p-8 text-gray-500 dark:text-gray-400">
-                                {{-- ✅ NEW: Check for archived client message (caregiver view) --}}
                                 <div x-show="hasArchivedClientMessage()" x-cloak>
                                     <div class="mb-4 p-4 bg-orange-100 border border-orange-400 text-orange-700 rounded-lg">
                                         <span class="font-bold">CLIENT HAS BEEN DELETED AND ARCHIVED</span>
@@ -216,7 +228,6 @@
                         </div>
                     </div>
 
-                    {{-- Modals for Admins --}}
                     @if ($is_admin)
                         <div x-show="showAddModal"
                             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -373,8 +384,18 @@
                 newShift: { client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' },
                 editShift: { id: null, client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' },
                 isAdmin: isAdmin,
+                isSuperAdmin: {{ Auth::user()->role === 'super_admin' ? 'true' : 'false' }},
                 pastDateError: false,
                 
+                filterByAgency(event) {
+                    const agencyId = event.target.value;
+                    let url = '{{ route('schedule.index') }}';
+                    if (agencyId) {
+                        url += `?agency=${agencyId}`;
+                    }
+                    window.location.href = url;
+                },
+
                 formatDateTimeLocal(date) { 
                     if (!date) return '';
                     const d = new Date(date);
@@ -404,7 +425,6 @@
                     });
                 },
                 
-                // ✅ NEW: Display client name with deletion status
                 getClientDisplayHtml(shift) {
                     const clientName = shift.client.first_name;
                     
@@ -415,7 +435,6 @@
                     return clientName;
                 },
                 
-                // ✅ NEW: Display client deletion messages
                 getClientDeletionMessage(shift) {
                     if (!shift.client_deletion_status || !shift.client_deletion_status.is_deleted) {
                         return '';
@@ -432,7 +451,6 @@
                     return `CLIENT DELETED ON ${deletionDate}`;
                 },
                 
-                // ✅ NEW: Caregiver view client display
                 getCaregiverClientDisplayHtml(shift) {
                     const clientName = `${shift.client.first_name} ${shift.client.last_name || ''}`.trim();
                     
@@ -443,11 +461,9 @@
                     return `Client: ${clientName}`;
                 },
                 
-                // ✅ NEW: Check if there are archived client messages to show
                 hasArchivedClientMessage() {
                     if (!this.selectedDate) return false;
                     
-                    // Check if there are any shifts with deleted clients that would be hidden
                     const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
                     
                     const potentialShifts = this.shifts.filter(shift => {
@@ -455,7 +471,6 @@
                         return shiftDate === this.selectedDate;
                     });
                     
-                    // For caregivers: check if there are future shifts with deleted clients that would be hidden
                     if (!this.isAdmin) {
                         return potentialShifts.some(shift => 
                             shift.client_deletion_status && 
@@ -464,7 +479,6 @@
                         );
                     }
                     
-                    // For admins: we show all shifts, so only show archived message if no visible shifts
                     return false;
                 },
 
@@ -519,7 +533,6 @@
                             caregiverName += ' (Deleted)';
                         }
                         
-                        // ✅ ENHANCED: Handle deleted clients in signature view
                         let clientName = `${shift.client.first_name} ${shift.client.last_name}`;
                         if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
                             clientName += ' (Deleted)';
@@ -571,7 +584,8 @@
                         } else {
                             caregiverName = 'unassigned';
                         }
-                        return clientName.includes(searchLower) || caregiverName.includes(searchLower);
+                        const agencyName = (this.isSuperAdmin && shift.agency) ? shift.agency.name.toLowerCase() : '';
+                        return clientName.includes(searchLower) || caregiverName.includes(searchLower) || agencyName.includes(searchLower);
                     });
                 },
                 caregiverDateClick(info) {
@@ -603,7 +617,6 @@
                     return html;
                 },
                 editShiftFromList(shift) {
-                    // ✅ ENHANCED: Prevent editing shifts with deleted clients
                     if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
                         toastr.warning('Cannot edit shifts for deleted clients. Please create a new shift if needed.');
                         return;
@@ -627,13 +640,33 @@
                     if (this.isAdmin) {
                         calendarConfig = {
                             initialView: 'dayGridMonth',
-                            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
-                            events: [],
+                            headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+                            events: this.shifts.map(shift => ({
+                                id: shift.id,
+                                title: `${shift.client.first_name} w/ ${shift.caregiver ? shift.caregiver.first_name : 'N/A'}`,
+                                start: shift.start_time,
+                                end: shift.end_time,
+                                extendedProps: { ...shift },
+                                className: shift.status === 'completed' ? 'shift-completed' : (shift.status === 'in_progress' ? 'shift-in-progress' : '')
+                            })),
+                            eventContent: (arg) => {
+                                let titleHtml = `<div class="font-semibold">${arg.event.title}</div>`;
+                                if (this.isSuperAdmin && arg.event.extendedProps.agency_name) {
+                                    titleHtml += `<div class="text-xs text-indigo-200">${arg.event.extendedProps.agency_name}</div>`;
+                                }
+                                if (arg.event.extendedProps.notes) {
+                                    titleHtml += `<div class="shift-notes">${arg.event.extendedProps.notes}</div>`;
+                                }
+                                if(arg.event.extendedProps.visit) {
+                                    let visitHtml = this.getVisitTimesHtml(arg.event.extendedProps.visit);
+                                    if(visitHtml) {
+                                        titleHtml += `<div class="visit-times">${visitHtml}</div>`;
+                                    }
+                                }
+                                return { html: titleHtml };
+                            },
                             dateClick: (info) => {
-                                // ✅ CORRECTED BEHAVIOR: Always allow viewing past dates, but warn on save.
-                                this.pastDateError = false; // Reset any previous error.
-                                
-                                // Set up the new shift object regardless of the date.
+                                this.pastDateError = false;
                                 const startTime = new Date(info.dateStr + 'T09:00:00');
                                 const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
                                 this.newShift = {
@@ -652,7 +685,14 @@
                                 center: 'title', 
                                 right: 'dayGridMonth' 
                             },
-                            events: [],
+                            events: this.shifts.map(shift => ({
+                                id: shift.id,
+                                title: `${shift.client.first_name} ${shift.client.last_name}`,
+                                start: shift.start_time,
+                                end: shift.end_time,
+                                extendedProps: { ...shift },
+                                className: shift.status === 'completed' ? 'shift-completed' : (shift.status === 'in_progress' ? 'shift-in-progress' : '')
+                            })),
                             dateClick: (info) => this.caregiverDateClick(info),
                             dayMaxEvents: false,
                             height: 'auto',
@@ -668,74 +708,78 @@
                 },
 
                 submitAddForm() { 
-                    // ✅ NEW VALIDATION: Check for past dates right before submitting.
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     const shiftStartDate = new Date(this.newShift.start_time);
                     shiftStartDate.setHours(0, 0, 0, 0);
 
                     if (shiftStartDate < today) {
-                        this.showAddModal = false; // Close the modal first
-                        this.pastDateError = true; // Show the warning banner
+                        this.showAddModal = false;
+                        this.pastDateError = true;
                         setTimeout(() => { this.pastDateError = false; }, 4000);
-                        return; // Stop the submission
+                        return;
                     }
 
                     fetch('{{ route('shifts.store') }}', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                            body: JSON.stringify(this.newShift)
-                        })
-                        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-                        .then(({ ok, data }) => {
-                            if (ok) {
-                                this.shifts.push(data.shift);
-                                this.showAddModal = false;
-                                this.newShift = { client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' };
-                                toastr.success('New shift created successfully!');
-                            } else { throw data; }
-                        }).catch(error => this.handleFormError(error));
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                        body: JSON.stringify(this.newShift)
+                    })
+                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (ok) {
+                            this.shifts.push(data.shift);
+                            this.showAddModal = false;
+                            this.newShift = { client_id: '', caregiver_id: '', start_time: '', end_time: '', notes: '' };
+                            toastr.success('New shift created successfully!');
+                            this.calendar.addEvent({
+                                id: data.shift.id,
+                                title: data.shift.title,
+                                start: data.shift.start,
+                                end: data.shift.end,
+                                extendedProps: data.shift.extendedProps
+                            });
+                        } else { throw data; }
+                    }).catch(error => this.handleFormError(error));
                 },
                 submitEditForm() { 
                     fetch(`/shifts/${this.editShift.id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                            body: JSON.stringify(this.editShift)
-                        })
-                        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-                        .then(({ ok, data }) => {
-                            if (ok) {
-                                // ✅ BUG FIX: Instead of updating local data that causes display issues,
-                                // show success message and auto-refresh the page
-                                this.showEditModal = false;
-                                
-                                // Show success message with longer duration
-                                toastr.success('Shift updated successfully! Refreshing to show updated calendar view...', 'Success', {
-                                    timeOut: 2500,
-                                    extendedTimeOut: 1000
-                                });
-                                
-                                // Auto-refresh after brief delay to show the message
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 2000);
-                            } else { throw data; }
-                        }).catch(error => this.handleFormError(error));
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                        body: JSON.stringify(this.editShift)
+                    })
+                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (ok) {
+                            this.showEditModal = false;
+                            
+                            toastr.success('Shift updated successfully! Refreshing to show updated calendar view...', 'Success', {
+                                timeOut: 2500,
+                                extendedTimeOut: 1000
+                            });
+                            
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
+                        } else { throw data; }
+                    }).catch(error => this.handleFormError(error));
                 },
                 deleteShift() { 
                     if (!confirm('Are you sure you want to delete this shift?')) return;
                     fetch(`/shifts/${this.editShift.id}`, {
-                            method: 'DELETE',
-                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
-                        })
-                        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-                        .then(({ ok, data }) => {
-                            if (ok) {
-                                this.shifts = this.shifts.filter(s => s.id != this.editShift.id);
-                                this.showEditModal = false;
-                                toastr.info('Shift has been deleted.');
-                            } else { throw data; }
-                        }).catch(error => this.handleFormError(error));
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                    })
+                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (ok) {
+                            this.shifts = this.shifts.filter(s => s.id != this.editShift.id);
+                            let event = this.calendar.getEventById(this.editShift.id);
+                            if (event) event.remove();
+                            this.showEditModal = false;
+                            toastr.info('Shift has been deleted.');
+                        } else { throw data; }
+                    }).catch(error => this.handleFormError(error));
                 },
                 handleFormError(error) { 
                     let errorMessages = 'An unexpected error occurred.';
