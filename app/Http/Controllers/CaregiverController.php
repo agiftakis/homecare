@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-// ✅ IMPORT: Added the Cache facade to clear the profile picture URL.
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -25,8 +24,19 @@ class CaregiverController extends Controller
 
     public function index()
     {
-        // Eager load the 'user' relationship to check onboarding status in the view.
-        $caregivers = Caregiver::with('user')->latest()->get();
+        // ✅ SUPER ADMIN UPDATE: Check user role to determine which caregivers to show.
+        $user = Auth::user();
+        $query = Caregiver::with('user'); // Start with a base query.
+
+        if ($user->role === 'super_admin') {
+            // If the user is a super_admin, we remove the default agency scope
+            // to fetch caregivers from ALL agencies. We also eager-load the 'agency'
+            // relationship so we can display the agency name in the view.
+            $query->withoutGlobalScope('agencyScope')->with('agency');
+        }
+
+        // For agency_admins, the global scope will apply automatically.
+        $caregivers = $query->latest()->get();
         return view('caregivers.index', compact('caregivers'));
     }
 
@@ -41,7 +51,6 @@ class CaregiverController extends Controller
 
     /**
      * Store a newly created resource in storage.
-     * ✅ THIS IS THE FULLY CORRECTED METHOD
      */
     public function store(Request $request)
     {
@@ -169,12 +178,31 @@ class CaregiverController extends Controller
                 }
                 $updateData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture($request->file('profile_picture'), 'caregiver_profile_pictures');
 
-                // ✅ THIS IS THE ONLY LINE ADDED TO THIS ENTIRE FILE.
                 // It instantly clears the cached URL so the new picture appears immediately.
                 Cache::forget("caregiver_{$caregiver->id}_profile_picture_url");
             }
 
-            // ... (Handle other file uploads similarly) ...
+            // ✅ FUNCTIONALITY FIX: Added missing logic to handle document uploads on update.
+            $documentTypes = [
+                'certifications',
+                'professional_licenses',
+                'state_province_id',
+            ];
+
+            foreach ($documentTypes as $type) {
+                if ($request->hasFile("{$type}_document")) {
+                    // Delete the old file if it exists
+                    if ($caregiver->{"{$type}_path"}) {
+                        $this->firebaseStorageService->deleteFile($caregiver->{"{$type}_path"});
+                    }
+
+                    $file = $request->file("{$type}_document");
+                    $documentInfo = $this->firebaseStorageService->uploadDocument($file, $caregiverName, Str::studly($type));
+
+                    $updateData["{$type}_path"] = $documentInfo['firebase_path'];
+                    $updateData["{$type}_filename"] = $documentInfo['descriptive_filename'];
+                }
+            }
 
             $caregiver->update($updateData);
         });
@@ -183,9 +211,7 @@ class CaregiverController extends Controller
     }
 
     /**
-     * ✅ SOFT DELETE IMPLEMENTATION: This method now performs a soft delete
-     * and records which user performed the action. Associated files are NOT
-     * deleted from storage, allowing for future restoration.
+     * Soft delete implementation.
      */
     public function destroy(Caregiver $caregiver)
     {
@@ -196,22 +222,17 @@ class CaregiverController extends Controller
             $adminId = Auth::id();
             $user = $caregiver->user;
 
-            // STEP 1: Update the deleted_by field for the audit trail, then soft delete.
+            // Update the deleted_by field for the audit trail, then soft delete.
             $caregiver->update(['deleted_by' => $adminId]);
             $caregiver->delete(); // This is now a soft delete.
 
-            // STEP 2: Soft delete the associated user account as well.
+            // Soft delete the associated user account as well.
             if ($user) {
                 $user->update(['deleted_by' => $adminId]);
                 $user->delete(); // This is now a soft delete.
             }
-
-            // NOTE: We do NOT delete files from Firebase storage on a soft delete.
-            // This ensures that if the caregiver is ever restored, their documents
-            // and profile picture will also be restored.
         });
 
-        // Redirect back with a more accurate success message.
         return redirect()->route('caregivers.index')->with('success', 'Caregiver has been deactivated and archived.');
     }
 

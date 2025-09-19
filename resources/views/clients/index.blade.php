@@ -27,7 +27,6 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
 
-                    <!-- Search Bar -->
                     <div class="mb-6">
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -37,16 +36,16 @@
                                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
                             </div>
-                            <input type="text" id="clientSearch" placeholder="Search clients by name..."
+                            <input type="text" id="clientSearch" placeholder="Search clients by name or agency..."
                                 class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                     </div>
 
-                    <!-- Mobile View -->
                     <div id="mobileView" class="space-y-4 md:hidden">
                         @forelse ($clients as $client)
                             <div class="client-card bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border dark:border-gray-700"
-                                data-name="{{ strtolower($client->first_name . ' ' . $client->last_name) }}">
+                                {{-- ✅ SUPER ADMIN UPDATE: Add agency name to the searchable data attribute --}}
+                                data-name="{{ strtolower($client->first_name . ' ' . $client->last_name . ' ' . ($client->agency->name ?? '')) }}">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-12 w-12">
@@ -68,6 +67,10 @@
                                         <div class="ml-4">
                                             <div class="text-base font-bold text-gray-900 dark:text-gray-100">
                                                 {{ $client->first_name }} {{ $client->last_name }}</div>
+                                            {{-- ✅ SUPER ADMIN UPDATE: Conditionally display the agency name for super admins --}}
+                                            @if (Auth::user()->role === 'super_admin' && $client->agency)
+                                                <div class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{{ $client->agency->name }}</div>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -121,7 +124,6 @@
                         @endforelse
                     </div>
 
-                    <!-- Desktop View -->
                     <div id="desktopView" class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700">
@@ -129,6 +131,12 @@
                                     <th scope="col"
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Name</th>
+                                    {{-- ✅ SUPER ADMIN UPDATE: Conditionally add the Agency column header --}}
+                                    @if (Auth::user()->role === 'super_admin')
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Agency</th>
+                                    @endif
                                     <th scope="col"
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Email</th>
@@ -143,7 +151,8 @@
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 @forelse ($clients as $client)
                                     <tr class="client-row"
-                                        data-name="{{ strtolower($client->first_name . ' ' . $client->last_name) }}">
+                                        {{-- ✅ SUPER ADMIN UPDATE: Add agency name to the searchable data attribute --}}
+                                        data-name="{{ strtolower($client->first_name . ' ' . $client->last_name . ' ' . ($client->agency->name ?? '')) }}">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-10 w-10">
@@ -168,6 +177,12 @@
                                                 </div>
                                             </div>
                                         </td>
+                                        {{-- ✅ SUPER ADMIN UPDATE: Conditionally add the Agency data cell --}}
+                                        @if (Auth::user()->role === 'super_admin')
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $client->agency->name ?? 'N/A' }}</div>
+                                            </td>
+                                        @endif
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm text-gray-500 dark:text-gray-400">{{ $client->email }}
                                             </div>
@@ -176,7 +191,6 @@
                                             <div class="text-sm text-gray-500 dark:text-gray-400">
                                                 {{ $client->phone_number }}</div>
                                         </td>
-
                                         <td
                                             class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                             @if ($client->user && $client->user->email_verified_at)
@@ -215,7 +229,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4"
+                                        <td colspan="{{ Auth::user()->role === 'super_admin' ? '5' : '4' }}"
                                             class="px-6 py-12 whitespace-nowrap text-sm text-gray-500 text-center">
                                             No clients have been added yet.
                                         </td>
@@ -225,7 +239,6 @@
                         </table>
                     </div>
 
-                    <!-- No Results Message -->
                     <div id="noResults" class="hidden text-center py-12">
                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
@@ -240,18 +253,15 @@
         </div>
     </div>
 
-    <!-- Onboarding Link Modal -->
     @if (session('setup_link'))
         <div x-data="{ show: true }" x-show="show" class="fixed inset-0 z-50 overflow-y-auto"
             style="display: none;" x-cloak>
             <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <!-- Background overlay -->
                 <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
                     x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
                     x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
                     class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="show = false"></div>
 
-                <!-- Modal panel -->
                 <div x-show="show" x-transition:enter="ease-out duration-300"
                     x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -327,14 +337,14 @@
             const mobileView = document.getElementById('mobileView');
             const desktopView = document.getElementById('desktopView');
 
-            searchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase().trim();
+            function performSearch() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
                 let visibleCount = 0;
 
                 // Filter mobile cards
                 clientCards.forEach(card => {
-                    const clientName = card.getAttribute('data-name');
-                    if (clientName.includes(searchTerm)) {
+                    const searchableData = card.getAttribute('data-name');
+                    if (searchableData.includes(searchTerm)) {
                         card.style.display = 'block';
                         visibleCount++;
                     } else {
@@ -344,26 +354,26 @@
 
                 // Filter desktop rows
                 clientRows.forEach(row => {
-                    const clientName = row.getAttribute('data-name');
-                    if (clientName.includes(searchTerm)) {
+                    const searchableData = row.getAttribute('data-name');
+                    if (searchableData.includes(searchTerm)) {
                         row.style.display = 'table-row';
-                        visibleCount++;
                     } else {
                         row.style.display = 'none';
                     }
                 });
+                
+                // Adjust for desktop/mobile visible count discrepancy
+                const totalVisible = document.querySelectorAll('.client-card[style*="display: block"]').length || document.querySelectorAll('.client-row[style*="display: table-row"]').length;
 
                 // Show/hide no results message
-                if (visibleCount === 0 && searchTerm !== '') {
+                if (totalVisible === 0 && searchTerm !== '') {
                     noResults.classList.remove('hidden');
-                    mobileView.classList.add('hidden');
-                    desktopView.classList.add('hidden');
                 } else {
                     noResults.classList.add('hidden');
-                    mobileView.classList.remove('hidden');
-                    desktopView.classList.remove('hidden');
                 }
-            });
+            }
+
+            searchInput.addEventListener('input', performSearch);
         });
     </script>
 </x-app-layout>
