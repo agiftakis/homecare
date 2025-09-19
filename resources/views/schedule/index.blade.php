@@ -85,7 +85,6 @@
                                             <div class="font-semibold text-gray-800 dark:text-gray-200">
                                                 <span x-html="getClientDisplayHtml(shift)"></span> w/ 
                                                 <span x-html="getCaregiverDisplayHtml(shift)"></span>
-                                                {{-- ✅ SUPER ADMIN UPDATE: Display agency name in the shift list --}}
                                                 <template x-if="isSuperAdmin && shift.agency">
                                                     <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400" x-text="`(${shift.agency.name})`"></span>
                                                 </template>
@@ -425,10 +424,11 @@
                     });
                 },
                 
+                // ✅ BUG FIX: Add checks for null client
                 getClientDisplayHtml(shift) {
-                    const clientName = shift.client.first_name;
+                    const clientName = shift.client ? shift.client.first_name : 'N/A';
                     
-                    if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
+                    if (shift.client && shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
                         return `<span class="text-red-600 dark:text-red-400">${clientName}</span>`;
                     }
                     
@@ -451,10 +451,11 @@
                     return `CLIENT DELETED ON ${deletionDate}`;
                 },
                 
+                // ✅ BUG FIX: Add checks for null client
                 getCaregiverClientDisplayHtml(shift) {
-                    const clientName = `${shift.client.first_name} ${shift.client.last_name || ''}`.trim();
+                    const clientName = shift.client ? `${shift.client.first_name} ${shift.client.last_name || ''}`.trim() : 'N/A';
                     
-                    if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
+                    if (shift.client && shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
                         return `<span class="text-red-600 dark:text-red-400">Client: ${clientName}</span>`;
                     }
                     
@@ -482,6 +483,7 @@
                     return false;
                 },
 
+                // ✅ BUG FIX: Add checks for null caregiver
                 getCaregiverDisplayHtml(shift) {
                     const now = new Date();
                     const shiftStartDate = new Date(shift.start_time);
@@ -533,8 +535,8 @@
                             caregiverName += ' (Deleted)';
                         }
                         
-                        let clientName = `${shift.client.first_name} ${shift.client.last_name}`;
-                        if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
+                        let clientName = shift.client ? `${shift.client.first_name} ${shift.client.last_name}` : 'N/A';
+                        if (shift.client && shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
                             clientName += ' (Deleted)';
                         }
                         
@@ -564,6 +566,8 @@
                     const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
                     
                     return this.shifts.filter(shift => {
+                        // ✅ BUG FIX: Ensure shift has a client before processing
+                        if (!shift.client) return false;
                         const shiftDate = new Date(shift.start_time).toLocaleDateString('en-CA', { timeZone: userTimezone });
                         return shiftDate === this.selectedDate;
                     }).sort((a,b) => new Date(a.start_time) - new Date(b.start_time));
@@ -575,7 +579,8 @@
                     }
                     const searchLower = this.searchTerm.toLowerCase();
                     return dayShifts.filter(shift => {
-                        const clientName = `${shift.client.first_name || ''} ${shift.client.last_name || ''}`.toLowerCase();
+                        // ✅ BUG FIX: Add checks for null client and caregiver
+                        const clientName = shift.client ? `${shift.client.first_name || ''} ${shift.client.last_name || ''}`.toLowerCase() : '';
                         let caregiverName = '';
                         if (shift.caregiver) {
                             caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`.toLowerCase();
@@ -641,14 +646,19 @@
                         calendarConfig = {
                             initialView: 'dayGridMonth',
                             headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
-                            events: this.shifts.map(shift => ({
-                                id: shift.id,
-                                title: `${shift.client.first_name} w/ ${shift.caregiver ? shift.caregiver.first_name : 'N/A'}`,
-                                start: shift.start_time,
-                                end: shift.end_time,
-                                extendedProps: { ...shift },
-                                className: shift.status === 'completed' ? 'shift-completed' : (shift.status === 'in_progress' ? 'shift-in-progress' : '')
-                            })),
+                            events: this.shifts.map(shift => {
+                                // ✅ BUG FIX: Check for null client/caregiver before creating event title
+                                const clientName = shift.client ? shift.client.first_name : 'N/A';
+                                const caregiverName = shift.caregiver ? shift.caregiver.first_name : 'N/A';
+                                return {
+                                    id: shift.id,
+                                    title: `${clientName} w/ ${caregiverName}`,
+                                    start: shift.start_time,
+                                    end: shift.end_time,
+                                    extendedProps: { ...shift },
+                                    className: shift.status === 'completed' ? 'shift-completed' : (shift.status === 'in_progress' ? 'shift-in-progress' : '')
+                                };
+                            }),
                             eventContent: (arg) => {
                                 let titleHtml = `<div class="font-semibold">${arg.event.title}</div>`;
                                 if (this.isSuperAdmin && arg.event.extendedProps.agency_name) {
@@ -685,14 +695,18 @@
                                 center: 'title', 
                                 right: 'dayGridMonth' 
                             },
-                            events: this.shifts.map(shift => ({
-                                id: shift.id,
-                                title: `${shift.client.first_name} ${shift.client.last_name}`,
-                                start: shift.start_time,
-                                end: shift.end_time,
-                                extendedProps: { ...shift },
-                                className: shift.status === 'completed' ? 'shift-completed' : (shift.status === 'in_progress' ? 'shift-in-progress' : '')
-                            })),
+                            events: this.shifts.map(shift => {
+                                // ✅ BUG FIX: Check for null client before creating event title
+                                const clientName = shift.client ? `${shift.client.first_name} ${shift.client.last_name}` : 'N/A';
+                                return {
+                                    id: shift.id,
+                                    title: clientName,
+                                    start: shift.start_time,
+                                    end: shift.end_time,
+                                    extendedProps: { ...shift },
+                                    className: shift.status === 'completed' ? 'shift-completed' : (shift.status === 'in_progress' ? 'shift-in-progress' : '')
+                                };
+                            }),
                             dateClick: (info) => this.caregiverDateClick(info),
                             dayMaxEvents: false,
                             height: 'auto',
