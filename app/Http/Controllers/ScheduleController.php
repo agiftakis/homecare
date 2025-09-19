@@ -172,9 +172,13 @@ class ScheduleController extends Controller
 
         ShiftUpdated::dispatch($shift);
 
+        // 🔧 BUG FIX: Handle null client/caregiver safely
+        $clientName = $shift->client ? ($shift->client->first_name ?? 'Unknown') : 'N/A';
+        $caregiverName = $shift->caregiver ? ($shift->caregiver->first_name ?? 'Unknown') : 'Unassigned';
+
         $eventData = [
             'id' => $shift->id,
-            'title' => $shift->client->first_name . ' w/ ' . ($shift->caregiver ? $shift->caregiver->first_name : 'N/A'),
+            'title' => $clientName . ' w/ ' . $caregiverName,
             'start' => $shift->start_time,
             'end' => $shift->end_time,
             'extendedProps' => [
@@ -223,9 +227,13 @@ class ScheduleController extends Controller
                 ? $this->firebaseStorageService->getPublicUrl($shift->visit->clock_out_signature_path) : null;
         }
 
+        // 🔧 BUG FIX: Handle null client/caregiver safely
+        $clientName = $shift->client ? ($shift->client->first_name ?? 'Unknown') : 'N/A';
+        $caregiverName = $shift->caregiver ? ($shift->caregiver->first_name ?? 'Unknown') : 'Unassigned';
+
         $eventData = [
             'id' => $shift->id,
-            'title' => $shift->client->first_name . ' w/ ' . ($shift->caregiver ? $shift->caregiver->first_name : 'N/A'),
+            'title' => $clientName . ' w/ ' . $caregiverName,
             'start' => $shift->start_time,
             'end' => $shift->end_time,
             'extendedProps' => [

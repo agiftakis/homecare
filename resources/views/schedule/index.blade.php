@@ -15,9 +15,8 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900 dark:text-gray-100" x-data="schedule({{ $is_admin ? 'true' : 'false' }})"
-                    x-init="initCalendar();
-                    setupSignatureButtonHandlers()">
+                <div class="p-6 text-gray-900 dark:text-gray-100" x-data="schedule({{ $is_admin ? 'true' : 'false' }})" x-init="initCalendar();
+                setupSignatureButtonHandlers()">
 
                     {{-- ✅ SUPER ADMIN UPDATE: Agency Filter Dropdown --}}
                     @if (Auth::user()->role === 'super_admin')
@@ -65,8 +64,10 @@
                         <div class="mb-4">
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                     </svg>
                                 </div>
                                 <input type="text" x-model="searchTerm"
@@ -525,21 +526,25 @@
                     });
                 },
 
-                // ✅ BUG FIX: Add checks for null client
+                // 🔧 BUG FIX: Improved getClientDisplayHtml with consistent return types
                 getClientDisplayHtml(shift) {
-                    // First, check if shift.client exists. If not, return 'N/A'.
-                    if (!shift.client) {
-                        return 'N/A';
+                    // Handle null or undefined shift.client
+                    if (!shift || !shift.client) {
+                        return '<span class="text-gray-500 dark:text-gray-400">N/A</span>';
                     }
 
-                    const clientName = shift.client.first_name || 'N/A';
+                    // Get client name, fallback to 'Unknown' if no first_name
+                    const clientName = shift.client.first_name || 'Unknown';
 
+                    // Handle deleted clients with styling
                     if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
                         return `<span class="text-red-600 dark:text-red-400">${clientName}</span>`;
                     }
 
-                    return clientName;
+                    // Return normal client name
+                    return `<span>${clientName}</span>`;
                 },
+
                 getClientDeletionMessage(shift) {
                     if (!shift.client_deletion_status || !shift.client_deletion_status.is_deleted) {
                         return '';
@@ -556,16 +561,20 @@
                     return `CLIENT DELETED ON ${deletionDate}`;
                 },
 
-                // ✅ BUG FIX: Add checks for null client
+                // 🔧 BUG FIX: Improved getCaregiverClientDisplayHtml with consistent return types
                 getCaregiverClientDisplayHtml(shift) {
-                    const clientName = shift.client ? `${shift.client.first_name} ${shift.client.last_name || ''}`.trim() :
-                        'N/A';
+                    // Handle null or undefined shift.client
+                    if (!shift || !shift.client) {
+                        return '<span class="text-gray-500 dark:text-gray-400">Client: N/A</span>';
+                    }
 
-                    if (shift.client && shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
+                    const clientName = `${shift.client.first_name || 'Unknown'} ${shift.client.last_name || ''}`.trim();
+
+                    if (shift.client_deletion_status && shift.client_deletion_status.is_deleted) {
                         return `<span class="text-red-600 dark:text-red-400">Client: ${clientName}</span>`;
                     }
 
-                    return `Client: ${clientName}`;
+                    return `<span>Client: ${clientName}</span>`;
                 },
 
                 hasArchivedClientMessage() {
@@ -591,17 +600,25 @@
                     return false;
                 },
 
-                // ✅ BUG FIX: Add checks for null caregiver
+                // 🔧 BUG FIX: Completely rewritten getCaregiverDisplayHtml with consistent HTML return types
                 getCaregiverDisplayHtml(shift) {
-                    // Case 1: The caregiver is assigned and not deleted.
-                    if (shift.caregiver && !shift.caregiver.deleted_at) {
-                        return `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`.trim();
+                    // Handle null or undefined shift
+                    if (!shift) {
+                        return '<span class="text-gray-500 dark:text-gray-400">N/A</span>';
                     }
 
-                    // Case 2: The caregiver is assigned but has been soft-deleted.
+                    // Case 1: Caregiver is assigned and active (not soft-deleted)
+                    if (shift.caregiver && !shift.caregiver.deleted_at) {
+                        const caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`
+                        .trim();
+                        return caregiverName ? `<span>${caregiverName}</span>` :
+                            '<span class="text-gray-500 dark:text-gray-400">Unknown</span>';
+                    }
+
+                    // Case 2: Caregiver is assigned but has been soft-deleted
                     if (shift.caregiver && shift.caregiver.deleted_at) {
                         const caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`
-                            .trim();
+                        .trim() || 'Unknown';
                         const now = new Date();
                         const shiftStartDate = new Date(shift.start_time);
 
@@ -619,7 +636,7 @@
                         }
                     }
 
-                    // Case 3: The caregiver was hard-deleted, but we have their name from the visit record.
+                    // Case 3: Caregiver was hard-deleted, but we have their name from visit record
                     if (shift.visit && shift.visit.caregiver_first_name) {
                         const caregiverName = `${shift.visit.caregiver_first_name} ${shift.visit.caregiver_last_name || ''}`
                             .trim();
@@ -629,9 +646,10 @@
                                 </span>`;
                     }
 
-                    // Fallback Case: The shift is unassigned.
-                    return `<span class="text-blue-500 dark:text-blue-400">Unassigned</span>`;
+                    // Case 4: Fallback - shift is unassigned
+                    return '<span class="text-blue-500 dark:text-blue-400">Unassigned</span>';
                 },
+
                 isShiftMissed(shift) {
                     const shiftStartDate = new Date(shift.start_time);
                     const now = new Date();
@@ -680,19 +698,22 @@
                         }
                     });
                 },
+
+                // 🔧 BUG FIX: Updated allShiftsForSelectedDay to handle null clients properly
                 allShiftsForSelectedDay() {
                     if (!this.selectedDate) return [];
                     const userTimezone = '{{ Auth::user()->agency?->timezone ?? 'UTC' }}';
 
                     return this.shifts.filter(shift => {
-                        // ✅ BUG FIX: Ensure shift has a client before processing
-                        if (!shift.client) return false;
+                        // Allow shifts even if client is null - we'll handle display in the template
                         const shiftDate = new Date(shift.start_time).toLocaleDateString('en-CA', {
                             timeZone: userTimezone
                         });
                         return shiftDate === this.selectedDate;
                     }).sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
                 },
+
+                // 🔧 BUG FIX: Updated filteredShiftsForSelectedDay to handle null clients/caregivers
                 filteredShiftsForSelectedDay() {
                     let dayShifts = this.allShiftsForSelectedDay();
                     if (!this.searchTerm.trim()) {
@@ -700,11 +721,17 @@
                     }
                     const searchLower = this.searchTerm.toLowerCase();
                     return dayShifts.filter(shift => {
-                        //  BUG FIX: Add checks for null client and caregiver
+                        // Handle null client
                         const clientName = shift.client ?
-                            `${shift.client.first_name || ''} ${shift.client.last_name || ''}`.toLowerCase() : '';
+                            `${shift.client.first_name || ''} ${shift.client.last_name || ''}`.toLowerCase() :
+                            'n/a unknown';
+
+                        // Handle null caregiver
                         let caregiverName = '';
-                        if (shift.caregiver) {
+                        if (shift.caregiver && !shift.caregiver.deleted_at) {
+                            caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`
+                                .toLowerCase();
+                        } else if (shift.caregiver && shift.caregiver.deleted_at) {
                             caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`
                                 .toLowerCase();
                         } else if (shift.visit && shift.visit.caregiver_first_name) {
@@ -714,6 +741,7 @@
                         } else {
                             caregiverName = 'unassigned';
                         }
+
                         const agencyName = (this.isSuperAdmin && shift.agency) ? shift.agency.name.toLowerCase() :
                             '';
                         return clientName.includes(searchLower) || caregiverName.includes(searchLower) || agencyName
@@ -784,9 +812,11 @@
                                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
                             },
                             events: this.shifts.map(shift => {
-                                // ✅ BUG FIX: Check for null client/caregiver before creating event title
-                                const clientName = shift.client ? shift.client.first_name : 'N/A';
-                                const caregiverName = shift.caregiver ? shift.caregiver.first_name : 'N/A';
+                                // 🔧 BUG FIX: Handle null client/caregiver in calendar events
+                                const clientName = shift.client ? (shift.client.first_name || 'Unknown') :
+                                'N/A';
+                                const caregiverName = shift.caregiver ? (shift.caregiver.first_name ||
+                                    'Unknown') : 'Unassigned';
                                 return {
                                     id: shift.id,
                                     title: `${clientName} w/ ${caregiverName}`,
@@ -841,9 +871,11 @@
                                 right: 'dayGridMonth'
                             },
                             events: this.shifts.map(shift => {
-                                // ✅ BUG FIX: Check for null client before creating event title
+                                // 🔧 BUG FIX: Handle null client in caregiver calendar view
                                 const clientName = shift.client ?
-                                    `${shift.client.first_name} ${shift.client.last_name}` : 'N/A';
+                                    `${shift.client.first_name || 'Unknown'} ${shift.client.last_name || ''}`
+                                    .trim() :
+                                    'N/A';
                                 return {
                                     id: shift.id,
                                     title: clientName,
@@ -886,108 +918,106 @@
                     }
 
                     fetch('{{ route('shifts.store') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(this.newShift)
-                    })
-                    .then(res => res.json().then(data => ({
-                        ok: res.ok,
-                        data
-                    })))
-                    .then(({
-                        ok,
-                        data
-                    }) => {
-                        if (ok) {
-                            this.shifts.push(data.shift);
-                            this.showAddModal = false;
-                            this.newShift = {
-                                client_id: '',
-                                caregiver_id: '',
-                                start_time: '',
-                                end_time: '',
-                                notes: ''
-                            };
-                            toastr.success('New shift created successfully!');
-                            this.calendar.addEvent({
-                                id: data.shift.id,
-                                title: data.shift.title,
-                                start: data.shift.start,
-                                end: data.shift.end,
-                                extendedProps: data.shift.extendedProps
-                            });
-                        } else {
-                            throw data;
-                        }
-                    }).catch(error => this.handleFormError(error));
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify(this.newShift)
+                        })
+                        .then(res => res.json().then(data => ({
+                            ok: res.ok,
+                            data
+                        })))
+                        .then(({
+                            ok,
+                            data
+                        }) => {
+                            if (ok) {
+                                this.shifts.push(data.shift);
+                                this.showAddModal = false;
+                                this.newShift = {
+                                    client_id: '',
+                                    caregiver_id: '',
+                                    start_time: '',
+                                    end_time: '',
+                                    notes: ''
+                                };
+                                toastr.success('New shift created successfully!');
+                                this.calendar.addEvent({
+                                    id: data.shift.id,
+                                    title: data.shift.title,
+                                    start: data.shift.start,
+                                    end: data.shift.end,
+                                    extendedProps: data.shift.extendedProps
+                                });
+                            } else {
+                                throw data;
+                            }
+                        }).catch(error => this.handleFormError(error));
                 },
                 submitEditForm() {
                     fetch(`/shifts/${this.editShift.id}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(this.editShift)
-                    })
-                    .then(res => res.json().then(data => ({
-                        ok: res.ok,
-                        data
-                    })))
-                    .then(({
-                        ok,
-                        data
-                    }) => {
-                        if (ok) {
-                            this.showEditModal = false;
-
-                            toastr.success(
-                                'Shift updated successfully! Refreshing to show updated calendar view...',
-                                'Success', {
-                                    timeOut: 2500,
-                                    extendedTimeOut: 1000
-                                });
-
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 2000);
-                        } else {
-                            throw data;
-                        }
-                    }).catch(error => this.handleFormError(error));
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify(this.editShift)
+                        })
+                        .then(res => res.json().then(data => ({
+                            ok: res.ok,
+                            data
+                        })))
+                        .then(({
+                            ok,
+                            data
+                        }) => {
+                            if (ok) {
+                                this.showEditModal = false;
+                                toastr.success(
+                                    'Shift updated successfully! Refreshing to show updated calendar view...',
+                                    'Success', {
+                                        timeOut: 2500,
+                                        extendedTimeOut: 1000
+                                    });
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 2000);
+                            } else {
+                                throw data;
+                            }
+                        }).catch(error => this.handleFormError(error));
                 },
                 deleteShift() {
                     if (!confirm('Are you sure you want to delete this shift?')) return;
                     fetch(`/shifts/${this.editShift.id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        }
-                    })
-                    .then(res => res.json().then(data => ({
-                        ok: res.ok,
-                        data
-                    })))
-                    .then(({
-                        ok,
-                        data
-                    }) => {
-                        if (ok) {
-                            this.shifts = this.shifts.filter(s => s.id != this.editShift.id);
-                            let event = this.calendar.getEventById(this.editShift.id);
-                            if (event) event.remove();
-                            this.showEditModal = false;
-                            toastr.info('Shift has been deleted.');
-                        } else {
-                            throw data;
-                        }
-                    }).catch(error => this.handleFormError(error));
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(res => res.json().then(data => ({
+                            ok: res.ok,
+                            data
+                        })))
+                        .then(({
+                            ok,
+                            data
+                        }) => {
+                            if (ok) {
+                                this.shifts = this.shifts.filter(s => s.id != this.editShift.id);
+                                let event = this.calendar.getEventById(this.editShift.id);
+                                if (event) event.remove();
+                                this.showEditModal = false;
+                                toastr.info('Shift has been deleted.');
+                            } else {
+                                throw data;
+                            }
+                        }).catch(error => this.handleFormError(error));
                 },
                 handleFormError(error) {
                     let errorMessages = 'An unexpected error occurred.';
