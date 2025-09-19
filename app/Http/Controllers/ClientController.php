@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-// ✅ IMPORT: Added the Cache facade to clear the profile picture URL.
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -27,8 +26,21 @@ class ClientController extends Controller
 
     public function index()
     {
-        // Eager load the 'user' relationship to check onboarding status in the view.
-        $clients = Client::with('user')->latest()->get();
+        // ✅ SUPER ADMIN UPDATE: Check user role to determine which clients to show.
+        $user = Auth::user();
+        $query = Client::with('user'); // Start with a base query.
+
+        if ($user->role === 'super_admin') {
+            // If the user is a super_admin, we remove the default agency scope
+            // to fetch clients from ALL agencies. We also eager-load the 'agency'
+            // relationship so we can display the agency name in the clients.index view.
+            $query->withoutGlobalScope('agencyScope')->with('agency');
+        }
+
+        // For agency_admins, the global scope will apply automatically,
+        // showing only clients from their own agency.
+
+        $clients = $query->latest()->get();
         return view('clients.index', compact('clients'));
     }
 
