@@ -5,8 +5,8 @@
                 {{ __('Caregivers') }}
             </h2>
             <a href="{{ route('caregivers.create') }}"
-                class="inline-flex items-center px-4 py-2 bg-gray-800 dark:bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-white dark:text-gray-800 uppercase tracking-widest hover:bg-gray-700 dark:hover:bg-white focus:bg-gray-700 dark:focus:bg-white active:bg-gray-900 dark:active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                Add New Caregiver
+                class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                + Add New Caregiver
             </a>
         </div>
     </x-slot>
@@ -84,7 +84,7 @@
                                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
                             </div>
-                            <input type="text" id="caregiverSearch" placeholder="Search caregivers by name..."
+                            <input type="text" id="caregiverSearch" placeholder="Search caregivers by name or agency..."
                                 class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                     </div>
@@ -93,7 +93,8 @@
                     <div id="mobileView" class="space-y-4 md:hidden">
                         @forelse ($caregivers as $caregiver)
                             <div class="caregiver-card bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border dark:border-gray-700"
-                                data-name="{{ strtolower($caregiver->first_name . ' ' . $caregiver->last_name) }}">
+                                {{-- ✅ SUPER ADMIN UPDATE: Add agency name to the searchable data attribute --}}
+                                data-name="{{ strtolower($caregiver->first_name . ' ' . $caregiver->last_name . ' ' . ($caregiver->agency->name ?? '')) }}">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-12 w-12">
@@ -114,17 +115,10 @@
                                         <div class="ml-4">
                                             <div class="text-base font-bold text-gray-900 dark:text-gray-100">
                                                 {{ $caregiver->first_name }} {{ $caregiver->last_name }}</div>
-                                            {{-- ✅ NEW: Mobile Status Badge --}}
-                                            @if ($caregiver->user && $caregiver->user->password_setup_token)
-                                                <span
-                                                    class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                    Pending Setup
-                                                </span>
-                                            @else
-                                                <span
-                                                    class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                    Active
-                                                </span>
+                                            
+                                            {{-- ✅ SUPER ADMIN UPDATE: Conditionally display the agency name for super admins --}}
+                                            @if (Auth::user()->role === 'super_admin' && $caregiver->agency)
+                                                <div class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{{ $caregiver->agency->name }}</div>
                                             @endif
                                         </div>
                                     </div>
@@ -135,21 +129,35 @@
                                     <p><span class="font-semibold text-gray-600 dark:text-gray-400">Phone:</span>
                                         {{ $caregiver->phone_number }}</p>
                                 </div>
-                                {{-- ✅ NEW: Mobile Action Buttons --}}
-                                <div class="mt-4 flex items-center justify-end space-x-2">
-                                    @if ($caregiver->user && $caregiver->user->password_setup_token)
-                                        <form action="{{ route('caregivers.resendOnboarding', $caregiver) }}" method="POST">
-                                            @csrf
-                                            <button type="submit"
-                                                class="inline-flex items-center px-3 py-1.5 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                                Get Link
-                                            </button>
-                                        </form>
-                                    @endif
-                                    <a href="{{ route('caregivers.edit', $caregiver) }}"
-                                        class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                                        Edit
-                                    </a>
+                                <div class="mt-4 flex items-center justify-between">
+                                    <div>
+                                        @if ($caregiver->user && $caregiver->user->password_setup_token)
+                                            <span
+                                                class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                Pending Setup
+                                            </span>
+                                        @else
+                                            <span
+                                                class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                Active
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="flex items-center justify-end space-x-2">
+                                        @if ($caregiver->user && $caregiver->user->password_setup_token)
+                                            <form action="{{ route('caregivers.resendOnboarding', $caregiver) }}" method="POST">
+                                                @csrf
+                                                <button type="submit"
+                                                    class="inline-flex items-center px-3 py-1.5 bg-yellow-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                                    Get Link
+                                                </button>
+                                            </form>
+                                        @endif
+                                        <a href="{{ route('caregivers.edit', $caregiver) }}"
+                                            class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                                            Edit
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         @empty
@@ -165,9 +173,14 @@
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Name</th>
+                                    {{-- ✅ SUPER ADMIN UPDATE: Conditionally add the Agency column header --}}
+                                    @if (Auth::user()->role === 'super_admin')
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            Agency</th>
+                                    @endif
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Contact</th>
-                                    {{-- ✅ NEW: Status Column --}}
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                         Status</th>
                                     <th scope="col" class="relative px-6 py-3">
@@ -178,7 +191,8 @@
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 @forelse ($caregivers as $caregiver)
                                     <tr class="caregiver-row"
-                                        data-name="{{ strtolower($caregiver->first_name . ' ' . $caregiver->last_name) }}">
+                                        {{-- ✅ SUPER ADMIN UPDATE: Add agency name to the searchable data attribute --}}
+                                        data-name="{{ strtolower($caregiver->first_name . ' ' . $caregiver->last_name . ' ' . ($caregiver->agency->name ?? '')) }}">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-10 w-10">
@@ -199,11 +213,16 @@
                                                 </div>
                                             </div>
                                         </td>
+                                        {{-- ✅ SUPER ADMIN UPDATE: Conditionally add the Agency data cell --}}
+                                        @if (Auth::user()->role === 'super_admin')
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $caregiver->agency->name ?? 'N/A' }}</div>
+                                            </td>
+                                        @endif
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm text-gray-900 dark:text-gray-100">{{ $caregiver->email }}</div>
                                             <div class="text-sm text-gray-500 dark:text-gray-400">{{ $caregiver->phone_number }}</div>
                                         </td>
-                                        {{-- ✅ NEW: Desktop Status Badge --}}
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @if ($caregiver->user && $caregiver->user->password_setup_token)
                                                 <span
@@ -217,7 +236,6 @@
                                                 </span>
                                             @endif
                                         </td>
-                                        {{-- ✅ NEW: Desktop Action Buttons --}}
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div class="flex items-center justify-end space-x-2">
                                                 @if ($caregiver->user && $caregiver->user->password_setup_token)
@@ -234,7 +252,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                        <td colspan="{{ Auth::user()->role === 'super_admin' ? '5' : '4' }}" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                             No caregivers have been added yet.
                                         </td>
                                     </tr>
@@ -264,36 +282,37 @@
             const caregiverRows = document.querySelectorAll('.caregiver-row');
             const noResults = document.getElementById('noResults');
 
-            searchInput.addEventListener('input', function () {
-                const searchTerm = this.value.toLowerCase().trim();
-                let visibleCount = 0;
+            function performSearch() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
 
-                // Unified search logic for both views
-                function filterItems(items) {
+                function filterItems(items, displayType) {
+                    let visibleCount = 0;
                     items.forEach(item => {
-                        const caregiverName = item.getAttribute('data-name');
-                        if (caregiverName.includes(searchTerm)) {
-                            // The display property is different for table rows vs divs
-                            item.style.display = item.tagName === 'TR' ? 'table-row' : 'block';
+                        const searchableData = item.getAttribute('data-name');
+                        if (searchableData.includes(searchTerm)) {
+                            item.style.display = displayType;
                             visibleCount++;
                         } else {
                             item.style.display = 'none';
                         }
                     });
+                    return visibleCount;
                 }
 
-                filterItems(caregiverCards);
-                filterItems(caregiverRows);
-
-
-                // Show/hide no results message
+                const mobileVisible = filterItems(caregiverCards, 'block');
+                const desktopVisible = filterItems(caregiverRows, 'table-row');
+                
+                const totalVisible = mobileVisible > 0 ? mobileVisible : desktopVisible;
                 const totalItems = caregiverCards.length > 0 ? caregiverCards.length : caregiverRows.length;
-                if (visibleCount === 0 && totalItems > 0 && searchTerm !== '') {
+                
+                if (totalVisible === 0 && totalItems > 0 && searchTerm !== '') {
                     noResults.classList.remove('hidden');
                 } else {
                     noResults.classList.add('hidden');
                 }
-            });
+            }
+
+            searchInput.addEventListener('input', performSearch);
         });
     </script>
 </x-app-layout>
