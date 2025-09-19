@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-// ✅ STEP 3.1: Import the ShiftUpdated event class we created.
 use App\Events\ShiftUpdated;
 use App\Models\Client;
 use App\Models\Caregiver;
@@ -26,85 +25,73 @@ class ScheduleController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $userRole = $user->role;
 
         // Redirect clients to their dedicated schedule view
-        if ($user->role === 'client') {
+        if ($userRole === 'client') {
             return redirect()->route('schedule.client');
         }
-        
-        // ✅ CRITICAL FIX: Only show active (non-deleted) clients and caregivers in dropdowns
-        $clients = Client::whereNull('deleted_at')->orderBy('first_name')->get();
 
-        $caregivers = Caregiver::whereNull('deleted_at')->orderBy('first_name')->get();
+        // ✅ SUPER ADMIN UPDATE: Determine if the user is any kind of admin
+        $is_admin = in_array($userRole, ['agency_admin', 'super_admin']);
 
-        $is_admin = ($user->role === 'agency_admin');
+        // Base queries for dropdowns
+        $clientQuery = Client::query();
+        $caregiverQuery = Caregiver::query();
+        $shiftsQuery = Shift::query();
 
-        if ($user->role === 'agency_admin') {
-            // ✅ ENHANCED: Load shifts with special handling for deleted clients
-            $shiftsQuery = Shift::with([
-                'client' => function ($query) {
-                    $query->withTrashed(); // Include deleted clients
-                },
-                'visit',
-                'caregiver' => function ($query) {
-                    $query->withTrashed();
-                }
-            ]);
-        } else { // This else now implicitly handles the 'caregiver' role
-            // ✅ ENHANCED: Caregiver view with deleted client handling
-            $shiftsQuery = Shift::with([
-                'client' => function ($query) {
-                    $query->withTrashed(); // Include deleted clients for historical accuracy
-                },
-                'visit',
-                'caregiver'
-            ]);
-
+        // ✅ SUPER ADMIN UPDATE: Modify queries based on user role
+        if ($userRole === 'super_admin') {
+            // Super admins see all active clients/caregivers from all agencies for the dropdowns
+            $clientQuery->withoutGlobalScope('agencyScope');
+            $caregiverQuery->withoutGlobalScope('agencyScope');
+            // Super admins see all shifts from all agencies
+            $shiftsQuery->withoutGlobalScope('agencyScope');
+        } elseif ($userRole === 'caregiver') {
+            // Caregivers only see shifts assigned to them
             $caregiverProfile = $user->caregiver;
             if ($caregiverProfile) {
                 $shiftsQuery->where('caregiver_id', $caregiverProfile->id);
             } else {
-                $shiftsQuery->where('caregiver_id', -1);
+                $shiftsQuery->where('caregiver_id', -1); // No shifts if no profile
             }
         }
+        // For agency_admin, the default global scope applies to all queries correctly.
+
+        $clients = $clientQuery->whereNull('deleted_at')->orderBy('first_name')->get();
+        $caregivers = $caregiverQuery->whereNull('deleted_at')->orderBy('first_name')->get();
+
+        // Eager load relationships with soft-deleted models for historical accuracy
+        $shiftsQuery->with([
+            'client' => fn($query) => $query->withTrashed(),
+            'visit',
+            'caregiver' => fn($query) => $query->withTrashed(),
+            'agency' // ✅ SUPER ADMIN UPDATE: Eager load agency for display
+        ]);
 
         $shifts = $shiftsQuery->get();
 
-        // ✅ NEW: Filter shifts based on client deletion logic
+        // Filter shifts based on client deletion logic (this logic is the same for both admin types)
         $filteredShifts = $shifts->filter(function ($shift) use ($is_admin) {
-            // If client exists and is not deleted, always show
             if ($shift->client && !$shift->client->deleted_at) {
                 return true;
             }
-
-            // If client is deleted, apply the enhanced logic
             if ($shift->client && $shift->client->deleted_at) {
                 $clientDeletionDate = Carbon::parse($shift->client->deleted_at);
                 $shiftDate = Carbon::parse($shift->start_time);
-
-                // For admin view: Show all shifts but mark them appropriately
                 if ($is_admin) {
                     return true;
                 }
-
-                // For caregiver view: Only show past shifts, hide future ones
-                if (!$is_admin) {
-                    // Show shifts that occurred before or on the deletion date
-                    return $shiftDate->lte($clientDeletionDate);
-                }
+                return $shiftDate->lte($clientDeletionDate);
             }
-
-            // If no client at all (shouldn't happen but safety check)
             return false;
         });
 
-        // ✅ ENHANCED: Add client deletion status to each shift
+        // Add client deletion status to each shift
         $enhancedShifts = $filteredShifts->map(function ($shift) {
             if ($shift->client && $shift->client->deleted_at) {
                 $clientDeletionDate = Carbon::parse($shift->client->deleted_at);
                 $shiftDate = Carbon::parse($shift->start_time);
-
-                // Determine if this is a past or future shift relative to deletion
                 $shift->client_deletion_status = [
                     'is_deleted' => true,
                     'deletion_date' => $clientDeletionDate,
@@ -113,33 +100,28 @@ class ScheduleController extends Controller
                     'formatted_deletion_date' => $clientDeletionDate->format('M j, Y @ g:i A')
                 ];
             } else {
-                $shift->client_deletion_status = [
-                    'is_deleted' => false
-                ];
+                $shift->client_deletion_status = ['is_deleted' => false];
             }
-
             return $shift;
         });
 
+        // Fetch signature URLs for admins
         if ($is_admin) {
             $enhancedShifts->each(function ($shift) {
                 if ($shift->visit) {
                     $shift->visit->clock_in_signature_url = $shift->visit->signature_path
-                        ? $this->firebaseStorageService->getPublicUrl($shift->visit->signature_path)
-                        : null;
-
+                        ? $this->firebaseStorageService->getPublicUrl($shift->visit->signature_path) : null;
                     $shift->visit->clock_out_signature_url = $shift->visit->clock_out_signature_path
-                        ? $this->firebaseStorageService->getPublicUrl($shift->visit->clock_out_signature_path)
-                        : null;
+                        ? $this->firebaseStorageService->getPublicUrl($shift->visit->clock_out_signature_path) : null;
                 }
             });
         }
 
-        return view('schedule.index', compact('clients', 'caregivers', 'shifts', 'is_admin'))->with('shifts', $enhancedShifts->values());
+        return view('schedule.index', compact('clients', 'caregivers', 'is_admin'))->with('shifts', $enhancedShifts->values());
     }
 
     /**
-     * ✅ NEW: Display a read-only schedule for the authenticated client.
+     * Display a read-only schedule for the authenticated client.
      */
     public function clientSchedule()
     {
@@ -147,32 +129,26 @@ class ScheduleController extends Controller
         $clientProfile = $user->client;
 
         if (!$clientProfile) {
-            // Or handle this scenario appropriately, maybe redirect with an error.
             return view('schedule.client-schedule', ['shifts' => collect()]);
         }
-        
-        // Fetch shifts for the specific client
-        // CRITICAL: Include withTrashed() for caregivers to show historical data correctly
+
         $shifts = Shift::where('client_id', $clientProfile->id)
             ->with([
-                'caregiver' => function ($query) {
-                    $query->withTrashed();
-                },
+                'caregiver' => fn($query) => $query->withTrashed(),
                 'visit'
             ])
             ->get();
-            
+
         return view('schedule.client-schedule', compact('shifts'));
     }
 
     public function store(Request $request)
     {
-        if (Auth::user()->role !== 'agency_admin') {
+        // ✅ SUPER ADMIN UPDATE: Allow both admin types to create shifts
+        if (!in_array(Auth::user()->role, ['agency_admin', 'super_admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
-        // ✅ FIX: Added server-side validation to prevent creating shifts in the past.
-        // 'today' is timezone-aware based on the application's config.
         $validator = Validator::make($request->all(), [
             'client_id' => 'required|exists:clients,id',
             'caregiver_id' => 'required|exists:caregivers,id',
@@ -185,10 +161,16 @@ class ScheduleController extends Controller
             return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $shift = Shift::create($validator->validated());
+        $validated = $validator->validated();
+
+        // ✅ SUPER ADMIN UPDATE: Determine agency_id from the selected client
+        // This ensures the shift is correctly associated with an agency.
+        $client = Client::find($validated['client_id']);
+        $validated['agency_id'] = $client->agency_id;
+
+        $shift = Shift::create($validated);
         $shift->load(['client', 'caregiver', 'visit']);
 
-        // After creating a new shift, we should also notify the client.
         ShiftUpdated::dispatch($shift);
 
         $eventData = [
@@ -213,7 +195,8 @@ class ScheduleController extends Controller
 
     public function update(Request $request, Shift $shift)
     {
-        if (Auth::user()->role !== 'agency_admin') {
+        // ✅ SUPER ADMIN UPDATE: Allow both admin types to update shifts
+        if (!in_array(Auth::user()->role, ['agency_admin', 'super_admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
@@ -232,17 +215,13 @@ class ScheduleController extends Controller
         $shift->update($validator->validated());
         $shift->load(['client', 'caregiver', 'visit']);
 
-        // ✅ STEP 3.2: Dispatch the event to notify the client in real-time.
         ShiftUpdated::dispatch($shift);
 
         if ($shift->visit) {
             $shift->visit->clock_in_signature_url = $shift->visit->signature_path
-                ? $this->firebaseStorageService->getPublicUrl($shift->visit->signature_path)
-                : null;
-
+                ? $this->firebaseStorageService->getPublicUrl($shift->visit->signature_path) : null;
             $shift->visit->clock_out_signature_url = $shift->visit->clock_out_signature_path
-                ? $this->firebaseStorageService->getPublicUrl($shift->visit->clock_out_signature_path)
-                : null;
+                ? $this->firebaseStorageService->getPublicUrl($shift->visit->clock_out_signature_path) : null;
         }
 
         $eventData = [
@@ -269,17 +248,12 @@ class ScheduleController extends Controller
 
     public function destroy(Shift $shift)
     {
-        if (Auth::user()->role !== 'agency_admin') {
+        // ✅ SUPER ADMIN UPDATE: Allow both admin types to delete shifts
+        if (!in_array(Auth::user()->role, ['agency_admin', 'super_admin'])) {
             return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
         }
 
-        // Before deleting, we capture the client_id to notify them.
-        $clientId = $shift->client_id;
-        
         $shift->delete();
-        
-        // We can't dispatch the event with the shift data anymore, but we can make a new event
-        // or re-use ShiftUpdated if we modify it to handle deletes. For now, we'll skip notifying on delete.
 
         return response()->json(['success' => true]);
     }
