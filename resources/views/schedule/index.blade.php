@@ -610,7 +610,7 @@
                     // Case 1: Caregiver is assigned and active (not soft-deleted)
                     if (shift.caregiver && !shift.caregiver.deleted_at) {
                         const caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`
-                        .trim();
+                            .trim();
                         return caregiverName ? `<span>${caregiverName}</span>` :
                             '<span class="text-gray-500 dark:text-gray-400">Unknown</span>';
                     }
@@ -618,7 +618,7 @@
                     // Case 2: Caregiver is assigned but has been soft-deleted
                     if (shift.caregiver && shift.caregiver.deleted_at) {
                         const caregiverName = `${shift.caregiver.first_name || ''} ${shift.caregiver.last_name || ''}`
-                        .trim() || 'Unknown';
+                            .trim() || 'Unknown';
                         const now = new Date();
                         const shiftStartDate = new Date(shift.start_time);
 
@@ -799,6 +799,7 @@
                     this.showEditModal = true;
                 },
 
+                // 🔧 CRITICAL FIX: Modified initCalendar for Agency Admin Clean View
                 initCalendar() {
                     const calendarEl = document.getElementById('calendar');
                     let calendarConfig;
@@ -809,45 +810,11 @@
                             headerToolbar: {
                                 left: 'prev,next today',
                                 center: 'title',
-                                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                                // 🔧 REMOVED: week and day view buttons for clean admin interface
+                                right: 'dayGridMonth'
                             },
-                            events: this.shifts.map(shift => {
-                                // 🔧 BUG FIX: Handle null client/caregiver in calendar events
-                                const clientName = shift.client ? (shift.client.first_name || 'Unknown') :
-                                'N/A';
-                                const caregiverName = shift.caregiver ? (shift.caregiver.first_name ||
-                                    'Unknown') : 'Unassigned';
-                                return {
-                                    id: shift.id,
-                                    title: `${clientName} w/ ${caregiverName}`,
-                                    start: shift.start_time,
-                                    end: shift.end_time,
-                                    extendedProps: {
-                                        ...shift
-                                    },
-                                    className: shift.status === 'completed' ? 'shift-completed' : (shift
-                                        .status === 'in_progress' ? 'shift-in-progress' : '')
-                                };
-                            }),
-                            eventContent: (arg) => {
-                                let titleHtml = `<div class="font-semibold">${arg.event.title}</div>`;
-                                if (this.isSuperAdmin && arg.event.extendedProps.agency_name) {
-                                    titleHtml +=
-                                        `<div class="text-xs text-indigo-200">${arg.event.extendedProps.agency_name}</div>`;
-                                }
-                                if (arg.event.extendedProps.notes) {
-                                    titleHtml += `<div class="shift-notes">${arg.event.extendedProps.notes}</div>`;
-                                }
-                                if (arg.event.extendedProps.visit) {
-                                    let visitHtml = this.getVisitTimesHtml(arg.event.extendedProps.visit);
-                                    if (visitHtml) {
-                                        titleHtml += `<div class="visit-times">${visitHtml}</div>`;
-                                    }
-                                }
-                                return {
-                                    html: titleHtml
-                                };
-                            },
+                            // 🔧 CRITICAL: Empty events array to show clean calendar grid
+                            events: [],
                             dateClick: (info) => {
                                 this.pastDateError = false;
                                 const startTime = new Date(info.dateStr + 'T09:00:00');
@@ -945,13 +912,7 @@
                                     notes: ''
                                 };
                                 toastr.success('New shift created successfully!');
-                                this.calendar.addEvent({
-                                    id: data.shift.id,
-                                    title: data.shift.title,
-                                    start: data.shift.start,
-                                    end: data.shift.end,
-                                    extendedProps: data.shift.extendedProps
-                                });
+                                // 🔧 NOTE: No need to add events to admin calendar since it shows clean view
                             } else {
                                 throw data;
                             }
@@ -1010,8 +971,7 @@
                         }) => {
                             if (ok) {
                                 this.shifts = this.shifts.filter(s => s.id != this.editShift.id);
-                                let event = this.calendar.getEventById(this.editShift.id);
-                                if (event) event.remove();
+                                // 🔧 NOTE: No need to remove events from admin calendar since it shows clean view
                                 this.showEditModal = false;
                                 toastr.info('Shift has been deleted.');
                             } else {
