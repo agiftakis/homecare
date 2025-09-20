@@ -91,12 +91,12 @@
                         </div>
                     </div>
 
-                    {{-- ✅ CALENDAR VIEW --}}
+                    {{-- CALENDAR VIEW --}}
                     <div x-show="viewMode === 'calendar'">
                         <div id='calendar' class="text-gray-900 dark:text-gray-100"></div>
                     </div>
 
-                    {{-- ✅ DAY LIST VIEW --}}
+                    {{--  DAY LIST VIEW --}}
                     <div x-show="viewMode === 'dayList'" x-cloak>
                         <div
                             class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
@@ -202,7 +202,7 @@
                         </div>
                     </div>
 
-                    {{-- ✅ LEGACY LIST VIEW (Original table view) --}}
+                    {{--  LEGACY LIST VIEW (Original table view) --}}
                     <div x-show="viewMode === 'list'" x-cloak>
                         <!-- Search Bar -->
                         <div class="mb-6">
@@ -332,7 +332,7 @@
                         </div>
                     </div>
 
-                    {{-- ✅ View Signatures Modal --}}
+                    {{--  View Signatures Modal --}}
                     <div x-show="showSignaturesModal"
                         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
                         @click.self="showSignaturesModal = false" style="display: none;">
@@ -435,7 +435,7 @@
             border-color: #d97706 !important;
         }
 
-        /* ✅ Enhanced hover effects for super admin list items */
+        /* Enhanced hover effects for super admin list items */
         .superadmin-shift-item:hover {
             background-color: rgba(107, 114, 128, 0.1);
         }
@@ -444,7 +444,7 @@
             background-color: rgba(255, 255, 255, 0.05);
         }
 
-        /* ✅ Mobile optimizations for super admin view */
+        /*  Mobile optimizations for super admin view */
         @media screen and (max-width: 1024px) {
             .superadmin-shift-item {
                 padding: 16px 12px;
@@ -471,7 +471,7 @@
                 agencies: [],
                 selectedVisit: {},
 
-                // 🔧 BUG FIX: Safe client display helper
+                //  BUG FIX: Safe client display helper
                 getClientDisplayHtml(shift) {
                     if (!shift || !shift.client) {
                         return '<span class="text-gray-500 dark:text-gray-400">N/A</span>';
@@ -480,7 +480,7 @@
                     return `<span class="text-gray-900 dark:text-gray-100">${clientName}</span>`;
                 },
 
-                // 🔧 BUG FIX: Safe caregiver display helper
+                //  BUG FIX: Safe caregiver display helper
                 getCaregiverDisplayHtml(shift) {
                     if (!shift || !shift.caregiver) {
                         return '<span class="text-blue-500 dark:text-blue-400">Unassigned</span>';
@@ -518,7 +518,7 @@
                     });
                 },
 
-                // ✅ Extract unique agencies from shifts
+                // Extract unique agencies from shifts
                 extractAgencies() {
                     const agencyMap = new Map();
                     this.shifts.forEach(shift => {
@@ -529,7 +529,7 @@
                     this.agencies = Array.from(agencyMap.values());
                 },
 
-                // ✅ Filter shifts for selected day
+                // Filter shifts for selected day
                 shiftsForSelectedDay() {
                     if (!this.selectedDate) return [];
 
@@ -541,7 +541,7 @@
                     }).sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
                 },
 
-                // ✅ Filter shifts for selected day with agency filter
+                // Filter shifts for selected day with agency filter
                 filteredShiftsForSelectedDay() {
                     const dayShifts = this.shiftsForSelectedDay();
                     if (!this.selectedAgencyFilter) return dayShifts;
@@ -551,7 +551,7 @@
                     );
                 },
 
-                // 🔧 BUG FIX: Updated filteredShifts with null-safe searching
+                // BUG FIX: Updated filteredShifts with null-safe searching
                 filteredShifts() {
                     let filtered = this.shifts;
 
@@ -581,7 +581,7 @@
                     return filtered.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
                 },
 
-                // ✅ Date click handler for calendar
+                // Date click handler for calendar
                 dateClick(info) {
                     this.selectedDate = info.dateStr; // YYYY-MM-DD
                     const dateObj = new Date(this.selectedDate + 'T00:00:00');
@@ -606,7 +606,7 @@
                     return html;
                 },
 
-                // 🔧 BUG FIX: Updated viewSignatures with null safety
+                //  BUG FIX: Updated viewSignatures with null safety
                 viewSignatures(shiftId) {
                     const shift = this.shifts.find(s => s.id == shiftId);
                     if (shift && shift.visit) {
@@ -635,7 +635,7 @@
                     }
                 },
 
-                // ✅ Initialize calendar
+                // Initialize calendar
                 initCalendar() {
                     this.extractAgencies();
 
