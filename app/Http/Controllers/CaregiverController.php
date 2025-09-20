@@ -6,15 +6,17 @@ use App\Models\Agency;
 use App\Models\Caregiver;
 use App\Models\User;
 use App\Services\FirebaseStorageService;
+use App\Traits\HandlesErrors;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class CaregiverController extends Controller
 {
+    use HandlesErrors;
+
     protected $firebaseStorageService;
 
     public function __construct(FirebaseStorageService $firebaseStorageService)
@@ -24,29 +26,37 @@ class CaregiverController extends Controller
 
     public function index()
     {
-        // ✅ SUPER ADMIN UPDATE: Check user role to determine which caregivers to show.
-        $user = Auth::user();
-        $query = Caregiver::with('user'); // Start with a base query.
+        try {
+            // ✅ SUPER ADMIN UPDATE: Check user role to determine which caregivers to show.
+            $user = Auth::user();
+            $query = Caregiver::with('user'); // Start with a base query.
 
-        if ($user->role === 'super_admin') {
-            // If the user is a super_admin, we remove the default agency scope
-            // to fetch caregivers from ALL agencies. We also eager-load the 'agency'
-            // relationship so we can display the agency name in the view.
-            $query->withoutGlobalScope('agencyScope')->with('agency');
+            if ($user->role === 'super_admin') {
+                // If the user is a super_admin, we remove the default agency scope
+                // to fetch caregivers from ALL agencies. We also eager-load the 'agency'
+                // relationship so we can display the agency name in the view.
+                $query->withoutGlobalScope('agencyScope')->with('agency');
+            }
+
+            // For agency_admins, the global scope will apply automatically.
+            $caregivers = $query->latest()->get();
+            return view('caregivers.index', compact('caregivers'));
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Unable to load caregivers. Please try again.', 'caregivers_index');
         }
-
-        // For agency_admins, the global scope will apply automatically.
-        $caregivers = $query->latest()->get();
-        return view('caregivers.index', compact('caregivers'));
     }
 
     public function create()
     {
-        $agencies = [];
-        if (Auth::user()->role === 'super_admin') {
-            $agencies = Agency::orderBy('name')->get();
+        try {
+            $agencies = [];
+            if (Auth::user()->role === 'super_admin') {
+                $agencies = Agency::orderBy('name')->get();
+            }
+            return view('caregivers.create', compact('agencies'));
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Unable to load caregiver creation form.', 'caregivers_create');
         }
-        return view('caregivers.create', compact('agencies'));
     }
 
     /**
@@ -60,7 +70,7 @@ class CaregiverController extends Controller
             'email' => ['required', 'email', 'unique:users,email'], // Must be unique in the main users table
             'phone_number' => 'required|string|max:20',
             'date_of_birth' => 'required|date|date_format:Y-m-d',
-            'certifications' => 'nullable|string',
+            'certifications' => 'nullable|string|max:1000',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'certifications_document' => 'nullable|file|mimes:pdf,docx,jpeg,png,jpg,gif|max:10240',
             'professional_licenses_document' => 'nullable|file|mimes:pdf,docx,jpeg,png,jpg,gif|max:10240',
@@ -73,11 +83,13 @@ class CaregiverController extends Controller
             $validationRules['agency_id'] = 'required|exists:agencies,id';
         }
 
-        $validated = $request->validate($validationRules);
+        try {
+            $validated = $request->validate($validationRules);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->handleValidationError($e->errors());
+        }
 
-        // Use a database transaction to ensure both records are created or neither are.
-        DB::transaction(function () use ($validated, $agencyId, $request) {
-
+        return $this->handleDatabaseTransaction(function () use ($validated, $agencyId, $request) {
             // 1. Create the User record FIRST to get its ID.
             $user = User::create([
                 'name' => $validated['first_name'] . ' ' . $validated['last_name'],
@@ -94,55 +106,84 @@ class CaregiverController extends Controller
 
             $caregiverName = $validated['first_name'] . '_' . $validated['last_name'];
 
-            if ($request->hasFile('profile_picture')) {
-                $caregiverData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture($request->file('profile_picture'), 'caregiver_profile_pictures');
-            }
-            if ($request->hasFile('certifications_document')) {
-                $documentInfo = $this->firebaseStorageService->uploadDocument($request->file('certifications_document'), $caregiverName, 'Certifications');
-                $caregiverData['certifications_filename'] = $documentInfo['descriptive_filename'];
-                $caregiverData['certifications_path'] = $documentInfo['firebase_path'];
-            }
-            if ($request->hasFile('professional_licenses_document')) {
-                $documentInfo = $this->firebaseStorageService->uploadDocument($request->file('professional_licenses_document'), $caregiverName, 'Professional_Licenses');
-                $caregiverData['professional_licenses_filename'] = $documentInfo['descriptive_filename'];
-                $caregiverData['professional_licenses_path'] = $documentInfo['firebase_path'];
-            }
-            if ($request->hasFile('state_province_id_document')) {
-                $documentInfo = $this->firebaseStorageService->uploadDocument($request->file('state_province_id_document'), $caregiverName, 'State_Province_ID');
-                $caregiverData['state_province_id_filename'] = $documentInfo['descriptive_filename'];
-                $caregiverData['state_province_id_path'] = $documentInfo['firebase_path'];
+            // 3. Handle file uploads with proper error handling
+            try {
+                if ($request->hasFile('profile_picture')) {
+                    $caregiverData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture(
+                        $request->file('profile_picture'),
+                        'caregiver_profile_pictures'
+                    );
+                }
+
+                if ($request->hasFile('certifications_document')) {
+                    $documentInfo = $this->firebaseStorageService->uploadDocument(
+                        $request->file('certifications_document'),
+                        $caregiverName,
+                        'Certifications'
+                    );
+                    $caregiverData['certifications_filename'] = $documentInfo['descriptive_filename'];
+                    $caregiverData['certifications_path'] = $documentInfo['firebase_path'];
+                }
+
+                if ($request->hasFile('professional_licenses_document')) {
+                    $documentInfo = $this->firebaseStorageService->uploadDocument(
+                        $request->file('professional_licenses_document'),
+                        $caregiverName,
+                        'Professional_Licenses'
+                    );
+                    $caregiverData['professional_licenses_filename'] = $documentInfo['descriptive_filename'];
+                    $caregiverData['professional_licenses_path'] = $documentInfo['firebase_path'];
+                }
+
+                if ($request->hasFile('state_province_id_document')) {
+                    $documentInfo = $this->firebaseStorageService->uploadDocument(
+                        $request->file('state_province_id_document'),
+                        $caregiverName,
+                        'State_Province_ID'
+                    );
+                    $caregiverData['state_province_id_filename'] = $documentInfo['descriptive_filename'];
+                    $caregiverData['state_province_id_path'] = $documentInfo['firebase_path'];
+                }
+            } catch (\Exception $e) {
+                // Clean up user if file upload fails
+                $user->delete();
+                throw new \Exception('Document upload failed: ' . $e->getMessage());
             }
 
-            // 3. Create the Caregiver record with all data, including the user_id link.
-            Caregiver::create($caregiverData);
+            // 4. Create the Caregiver record with all data, including the user_id link.
+            $caregiver = Caregiver::create($caregiverData);
 
-            // 4. Generate and store the password setup token for the new user.
+            // 5. Generate and store the password setup token for the new user.
             $token = Str::random(60);
             $user->forceFill([
                 'password_setup_token' => hash('sha256', $token),
                 'password_setup_expires_at' => now()->addHours(48),
             ])->save();
 
-            // 5. Flash the setup link to the session for the modal popup.
+            // 6. Flash the setup link to the session for the modal popup.
             $setupUrl = route('password.setup.show', ['token' => $token]);
             session()->flash('setup_link', $setupUrl);
-        });
 
-        session()->flash('success', 'Caregiver added successfully!');
-        return redirect()->route('caregivers.index');
+            return $caregiver;
+        }, 'Caregiver added successfully!', 'Failed to create caregiver. Please check your information and try again.');
     }
 
     public function edit(Caregiver $caregiver)
     {
-        $this->authorize('update', $caregiver);
-        return view('caregivers.edit', compact('caregiver'));
+        $this->authorizeWithError('update', $caregiver, 'You do not have permission to edit this caregiver.');
+
+        try {
+            return view('caregivers.edit', compact('caregiver'));
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Unable to load caregiver editing form.', 'caregivers_edit');
+        }
     }
 
     public function update(Request $request, Caregiver $caregiver)
     {
-        $this->authorize('update', $caregiver);
+        $this->authorizeWithError('update', $caregiver, 'You do not have permission to update this caregiver.');
 
-        $validated = $request->validate([
+        $validationRules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => [
@@ -153,14 +194,20 @@ class CaregiverController extends Controller
             ],
             'phone_number' => 'required|string|max:20',
             'date_of_birth' => 'required|date|date_format:Y-m-d',
-            'certifications' => 'nullable|string',
+            'certifications' => 'nullable|string|max:1000',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'certifications_document' => 'nullable|file|mimes:pdf,docx,jpeg,png,jpg,gif|max:10240',
             'professional_licenses_document' => 'nullable|file|mimes:pdf,docx,jpeg,png,jpg,gif|max:10240',
             'state_province_id_document' => 'nullable|file|mimes:pdf,docx,jpeg,png,jpg,gif|max:10240',
-        ]);
+        ];
 
-        DB::transaction(function () use ($caregiver, $validated, $request) {
+        try {
+            $validated = $request->validate($validationRules);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->handleValidationError($e->errors());
+        }
+
+        return $this->handleDatabaseTransaction(function () use ($caregiver, $validated, $request) {
             // Update the associated user record first
             if ($caregiver->user) {
                 $caregiver->user->update([
@@ -172,42 +219,53 @@ class CaregiverController extends Controller
             $caregiverName = $validated['first_name'] . '_' . $validated['last_name'];
             $updateData = $validated;
 
-            if ($request->hasFile('profile_picture')) {
-                if ($caregiver->profile_picture_path) {
-                    $this->firebaseStorageService->deleteFile($caregiver->profile_picture_path);
-                }
-                $updateData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture($request->file('profile_picture'), 'caregiver_profile_pictures');
-
-                // It instantly clears the cached URL so the new picture appears immediately.
-                Cache::forget("caregiver_{$caregiver->id}_profile_picture_url");
-            }
-
-            // ✅ FUNCTIONALITY FIX: Added missing logic to handle document uploads on update.
-            $documentTypes = [
-                'certifications',
-                'professional_licenses',
-                'state_province_id',
-            ];
-
-            foreach ($documentTypes as $type) {
-                if ($request->hasFile("{$type}_document")) {
-                    // Delete the old file if it exists
-                    if ($caregiver->{"{$type}_path"}) {
-                        $this->firebaseStorageService->deleteFile($caregiver->{"{$type}_path"});
+            // Handle file uploads with proper error handling
+            try {
+                if ($request->hasFile('profile_picture')) {
+                    if ($caregiver->profile_picture_path) {
+                        $this->firebaseStorageService->deleteFile($caregiver->profile_picture_path);
                     }
+                    $updateData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture(
+                        $request->file('profile_picture'),
+                        'caregiver_profile_pictures'
+                    );
 
-                    $file = $request->file("{$type}_document");
-                    $documentInfo = $this->firebaseStorageService->uploadDocument($file, $caregiverName, Str::studly($type));
-
-                    $updateData["{$type}_path"] = $documentInfo['firebase_path'];
-                    $updateData["{$type}_filename"] = $documentInfo['descriptive_filename'];
+                    // Clear cached URL so the new picture appears immediately.
+                    Cache::forget("caregiver_{$caregiver->id}_profile_picture_url");
                 }
+
+                // ✅ FUNCTIONALITY FIX: Handle document uploads on update.
+                $documentTypes = [
+                    'certifications',
+                    'professional_licenses',
+                    'state_province_id',
+                ];
+
+                foreach ($documentTypes as $type) {
+                    if ($request->hasFile("{$type}_document")) {
+                        // Delete the old file if it exists
+                        if ($caregiver->{"{$type}_path"}) {
+                            $this->firebaseStorageService->deleteFile($caregiver->{"{$type}_path"});
+                        }
+
+                        $file = $request->file("{$type}_document");
+                        $documentInfo = $this->firebaseStorageService->uploadDocument(
+                            $file,
+                            $caregiverName,
+                            Str::studly($type)
+                        );
+
+                        $updateData["{$type}_path"] = $documentInfo['firebase_path'];
+                        $updateData["{$type}_filename"] = $documentInfo['descriptive_filename'];
+                    }
+                }
+            } catch (\Exception $e) {
+                throw new \Exception('Document upload failed: ' . $e->getMessage());
             }
 
             $caregiver->update($updateData);
-        });
-
-        return redirect()->route('caregivers.index')->with('success', 'Caregiver updated successfully!');
+            return $caregiver;
+        }, 'Caregiver updated successfully!', 'Failed to update caregiver. Please check your information and try again.');
     }
 
     /**
@@ -215,10 +273,9 @@ class CaregiverController extends Controller
      */
     public function destroy(Caregiver $caregiver)
     {
-        // Authorize the action first.
-        $this->authorize('delete', $caregiver);
+        $this->authorizeWithError('delete', $caregiver, 'You do not have permission to delete this caregiver.');
 
-        DB::transaction(function () use ($caregiver) {
+        return $this->handleDatabaseTransaction(function () use ($caregiver) {
             $adminId = Auth::id();
             $user = $caregiver->user;
 
@@ -231,33 +288,35 @@ class CaregiverController extends Controller
                 $user->update(['deleted_by' => $adminId]);
                 $user->delete(); // This is now a soft delete.
             }
-        });
 
-        return redirect()->route('caregivers.index')->with('success', 'Caregiver has been deactivated and archived.');
+            return $caregiver;
+        }, 'Caregiver has been deactivated and archived.', 'Failed to delete caregiver. Please try again.');
     }
-
 
     public function resendOnboardingLink(Caregiver $caregiver)
     {
-        $this->authorize('update', $caregiver);
+        $this->authorizeWithError('update', $caregiver, 'You do not have permission to resend the onboarding link for this caregiver.');
 
-        $user = $caregiver->user;
+        try {
+            $user = $caregiver->user;
 
-        if (!$user) {
-            return redirect()->route('caregivers.index')->with('error', 'This caregiver does not have a user account.');
+            if (!$user) {
+                return $this->successResponse('This caregiver does not have a user account.', null, 400);
+            }
+
+            $token = Str::random(60);
+            $user->forceFill([
+                'password_setup_token' => hash('sha256', $token),
+                'password_setup_expires_at' => now()->addHours(48),
+            ])->save();
+
+            $setupUrl = route('password.setup.show', ['token' => $token]);
+
+            session()->flash('setup_link', $setupUrl);
+
+            return $this->successResponse('New onboarding link generated successfully!');
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Failed to generate onboarding link.', 'caregiver_resend_onboarding');
         }
-
-        $token = Str::random(60);
-        $user->forceFill([
-            'password_setup_token' => hash('sha256', $token),
-            'password_setup_expires_at' => now()->addHours(48),
-        ])->save();
-
-        $setupUrl = route('password.setup.show', ['token' => $token]);
-
-        session()->flash('success', 'New onboarding link generated successfully!');
-        session()->flash('setup_link', $setupUrl);
-
-        return redirect()->route('caregivers.index');
     }
 }

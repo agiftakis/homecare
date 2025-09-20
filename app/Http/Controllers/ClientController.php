@@ -7,16 +7,17 @@ use App\Models\Client;
 use App\Models\User;
 use App\Models\Visit;
 use App\Services\FirebaseStorageService;
+use App\Traits\HandlesErrors;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
 {
+    use HandlesErrors;
+
     protected $firebaseStorageService;
 
     public function __construct(FirebaseStorageService $firebaseStorageService)
@@ -26,31 +27,39 @@ class ClientController extends Controller
 
     public function index()
     {
-        // ✅ SUPER ADMIN UPDATE: Check user role to determine which clients to show.
-        $user = Auth::user();
-        $query = Client::with('user'); // Start with a base query.
+        try {
+            // ✅ SUPER ADMIN UPDATE: Check user role to determine which clients to show.
+            $user = Auth::user();
+            $query = Client::with('user'); // Start with a base query.
 
-        if ($user->role === 'super_admin') {
-            // If the user is a super_admin, we remove the default agency scope
-            // to fetch clients from ALL agencies. We also eager-load the 'agency'
-            // relationship so we can display the agency name in the clients.index view.
-            $query->withoutGlobalScope('agencyScope')->with('agency');
+            if ($user->role === 'super_admin') {
+                // If the user is a super_admin, we remove the default agency scope
+                // to fetch clients from ALL agencies. We also eager-load the 'agency'
+                // relationship so we can display the agency name in the clients.index view.
+                $query->withoutGlobalScope('agencyScope')->with('agency');
+            }
+
+            // For agency_admins, the global scope will apply automatically,
+            // showing only clients from their own agency.
+
+            $clients = $query->latest()->get();
+            return view('clients.index', compact('clients'));
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Unable to load clients. Please try again.', 'clients_index');
         }
-
-        // For agency_admins, the global scope will apply automatically,
-        // showing only clients from their own agency.
-
-        $clients = $query->latest()->get();
-        return view('clients.index', compact('clients'));
     }
 
     public function create()
     {
-        $agencies = [];
-        if (Auth::user()->role === 'super_admin') {
-            $agencies = Agency::orderBy('name')->get();
+        try {
+            $agencies = [];
+            if (Auth::user()->role === 'super_admin') {
+                $agencies = Agency::orderBy('name')->get();
+            }
+            return view('clients.create', compact('agencies'));
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Unable to load client creation form.', 'clients_create');
         }
-        return view('clients.create', compact('agencies'));
     }
 
     public function store(Request $request)
@@ -79,86 +88,89 @@ class ClientController extends Controller
             $validationRules['agency_id'] = 'required|exists:agencies,id';
         }
 
-        $validated = $request->validate($validationRules);
-
         try {
-            // Use a database transaction to ensure both records are created or neither are.
-            DB::transaction(function () use ($validated, $agencyId, $request) {
+            $validated = $request->validate($validationRules);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->handleValidationError($e->errors());
+        }
 
-                // 1. Create the User record FIRST to get its ID.
-                $user = User::create([
-                    'name' => $validated['first_name'] . ' ' . $validated['last_name'],
-                    'email' => $validated['email'],
-                    'agency_id' => $agencyId,
-                    'role' => 'client',
-                    'password' => bcrypt(Str::random(32)), // Temporary secure password
-                ]);
+        return $this->handleDatabaseTransaction(function () use ($validated, $agencyId, $request) {
+            // 1. Create the User record FIRST to get its ID.
+            $user = User::create([
+                'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                'email' => $validated['email'],
+                'agency_id' => $agencyId,
+                'role' => 'client',
+                'password' => bcrypt(Str::random(32)), // Temporary secure password
+            ]);
 
-                // 2. Prepare Client data, now including the new user_id.
-                $clientData = $validated;
-                $clientData['agency_id'] = $agencyId;
-                $clientData['user_id'] = $user->id;
+            // 2. Prepare Client data, now including the new user_id.
+            $clientData = $validated;
+            $clientData['agency_id'] = $agencyId;
+            $clientData['user_id'] = $user->id;
 
-                if ($request->hasFile('profile_picture')) {
+            // 3. Handle profile picture upload
+            if ($request->hasFile('profile_picture')) {
+                try {
                     $clientData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture(
                         $request->file('profile_picture'),
                         'client_profile_pictures'
                     );
+                } catch (\Exception $e) {
+                    // Clean up the user if file upload fails
+                    $user->delete();
+                    throw new \Exception('Profile picture upload failed: ' . $e->getMessage());
                 }
+            }
 
-                // 3. Create the Client record with all data, including the user_id link.
-                $client = Client::create($clientData);
+            // 4. Create the Client record with all data, including the user_id link.
+            $client = Client::create($clientData);
 
-                // 4. Generate and store the password setup token for the new user.
-                $token = Str::random(60);
-                $user->forceFill([
-                    'password_setup_token' => hash('sha256', $token),
-                    'password_setup_expires_at' => now()->addHours(48),
-                ])->save();
+            // 5. Generate and store the password setup token for the new user.
+            $token = Str::random(60);
+            $user->forceFill([
+                'password_setup_token' => hash('sha256', $token),
+                'password_setup_expires_at' => now()->addHours(48),
+            ])->save();
 
-                // 5. Flash the setup link to the session for the modal popup.
-                $setupUrl = route('password.setup.show', ['token' => $token]);
-                session()->flash('setup_link', $setupUrl);
-            });
+            // 6. Flash the setup link to the session for the modal popup.
+            $setupUrl = route('password.setup.show', ['token' => $token]);
+            session()->flash('setup_link', $setupUrl);
 
-            session()->flash('success', 'Client added successfully!');
-            return redirect()->route('clients.index');
-        } catch (\Exception $e) {
-            Log::error('Client creation failed: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Failed to create client: ' . $e->getMessage());
-        }
+            return $client;
+        }, 'Client added successfully!', 'Failed to create client. Please check your information and try again.');
     }
 
     public function edit(Client $client)
     {
-        $this->authorize('update', $client);
+        $this->authorizeWithError('update', $client, 'You do not have permission to edit this client.');
 
-        // Fetch all visits for this client that have progress notes.
-        // Order them by the most recent first.
-        // Eager load the caregiver, including those who might have been soft-deleted.
-        $visitsWithNotes = Visit::whereHas('shift', function ($query) use ($client) {
-            $query->where('client_id', $client->id);
-        })
-            ->whereNotNull('progress_notes')
-            ->where('progress_notes', '!=', '')
-            ->with(['shift.caregiver' => function ($query) {
-                $query->withTrashed(); // Get caregiver's name even if they are soft-deleted
-            }])
-            ->orderBy('clock_out_time', 'desc')
-            ->get();
+        try {
+            // Fetch all visits for this client that have progress notes.
+            // Order them by the most recent first.
+            // Eager load the caregiver, including those who might have been soft-deleted.
+            $visitsWithNotes = Visit::whereHas('shift', function ($query) use ($client) {
+                $query->where('client_id', $client->id);
+            })
+                ->whereNotNull('progress_notes')
+                ->where('progress_notes', '!=', '')
+                ->with(['shift.caregiver' => function ($query) {
+                    $query->withTrashed(); // Get caregiver's name even if they are soft-deleted
+                }])
+                ->orderBy('clock_out_time', 'desc')
+                ->get();
 
-        return view('clients.edit', compact('client', 'visitsWithNotes'));
+            return view('clients.edit', compact('client', 'visitsWithNotes'));
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Unable to load client editing form.', 'clients_edit');
+        }
     }
 
     public function update(Request $request, Client $client)
     {
-        $this->authorize('update', $client);
+        $this->authorizeWithError('update', $client, 'You do not have permission to update this client.');
 
-        $validated = $request->validate([
+        $validationRules = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => [
@@ -179,9 +191,15 @@ class ClientController extends Controller
             'designated_poa' => 'nullable|string',
             'current_routines_am_pm' => 'nullable|string',
             'fall_risk' => 'nullable|in:yes,no',
-        ]);
+        ];
 
-        DB::transaction(function () use ($client, $validated, $request) {
+        try {
+            $validated = $request->validate($validationRules);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->handleValidationError($e->errors());
+        }
+
+        return $this->handleDatabaseTransaction(function () use ($client, $validated, $request) {
             // Update the associated user record first
             if ($client->user) {
                 $client->user->update([
@@ -192,23 +210,29 @@ class ClientController extends Controller
 
             $updateData = $validated;
 
+            // Handle profile picture upload
             if ($request->hasFile('profile_picture')) {
-                if ($client->profile_picture_path) {
-                    $this->firebaseStorageService->deleteFile($client->profile_picture_path);
-                }
-                $updateData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture(
-                    $request->file('profile_picture'),
-                    'client_profile_pictures'
-                );
+                try {
+                    // Delete old profile picture if exists
+                    if ($client->profile_picture_path) {
+                        $this->firebaseStorageService->deleteFile($client->profile_picture_path);
+                    }
 
-                // ✅ CACHE FIX: Instantly forget the old URL so the new one can be fetched.
-                Cache::forget("client_{$client->id}_profile_picture_url");
+                    $updateData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture(
+                        $request->file('profile_picture'),
+                        'client_profile_pictures'
+                    );
+
+                    // ✅ CACHE FIX: Instantly forget the old URL so the new one can be fetched.
+                    Cache::forget("client_{$client->id}_profile_picture_url");
+                } catch (\Exception $e) {
+                    throw new \Exception('Profile picture upload failed: ' . $e->getMessage());
+                }
             }
 
             $client->update($updateData);
-        });
-
-        return redirect()->route('clients.index')->with('success', 'Client updated successfully!');
+            return $client;
+        }, 'Client updated successfully!', 'Failed to update client. Please check your information and try again.');
     }
 
     /**
@@ -218,9 +242,9 @@ class ClientController extends Controller
      */
     public function destroy(Client $client)
     {
-        $this->authorize('delete', $client);
+        $this->authorizeWithError('delete', $client, 'You do not have permission to delete this client.');
 
-        DB::transaction(function () use ($client) {
+        return $this->handleDatabaseTransaction(function () use ($client) {
             $adminId = Auth::id();
             $user = $client->user;
 
@@ -237,93 +261,64 @@ class ClientController extends Controller
             // NOTE: We do NOT delete files from Firebase storage on a soft delete.
             // This ensures that if the client is ever restored, their profile
             // picture will also be restored.
-        });
 
-        return redirect()->route('clients.index')->with('success', 'Client has been deactivated and archived.');
+            return $client;
+        }, 'Client has been deactivated and archived.', 'Failed to delete client. Please try again.');
     }
 
     public function resendOnboardingLink(Client $client)
     {
-        $this->authorize('update', $client);
+        $this->authorizeWithError('update', $client, 'You do not have permission to resend the onboarding link for this client.');
 
-        $user = $client->user;
+        try {
+            $user = $client->user;
 
-        if (!$user) {
-            return redirect()->route('clients.index')->with('error', 'This client does not have a user account.');
+            if (!$user) {
+                return $this->successResponse('This client does not have a user account.', null, 400);
+            }
+
+            $token = Str::random(60);
+            $user->forceFill([
+                'password_setup_token' => hash('sha256', $token),
+                'password_setup_expires_at' => now()->addHours(48),
+            ])->save();
+
+            $setupUrl = route('password.setup.show', ['token' => $token]);
+
+            session()->flash('setup_link', $setupUrl);
+
+            return $this->successResponse('New onboarding link generated successfully!');
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Failed to generate onboarding link.', 'client_resend_onboarding');
         }
-
-        $token = Str::random(60);
-        $user->forceFill([
-            'password_setup_token' => hash('sha256', $token),
-            'password_setup_expires_at' => now()->addHours(48),
-        ])->save();
-
-        $setupUrl = route('password.setup.show', ['token' => $token]);
-
-        session()->flash('success', 'New onboarding link generated successfully!');
-        session()->flash('setup_link', $setupUrl);
-
-        return redirect()->route('clients.index');
     }
 
-    // ✅ NEW METHODS FOR MANAGING NOTES WITH DEBUGGING
+    // ✅ ENHANCED METHODS FOR MANAGING NOTES
 
     /**
      * Update a specific progress note.
      */
     public function updateNote(Request $request, Visit $visit)
     {
-        // ✅ DEBUG: Log the incoming request
-        Log::info('UpdateNote called', [
-            'visit_id' => $visit->id,
-            'request_data' => $request->all(),
-            'user_id' => Auth::id(),
-        ]);
+        $this->authorizeWithError('update', $visit->shift->client, 'You do not have permission to update notes for this client.');
+
+        $validationRules = [
+            'progress_notes' => 'required|string|max:5000',
+        ];
 
         try {
-            // Use the client policy to authorize this action.
-            // Ensures the admin belongs to the same agency as the client.
-            $this->authorize('update', $visit->shift->client);
+            $validated = $request->validate($validationRules);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->handleValidationError($e->errors());
+        }
 
-            // ✅ DEBUG: Log successful authorization
-            Log::info('Authorization passed for visit', ['visit_id' => $visit->id]);
-
-            $validated = $request->validate([
-                'progress_notes' => 'required|string',
-            ]);
-
-            // ✅ DEBUG: Log validation success
-            Log::info('Validation passed', ['validated_data' => $validated]);
-
-            // ✅ DEBUG: Log before update
-            Log::info('Before update', [
-                'visit_id' => $visit->id,
-                'old_progress_notes' => $visit->progress_notes,
-                'new_progress_notes' => $validated['progress_notes']
-            ]);
-
+        return $this->handleDatabaseTransaction(function () use ($visit, $validated) {
             $visit->update([
                 'progress_notes' => $validated['progress_notes'],
             ]);
 
-            // ✅ DEBUG: Log after update
-            $visit->refresh(); // Reload from database
-            Log::info('After update', [
-                'visit_id' => $visit->id,
-                'current_progress_notes' => $visit->progress_notes
-            ]);
-
-            return redirect()->back()->with('success', 'Care note updated successfully.');
-        } catch (\Exception $e) {
-            // ✅ DEBUG: Log any errors
-            Log::error('UpdateNote failed', [
-                'visit_id' => $visit->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return redirect()->back()->with('error', 'Failed to update care note: ' . $e->getMessage());
-        }
+            return $visit;
+        }, 'Care note updated successfully.', 'Failed to update care note. Please try again.');
     }
 
     /**
@@ -331,12 +326,12 @@ class ClientController extends Controller
      */
     public function destroyNote(Visit $visit)
     {
-        // Use the client policy to authorize this action.
-        $this->authorize('delete', $visit->shift->client);
+        $this->authorizeWithError('delete', $visit->shift->client, 'You do not have permission to delete notes for this client.');
 
-        // We don't delete the visit, just the notes associated with it.
-        $visit->update(['progress_notes' => null]);
-
-        return redirect()->back()->with('success', 'Care note deleted successfully.');
+        return $this->handleDatabaseTransaction(function () use ($visit) {
+            // We don't delete the visit, just the notes associated with it.
+            $visit->update(['progress_notes' => null]);
+            return $visit;
+        }, 'Care note deleted successfully.', 'Failed to delete care note. Please try again.');
     }
 }
