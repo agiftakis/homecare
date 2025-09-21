@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address; // ✅ ADDED: Import the Address class
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -46,6 +47,8 @@ class PasswordResetEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            // ✅ THE FIX: We now specify who the email is "to", using the user's email and name.
+            to: [new Address($this->user->email, $this->user->name)],
             subject: 'Reset Your VitaLink Password',
         );
     }
