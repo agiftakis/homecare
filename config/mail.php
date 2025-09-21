@@ -48,16 +48,42 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
         ],
 
+        // ✅ START: New Gmail Mailer Configurations
+        'gmail_1' => [
+            'transport' => 'smtp',
+            'host' => 'smtp.gmail.com',
+            'port' => 465,
+            'encryption' => 'ssl',
+            'username' => env('GMAIL_1_USERNAME'),
+            'password' => env('GMAIL_1_PASSWORD'),
+            'timeout' => null,
+        ],
+        'gmail_2' => [
+            'transport' => 'smtp',
+            'host' => 'smtp.gmail.com',
+            'port' => 465,
+            'encryption' => 'ssl',
+            'username' => env('GMAIL_2_USERNAME'),
+            'password' => env('GMAIL_2_PASSWORD'),
+            'timeout' => null,
+        ],
+        'gmail_3' => [
+            'transport' => 'smtp',
+            'host' => 'smtp.gmail.com',
+            'port' => 465,
+            'encryption' => 'ssl',
+            'username' => env('GMAIL_3_USERNAME'),
+            'password' => env('GMAIL_3_PASSWORD'),
+            'timeout' => null,
+        ],
+        // ✅ END: New Gmail Mailer Configurations
+
         'ses' => [
             'transport' => 'ses',
         ],
 
         'postmark' => [
             'transport' => 'postmark',
-            // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
-            // 'client' => [
-            //     'timeout' => 5,
-            // ],
         ],
 
         'sendmail' => [
