@@ -2,37 +2,7 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Default Mailer
-    |--------------------------------------------------------------------------
-    |
-    | This option controls the default mailer that is used to send all email
-    | messages unless another mailer is explicitly specified when sending
-    | the message. All additional mailers can be configured within the
-    | "mailers" array. Examples of each type of mailer are provided.
-    |
-    */
-
     'default' => env('MAIL_MAILER', 'log'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Mailer Configurations
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure all of the mailers used by your application plus
-    | their respective settings. Several examples have been configured for
-    | you and you are free to add your own as your application requires.
-    |
-    | Laravel supports a variety of mail "transport" drivers that can be used
-    | when delivering an email. You may specify which one you're using for
-    | your mailers below. You may also add additional mailers if needed.
-    |
-    | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
-    |            "postmark", "log", "array", "failover", "roundrobin"
-    |
-    */
 
     'mailers' => [
 
@@ -48,7 +18,7 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
         ],
 
-        // ✅ START: New Gmail Mailer Configurations
+        // ✅ START: Updated Gmail Mailer Configurations
         'gmail_1' => [
             'transport' => 'smtp',
             'host' => 'smtp.gmail.com',
@@ -57,6 +27,7 @@ return [
             'username' => env('GMAIL_1_USERNAME'),
             'password' => env('GMAIL_1_PASSWORD'),
             'timeout' => null,
+            'from' => ['address' => env('GMAIL_1_USERNAME'), 'name' => env('GMAIL_1_FROM_NAME')],
         ],
         'gmail_2' => [
             'transport' => 'smtp',
@@ -66,6 +37,7 @@ return [
             'username' => env('GMAIL_2_USERNAME'),
             'password' => env('GMAIL_2_PASSWORD'),
             'timeout' => null,
+            'from' => ['address' => env('GMAIL_2_USERNAME'), 'name' => env('GMAIL_2_FROM_NAME')],
         ],
         'gmail_3' => [
             'transport' => 'smtp',
@@ -75,51 +47,18 @@ return [
             'username' => env('GMAIL_3_USERNAME'),
             'password' => env('GMAIL_3_PASSWORD'),
             'timeout' => null,
+            'from' => ['address' => env('GMAIL_3_USERNAME'), 'name' => env('GMAIL_3_FROM_NAME')],
         ],
-        // ✅ END: New Gmail Mailer Configurations
+        // ✅ END: Updated Gmail Mailer Configurations
 
-        'ses' => [
-            'transport' => 'ses',
-        ],
-
-        'postmark' => [
-            'transport' => 'postmark',
-        ],
-
-        'sendmail' => [
-            'transport' => 'sendmail',
-            'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
-        ],
-
-        'log' => [
-            'transport' => 'log',
-            'channel' => env('MAIL_LOG_CHANNEL'),
-        ],
-
-        'array' => [
-            'transport' => 'array',
-        ],
-
-        'failover' => [
-            'transport' => 'failover',
-            'mailers' => [
-                'smtp',
-                'log',
-            ],
-        ],
-
+        // ... rest of the file is the same
+        'ses' => [ 'transport' => 'ses', ],
+        'postmark' => [ 'transport' => 'postmark', ],
+        'sendmail' => [ 'transport' => 'sendmail', 'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'), ],
+        'log' => [ 'transport' => 'log', 'channel' => env('MAIL_LOG_CHANNEL'), ],
+        'array' => [ 'transport' => 'array', ],
+        'failover' => [ 'transport' => 'failover', 'mailers' => [ 'smtp', 'log', ], ],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Global "From" Address
-    |--------------------------------------------------------------------------
-    |
-    | You may wish for all emails sent by your application to be sent from
-    | the same address. Here you may specify a name and address that is
-    | used globally for all emails that are sent by your application.
-    |
-    */
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),

@@ -16,33 +16,22 @@ class SendTransactionalEmail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * @var \Illuminate\Mail\Mailable
-     */
     public $mailable;
+    public $mailerName;
 
-    /**
-     * Create a new job instance.
-     *
-     * @param \Illuminate\Mail\Mailable $mailable
-     */
-    public function __construct(Mailable $mailable)
+    public function __construct(Mailable $mailable, string $mailerName)
     {
         $this->mailable = $mailable;
+        $this->mailerName = $mailerName;
     }
 
-    /**
-     * Execute the job.
-     *
-     * @return void
-     */
     public function handle(): void
     {
         try {
-            Mail::send($this->mailable);
+            // ✅ THE FIX: Use Mail::mailer() to select the correct mailer configuration
+            Mail::mailer($this->mailerName)->send($this->mailable);
         } catch (Throwable $e) {
-            // Log the error and allow the job to be released back to the queue for another try.
-            Log::error("Failed to send email: " . $e->getMessage());
+            Log::error("Failed to send email using mailer [{$this->mailerName}]: " . $e->getMessage());
             $this->fail($e);
         }
     }
