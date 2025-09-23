@@ -23,23 +23,14 @@ class WelcomeEmail extends Mailable
     public $user;
 
     /**
-     * The password setup token.
-     *
-     * @var string
-     */
-    public $token;
-
-    /**
      * Create a new message instance.
      *
      * @param \App\Models\User $user
-     * @param string $token
      * @return void
      */
-    public function __construct(User $user, string $token)
+    public function __construct(User $user)
     {
         $this->user = $user;
-        $this->token = $token;
     }
 
     /**
@@ -50,7 +41,7 @@ class WelcomeEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to VitaLink - Set Up Your Account',
+            subject: 'Welcome to VitaLink!',
             to: [new Address($this->user->email, $this->user->name)],
         );
     }
@@ -77,3 +68,4 @@ class WelcomeEmail extends Mailable
         return [];
     }
 }
+
