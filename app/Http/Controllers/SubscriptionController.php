@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Exception;
 use Illuminate\Support\Facades\Log;
+// ✅ STEP 1: Import the Mailable and the Email Service.
+use App\Mail\WelcomeEmail;
+use App\Services\MultiGmailEmailService;
 
 class SubscriptionController extends Controller
 {
@@ -31,8 +34,6 @@ class SubscriptionController extends Controller
             'payment_method' => 'required|string',
         ]);
 
-        // **THE FIX:** We explicitly find the currently authenticated user in the database.
-        // This is a more robust way to get a "fresh" model instance and satisfies static analysis.
         $user = User::find(Auth::id());
         $agency = $user->agency;
 
@@ -51,6 +52,10 @@ class SubscriptionController extends Controller
 
             // Update the local subscription_status
             $agency->update(['subscription_status' => 'active']);
+
+            // ✅ STEP 2: Dispatch the welcome email using our service.
+            // This will send the email in the background after the payment is successful.
+            (new MultiGmailEmailService())->dispatch(new WelcomeEmail($user));
 
             return redirect()->route('dashboard')->with('success', 'Thank you! Your subscription has been activated.');
         } catch (Exception $e) {
@@ -72,4 +77,3 @@ class SubscriptionController extends Controller
         };
     }
 }
-
