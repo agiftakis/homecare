@@ -99,7 +99,7 @@
                         <img src="{{ asset('images/icon-medium-agency.png') }}" alt="Medium Agency Icon"
                             class="h-16 w-16 mx-auto mb-4">
                         <h3 class="text-xl font-bold mb-2">Growing Agencies</h3>
-                        <p class="italic font-bold text-[#27D6F5] text-[13px]">between 20-100 clients</p>
+                        <p class="italic font-bold text-[#27D6F5] text-[13px]">between 10-30 clients</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">Improve caregiver retention and
                             streamline operations.</p>
                         <a href="{{ route('agency.register') }}?plan=professional"
@@ -113,7 +113,7 @@
                         <img src="{{ asset('images/icon-large-agency.png') }}" alt="Large Agency Icon"
                             class="h-16 w-16 mx-auto mb-4">
                         <h3 class="text-xl font-bold mb-2">Established Agencies</h3>
-                        <p class="italic font-bold text-[#917dc7] text-[13px]">over 150 clients</p>
+                        <p class="italic font-bold text-[#917dc7] text-[13px]">under 60 clients</p>
                         <p class="text-gray-500 dark:text-gray-400 mb-6 flex-grow">Advanced tools for your agency's
                             specific requirements.</p>
                         <a href="{{ route('agency.register') }}?plan=premium"
