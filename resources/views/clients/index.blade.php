@@ -88,7 +88,8 @@
                                                 {{ $client->first_name }} {{ $client->last_name }}</div>
                                             {{-- ✅ SUPER ADMIN UPDATE: Conditionally display the agency name for super admins --}}
                                             @if (Auth::user()->role === 'super_admin' && $client->agency)
-                                                <div class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">{{ $client->agency->name }}</div>
+                                                <div class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
+                                                    {{ $client->agency->name }}</div>
                                             @endif
                                         </div>
                                     </div>
@@ -169,8 +170,7 @@
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 @forelse ($clients as $client)
-                                    <tr class="client-row"
-                                        {{-- ✅ SUPER ADMIN UPDATE: Add agency name to the searchable data attribute --}}
+                                    <tr class="client-row" {{-- ✅ SUPER ADMIN UPDATE: Add agency name to the searchable data attribute --}}
                                         data-name="{{ strtolower($client->first_name . ' ' . $client->last_name . ' ' . ($client->agency->name ?? '')) }}">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
@@ -199,7 +199,8 @@
                                         {{-- ✅ SUPER ADMIN UPDATE: Conditionally add the Agency data cell --}}
                                         @if (Auth::user()->role === 'super_admin')
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $client->agency->name ?? 'N/A' }}</div>
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                    {{ $client->agency->name ?? 'N/A' }}</div>
                                             </td>
                                         @endif
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -273,8 +274,8 @@
     </div>
 
     {{-- ✅ NEW: Client Limit Modal --}}
-    <div id="clientLimitModal" x-data="{ show: false }" x-show="show" 
-         class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" x-cloak>
+    <div id="clientLimitModal" x-data="{ show: false }" x-show="show" class="fixed inset-0 z-50 overflow-y-auto"
+        style="display: none;" x-cloak>
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
                 x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
@@ -290,9 +291,13 @@
                 class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
 
                 <div class="sm:flex sm:items-start">
-                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900 sm:mx-0 sm:h-10 sm:w-10">
-                        <svg class="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.854-.833-2.624 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    <div
+                        class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.854-.833-2.624 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                            </path>
                         </svg>
                     </div>
                     <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
@@ -309,7 +314,7 @@
 
                 <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                     <a href="{{ route('subscription.manage') }}"
-                       class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
                         Upgrade Subscription
                     </a>
                     <button @click="show = false" type="button"
@@ -419,3 +424,68 @@
                     } else {
                         card.style.display = 'none';
                     }
+                });
+
+                // Filter desktop rows
+                clientRows.forEach(row => {
+                    const searchableData = row.getAttribute('data-name');
+                    if (searchableData.includes(searchTerm)) {
+                        row.style.display = 'table-row';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Adjust for desktop/mobile visible count discrepancy
+                const totalVisible = document.querySelectorAll('.client-card[style*="display: block"]').length ||
+                    document.querySelectorAll('.client-row[style*="display: table-row"]').length;
+
+                // Show/hide no results message
+                if (totalVisible === 0 && searchTerm !== '') {
+                    noResults.classList.remove('hidden');
+                } else {
+                    noResults.classList.add('hidden');
+                }
+            }
+
+            // ✅ NEW: Client Limit Check Function
+            function checkClientLimit() {
+                fetch('{{ route('clients.checkLimit') }}', {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                                'content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.allowed) {
+                            // Show the modal with the limit message
+                            document.getElementById('limitMessage').textContent = data.message;
+                            Alpine.store('clientLimitModal').show = true;
+                            document.querySelector('#clientLimitModal [x-data]').__x.$data.show = true;
+                        } else {
+                            // Redirect to create page if limit not reached
+                            window.location.href = '{{ route('clients.create') }}';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking client limit:', error);
+                        // Fallback - redirect to create page if check fails
+                        window.location.href = '{{ route('clients.create') }}';
+                    });
+            }
+
+            // ✅ NEW: Add click event listener to Add Client button for agency admins
+            if (addClientBtn) {
+                addClientBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    checkClientLimit();
+                });
+            }
+
+            searchInput.addEventListener('input', performSearch);
+        });
+    </script>
+</x-app-layout>
