@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // The incorrect line has been removed from here.
+
         $middleware->alias([
             'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
             'superadmin' => \App\Http\Middleware\CheckSuperAdmin::class,
@@ -138,3 +140,4 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
     })->create();
+
