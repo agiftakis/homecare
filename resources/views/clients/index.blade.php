@@ -4,10 +4,18 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight mb-4 sm:mb-0">
                 {{ __('Clients') }}
             </h2>
-            <a href="{{ route('clients.create') }}"
-                class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                + Add New Client
-            </a>
+            {{-- ✅ NEW: Client limit check for Add New Client button --}}
+            @if (Auth::user()->role === 'agency_admin')
+                <button id="addClientBtn"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                    + Add New Client
+                </button>
+            @else
+                <a href="{{ route('clients.create') }}"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                    + Add New Client
+                </a>
+            @endif
         </div>
     </x-slot>
 
@@ -21,6 +29,17 @@
                     class="bg-green-100 dark:bg-green-900/50 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-200 px-4 py-3 rounded-lg relative mb-6"
                     role="alert">
                     <span class="block sm:inline">{{ session('success') }}</span>
+                </div>
+            @endif
+
+            {{-- ✅ NEW: Error message for client limit --}}
+            @if (session('error'))
+                <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 6000)" x-show="show"
+                    x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg relative mb-6"
+                    role="alert">
+                    <span class="block sm:inline">{{ session('error') }}</span>
                 </div>
             @endif
 
@@ -253,6 +272,55 @@
         </div>
     </div>
 
+    {{-- ✅ NEW: Client Limit Modal --}}
+    <div id="clientLimitModal" x-data="{ show: false }" x-show="show" 
+         class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" x-cloak>
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="show = false"></div>
+
+            <div x-show="show" x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.854-.833-2.624 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+                            Client Limit Reached
+                        </h3>
+                        <div class="mt-2">
+                            <p id="limitMessage" class="text-sm text-gray-500 dark:text-gray-400">
+                                <!-- Dynamic message will be inserted here -->
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                    <a href="{{ route('subscription.manage') }}"
+                       class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Upgrade Subscription
+                    </a>
+                    <button @click="show = false" type="button"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @if (session('setup_link'))
         <div x-data="{ show: true }" x-show="show" class="fixed inset-0 z-50 overflow-y-auto"
             style="display: none;" x-cloak>
@@ -336,6 +404,7 @@
             const noResults = document.getElementById('noResults');
             const mobileView = document.getElementById('mobileView');
             const desktopView = document.getElementById('desktopView');
+            const addClientBtn = document.getElementById('addClientBtn');
 
             function performSearch() {
                 const searchTerm = searchInput.value.toLowerCase().trim();
@@ -350,30 +419,3 @@
                     } else {
                         card.style.display = 'none';
                     }
-                });
-
-                // Filter desktop rows
-                clientRows.forEach(row => {
-                    const searchableData = row.getAttribute('data-name');
-                    if (searchableData.includes(searchTerm)) {
-                        row.style.display = 'table-row';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-                
-                // Adjust for desktop/mobile visible count discrepancy
-                const totalVisible = document.querySelectorAll('.client-card[style*="display: block"]').length || document.querySelectorAll('.client-row[style*="display: table-row"]').length;
-
-                // Show/hide no results message
-                if (totalVisible === 0 && searchTerm !== '') {
-                    noResults.classList.remove('hidden');
-                } else {
-                    noResults.classList.add('hidden');
-                }
-            }
-
-            searchInput.addEventListener('input', performSearch);
-        });
-    </script>
-</x-app-layout>
