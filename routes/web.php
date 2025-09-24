@@ -62,6 +62,9 @@ Route::middleware(['auth', 'timezone'])->group(function () {
         // ✅ FIXED: Routes for managing caregiver notes - corrected URL structure
         Route::patch('/clients/notes/{visit}', [ClientController::class, 'updateNote'])->name('clients.notes.update');
         Route::delete('/clients/notes/{visit}', [ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
+
+        // ✅ NEW: Subscription Management Route - ONLY accessible to agency_admin
+        Route::get('/subscription/manage', [SubscriptionController::class, 'manage'])->name('subscription.manage');
     });
     // ✅ --- END SECURITY FIX ---
 

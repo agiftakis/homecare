@@ -39,6 +39,13 @@
                         <x-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.index')">
                             {{ __('Schedule') }}
                         </x-nav-link>
+
+                        {{-- ✅ NEW: Manage Subscription link - ONLY visible to agency_admin --}}
+                        @if (Auth::user()->role === 'agency_admin')
+                            <x-nav-link :href="route('subscription.manage')" :active="request()->routeIs('subscription.manage')">
+                                {{ __('Manage Subscription') }}
+                            </x-nav-link>
+                        @endif
                     @endif
 
                     {{-- SuperAdmin BLOCK (No changes needed here) --}}
@@ -157,6 +164,11 @@
                     {{-- ✅ SETTINGS PAGE: Add responsive link to the new agency settings page --}}
                     <x-responsive-nav-link :href="route('settings.edit')" :active="request()->routeIs('settings.*')">
                         {{ __('Settings') }}
+                    </x-responsive-nav-link>
+
+                    {{-- ✅ NEW: Responsive Manage Subscription link --}}
+                    <x-responsive-nav-link :href="route('subscription.manage')" :active="request()->routeIs('subscription.manage')">
+                        {{ __('Manage Subscription') }}
                     </x-responsive-nav-link>
                 @endif
 
