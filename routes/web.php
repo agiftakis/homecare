@@ -48,8 +48,9 @@ Route::middleware(['auth', 'timezone'])->group(function () {
     // Routes that are ONLY accessible to Agency Admins.
     // The 'agency_admin' middleware we created now protects this group.
     Route::middleware('agency_admin')->group(function () {
-        Route::resource('clients', ClientController::class);
         Route::get('/clients/check-limit', [ClientController::class, 'checkLimit'])->name('clients.checkLimit');
+        Route::resource('clients', ClientController::class);
+
         Route::resource('caregivers', CaregiverController::class);
         // This route is also protected as it is part of caregiver management.
         Route::post('/caregivers/{caregiver}/resend-onboarding', [CaregiverController::class, 'resendOnboardingLink'])->name('caregivers.resendOnboarding');
