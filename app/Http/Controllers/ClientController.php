@@ -11,6 +11,8 @@ use App\Traits\HandlesErrors;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB; 
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -28,7 +30,7 @@ class ClientController extends Controller
     public function index()
     {
         try {
-            // ✅ SUPER ADMIN UPDATE: Check user role to determine which clients to show.
+            //SUPER ADMIN UPDATE: Check user role to determine which clients to show.
             $user = Auth::user();
             $query = Client::with('user'); // Start with a base query.
 
@@ -113,51 +115,60 @@ class ClientController extends Controller
             return $this->handleValidationError($e->errors());
         }
 
-        return $this->handleDatabaseTransaction(function () use ($validated, $agencyId, $request) {
-            // 1. Create the User record FIRST to get its ID.
-            $user = User::create([
-                'name' => $validated['first_name'] . ' ' . $validated['last_name'],
-                'email' => $validated['email'],
-                'agency_id' => $agencyId,
-                'role' => 'client',
-                'password' => bcrypt(Str::random(32)), // Temporary secure password
-            ]);
+        // ✅ FIXED: Custom transaction handling with proper redirect
+        try {
+            DB::transaction(function () use ($validated, $agencyId, $request) {
+                // 1. Create the User record FIRST to get its ID.
+                $user = User::create([
+                    'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                    'email' => $validated['email'],
+                    'agency_id' => $agencyId,
+                    'role' => 'client',
+                    'password' => bcrypt(Str::random(32)), // Temporary secure password
+                ]);
 
-            // 2. Prepare Client data, now including the new user_id.
-            $clientData = $validated;
-            $clientData['agency_id'] = $agencyId;
-            $clientData['user_id'] = $user->id;
+                // 2. Prepare Client data, now including the new user_id.
+                $clientData = $validated;
+                $clientData['agency_id'] = $agencyId;
+                $clientData['user_id'] = $user->id;
 
-            // 3. Handle profile picture upload
-            if ($request->hasFile('profile_picture')) {
-                try {
-                    $clientData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture(
-                        $request->file('profile_picture'),
-                        'client_profile_pictures'
-                    );
-                } catch (\Exception $e) {
-                    // Clean up the user if file upload fails
-                    $user->delete();
-                    throw new \Exception('Profile picture upload failed: ' . $e->getMessage());
+                // 3. Handle profile picture upload
+                if ($request->hasFile('profile_picture')) {
+                    try {
+                        $clientData['profile_picture_path'] = $this->firebaseStorageService->uploadProfilePicture(
+                            $request->file('profile_picture'),
+                            'client_profile_pictures'
+                        );
+                    } catch (\Exception $e) {
+                        // Clean up the user if file upload fails
+                        $user->delete();
+                        throw new \Exception('Profile picture upload failed: ' . $e->getMessage());
+                    }
                 }
-            }
 
-            // 4. Create the Client record with all data, including the user_id link.
-            $client = Client::create($clientData);
+                // 4. Create the Client record with all data, including the user_id link.
+                $client = Client::create($clientData);
 
-            // 5. Generate and store the password setup token for the new user.
-            $token = Str::random(60);
-            $user->forceFill([
-                'password_setup_token' => hash('sha256', $token),
-                'password_setup_expires_at' => now()->addHours(48),
-            ])->save();
+                // 5. Generate and store the password setup token for the new user.
+                $token = Str::random(60);
+                $user->forceFill([
+                    'password_setup_token' => hash('sha256', $token),
+                    'password_setup_expires_at' => now()->addHours(48),
+                ])->save();
 
-            // 6. Flash the setup link to the session for the modal popup.
-            $setupUrl = route('password.setup.show', ['token' => $token]);
-            session()->flash('setup_link', $setupUrl);
+                // 6. Flash the setup link to the session for the modal popup.
+                $setupUrl = route('password.setup.show', ['token' => $token]);
+                session()->flash('setup_link', $setupUrl);
+            });
 
-            return $client;
-        }, 'Client added successfully!', 'Failed to create client. Please check your information and try again.');
+            // ✅ FIXED: Redirect to dashboard with success message
+            return redirect()->route('dashboard')->with('success', 'New Client Added Successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Client creation failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to create client. Please check your information and try again.')
+                      ->withInput();
+        }
     }
 
     public function edit(Client $client)
@@ -366,7 +377,7 @@ class ClientController extends Controller
             return ['allowed' => false, 'message' => 'Agency not found.'];
         }
 
-        // Get current client count for this agency
+        // ✅ FIXED: Get current client count for this agency using query builder
         $currentClientCount = Client::where('agency_id', $agency->id)->count();
 
         // Get client limit based on subscription plan
