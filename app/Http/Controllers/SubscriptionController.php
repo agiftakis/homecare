@@ -65,6 +65,43 @@ class SubscriptionController extends Controller
     }
 
     /**
+     * ✅ NEW: Show the subscription management page with current subscription details
+     * and generate a secure URL to Stripe's Customer Portal for billing management.
+     */
+    public function manage()
+    {
+        $user = Auth::user();
+        $agency = $user->agency;
+
+        if (!$agency) {
+            return redirect()->route('dashboard')->with('error', 'Agency not found.');
+        }
+
+        // Get the current subscription
+        $subscription = $agency->subscription('default');
+        
+        // Get subscription details
+        $subscriptionData = [
+            'plan' => $this->getPlanNameFromSubscription($subscription),
+            'status' => $subscription ? $subscription->stripe_status : 'inactive',
+            'current_period_end' => $subscription ? $subscription->asStripeSubscription()->current_period_end : null,
+            'cancel_at_period_end' => $subscription ? $subscription->asStripeSubscription()->cancel_at_period_end : false,
+        ];
+
+        // Generate Stripe Customer Portal URL
+        $portalUrl = null;
+        if ($agency->hasStripeId()) {
+            try {
+                $portalUrl = $agency->billingPortalUrl(route('dashboard'));
+            } catch (Exception $e) {
+                Log::error('Failed to generate Stripe portal URL: ' . $e->getMessage(), ['agency_id' => $agency->id]);
+            }
+        }
+
+        return view('subscription.manage', compact('subscriptionData', 'portalUrl'));
+    }
+
+    /**
      * A helper function to get the correct Stripe Price ID from the .env file.
      */
     private function getStripePriceId($planName)
@@ -74,6 +111,26 @@ class SubscriptionController extends Controller
             'premium' => env('STRIPE_PREMIUM_PRICE_ID'),
             'enterprise' => env('STRIPE_ENTERPRISE_PRICE_ID'),
             default => env('STRIPE_BASIC_PRICE_ID'),
+        };
+    }
+
+    /**
+     * ✅ NEW: Helper function to get the plan name from the subscription
+     */
+    private function getPlanNameFromSubscription($subscription)
+    {
+        if (!$subscription) {
+            return 'No Active Plan';
+        }
+
+        $stripePriceId = $subscription->stripe_price;
+        
+        return match ($stripePriceId) {
+            env('STRIPE_PROFESSIONAL_PRICE_ID') => 'Professional',
+            env('STRIPE_PREMIUM_PRICE_ID') => 'Premium', 
+            env('STRIPE_ENTERPRISE_PRICE_ID') => 'Enterprise',
+            env('STRIPE_BASIC_PRICE_ID') => 'Basic',
+            default => 'Unknown Plan',
         };
     }
 }
