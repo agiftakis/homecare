@@ -23,7 +23,7 @@ use App\Http\Controllers\AgencySettingsController;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('welcome');
 
 // Publicly accessible routes
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
