@@ -22,18 +22,19 @@ class Shift extends Model
         'end_time',
         'status',
         'notes',
+        'hourly_rate',      // Added for billing
+        'service_type',     // Added for billing
     ];
 
     /**
-     * ✅ NEW: The attributes that should be cast.
-     * This tells Laravel to treat these columns as proper date objects
-     * and format them correctly when sending them to the browser.
+     * The attributes that should be cast.
      *
      * @var array<string, string>
      */
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
+        'hourly_rate' => 'decimal:2',
     ];
 
     public function client()
@@ -47,11 +48,44 @@ class Shift extends Model
     }
 
     /**
-     * ✅ NEW RELATIONSHIP: Get the visit record for this shift
-     * A shift can have one visit (clock-in/out record)
+     * Get the visit record for this shift
      */
     public function visit()
     {
         return $this->hasOne(Visit::class);
+    }
+
+    /**
+     * Check if this shift has a completed visit
+     */
+    public function hasCompletedVisit(): bool
+    {
+        return $this->visit && 
+               $this->visit->clock_in_time && 
+               $this->visit->clock_out_time;
+    }
+
+    /**
+     * Get the total billable hours for this shift (from actual visit times)
+     */
+    public function getBillableHours(): float
+    {
+        if (!$this->hasCompletedVisit()) {
+            return 0;
+        }
+
+        $visit = $this->visit;
+        $start = $visit->clock_in_time;
+        $end = $visit->clock_out_time;
+
+        return round($end->diffInMinutes($start) / 60, 2);
+    }
+
+    /**
+     * Calculate the total billable amount for this shift
+     */
+    public function getBillableAmount(): float
+    {
+        return $this->getBillableHours() * $this->hourly_rate;
     }
 }
