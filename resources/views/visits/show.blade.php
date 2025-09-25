@@ -200,7 +200,7 @@
                             const data = await response.json();
                            
                             // ✅ NO MORE PAGE RELOAD
-                            this.visitId = data.visit_id; // Get new visit ID from the response
+                            this.visitId = data.data.id; // Get new visit ID from the response
                             // Set the time for display
                             this.clockInTimeDisplay = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
                             this.status = 'in_progress'; // Switch to clock-out view
