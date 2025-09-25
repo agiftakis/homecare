@@ -53,7 +53,23 @@ class Visit extends Model
     }
 
     /**
-     * ✅ NEW: Get the full caregiver name from the visit record
+     * Get the invoice items that reference this visit.
+     */
+    public function invoiceItems()
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
+
+    /**
+     * Check if this visit has been invoiced.
+     */
+    public function isInvoiced(): bool
+    {
+        return $this->invoiceItems()->exists();
+    }
+
+    /**
+     * Get the full caregiver name from the visit record
      * This preserves the caregiver information even if the caregiver is deleted
      */
     public function getCaregiverFullNameAttribute(): string
