@@ -13,8 +13,6 @@ use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\VisitVerificationController;
 use App\Http\Controllers\AgencySettingsController;
-// ✅ STRIPE WEBHOOK: Import the new webhook controller.
-use App\Http\Controllers\StripeWebhookController;
 
 
 /*
@@ -26,10 +24,6 @@ use App\Http\Controllers\StripeWebhookController;
 Route::get('/', function () {
     return view('welcome');
 });
-
-// ✅ STRIPE WEBHOOK: Add the route for Stripe to send webhook notifications.
-// This route is OUTSIDE the auth middleware because it needs to be publicly accessible.
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])->name('stripe.webhook');
 
 // Publicly accessible routes
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
