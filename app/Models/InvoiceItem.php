@@ -1,0 +1,121 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class InvoiceItem extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'invoice_id',
+        'visit_id',
+        'service_description',
+        'service_type',
+        'service_date',
+        'start_time',
+        'end_time',
+        'hours_worked',
+        'hourly_rate',
+        'line_total',
+        'caregiver_name',
+    ];
+
+    protected $casts = [
+        'service_date' => 'date',
+        'start_time' => 'datetime:H:i',
+        'end_time' => 'datetime:H:i',
+        'hours_worked' => 'decimal:2',
+        'hourly_rate' => 'decimal:2',
+        'line_total' => 'decimal:2',
+    ];
+
+    /**
+     * Get the invoice that owns this item.
+     */
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class);
+    }
+
+    /**
+     * Get the visit that this item is based on.
+     */
+    public function visit(): BelongsTo
+    {
+        return $this->belongsTo(Visit::class);
+    }
+
+    /**
+     * Calculate hours worked from start and end times.
+     */
+    public static function calculateHours($startTime, $endTime): float
+    {
+        $start = \Carbon\Carbon::parse($startTime);
+        $end = \Carbon\Carbon::parse($endTime);
+        
+        // Convert to hours with 2 decimal places
+        return round($end->diffInMinutes($start) / 60, 2);
+    }
+
+    /**
+     * Extract caregiver name from signature path.
+     */
+    public static function extractCaregiverName($signaturePath): string
+    {
+        if (!$signaturePath) {
+            return 'Unknown Caregiver';
+        }
+
+        // Extract name from path like "caregiver_documents/68bf2486dcffe_Ronda_Bellford_S..."
+        $parts = explode('_', basename($signaturePath));
+        
+        if (count($parts) >= 3) {
+            // Remove the hash part and get the name parts
+            $firstName = $parts[1] ?? '';
+            $lastName = $parts[2] ?? '';
+            
+            return trim(ucfirst(strtolower($firstName)) . ' ' . ucfirst(strtolower($lastName)));
+        }
+
+        return 'Unknown Caregiver';
+    }
+
+    /**
+     * Create an invoice item from a visit.
+     */
+    public static function createFromVisit(Visit $visit, Invoice $invoice): static
+    {
+        $shift = $visit->shift;
+        $startTime = $visit->clock_in_time;
+        $endTime = $visit->clock_out_time;
+        
+        $hoursWorked = static::calculateHours($startTime, $endTime);
+        $caregiverName = static::extractCaregiverName($visit->signature_path);
+        
+        return static::create([
+            'invoice_id' => $invoice->id,
+            'visit_id' => $visit->id,
+            'service_description' => ucfirst($shift->service_type) . ' - ' . $visit->clock_in_time->format('m/d/Y'),
+            'service_type' => $shift->service_type,
+            'service_date' => $visit->clock_in_time->toDateString(),
+            'start_time' => $startTime->format('H:i'),
+            'end_time' => $endTime->format('H:i'),
+            'hours_worked' => $hoursWorked,
+            'hourly_rate' => $shift->hourly_rate,
+            'line_total' => $hoursWorked * $shift->hourly_rate,
+            'caregiver_name' => $caregiverName,
+        ]);
+    }
+
+    /**
+     * Get formatted time range for display.
+     */
+    public function getTimeRangeAttribute(): string
+    {
+        return $this->start_time . ' - ' . $this->end_time;
+    }
+}
