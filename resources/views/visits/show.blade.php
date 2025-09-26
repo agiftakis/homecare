@@ -44,7 +44,7 @@
                     {{ $shift->id }},
                     {{ $visit->id ?? 'null' }},
                     '{{ $visit && $visit->clock_out_time ? 'completed' : ($visit ? 'in_progress' : 'pending') }}',
-                    '{{ $visit ? \Carbon\Carbon::parse($visit->clock_in_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') : '' }}',
+                    '{{ $visit? \Carbon\Carbon::parse($visit->clock_in_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A'): '' }}',
                     `{{ $visit && $visit->progress_notes ? addslashes($visit->progress_notes) : '' }}`
                 )">
 
@@ -82,10 +82,12 @@
                             <p class="font-bold">Shift In Progress</p>
                             <p>Clocked in at: <span x-text="clockInTimeDisplay"></span></p>
                         </div>
-                        
+
                         {{-- ✅ STEP 1: ADD NOTES TEXTAREA --}}
                         <div>
-                            <label for="progress_notes" class="block text-lg font-semibold mb-2 text-gray-900 dark:text-blue-200">Progress Notes</label>
+                            <label for="progress_notes"
+                                class="block text-lg font-semibold mb-2 text-gray-900 dark:text-blue-200">Progress
+                                Notes</label>
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
                                 Add any notes about the visit. These will be saved when you clock out.
                             </p>
@@ -95,8 +97,10 @@
                         </div>
 
                         <div>
-                           <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-blue-200">Clock-Out Signature</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family Member
+                            <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-blue-200">Clock-Out Signature
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please have the Client or Family
+                                Member
                                 sign below to confirm you are ending your shift.</p>
                             <div
                                 class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md">
@@ -126,7 +130,8 @@
                             </p>
                         </div>
                         <p class="text-gray-600 dark:text-gray-400">Thank you for your work!</p>
-                         <a href="{{ route('schedule.index') }}" class="mt-4 inline-block text-blue-500 hover:underline">Return to Schedule</a>
+                        <a href="{{ route('schedule.index') }}"
+                            class="mt-4 inline-block text-blue-500 hover:underline">Return to Schedule</a>
                     </div>
                 </div>
             @endif
@@ -145,25 +150,31 @@
                     signaturePadIn: null,
                     signaturePadOut: null,
                     clockInTimeDisplay: initialClockInTime,
-                    // ✅ STEP 2: Add Alpine property for notes
                     progressNotes: initialNotes,
 
                     init() {
                         this.$watch('status', (newStatus) => {
-                             this.$nextTick(() => {
+                            this.$nextTick(() => {
                                 if (newStatus === 'pending' && !this.signaturePadIn) {
-                                    this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn, { penColor: '#60A5FA' });
+                                    this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn, {
+                                        penColor: '#60A5FA'
+                                    });
                                 } else if (newStatus === 'in_progress' && !this.signaturePadOut) {
-                                    this.signaturePadOut = new SignaturePad(this.$refs.signaturePadOut, { penColor: '#60A5FA' });
+                                    this.signaturePadOut = new SignaturePad(this.$refs.signaturePadOut, {
+                                        penColor: '#60A5FA'
+                                    });
                                 }
                             });
                         });
-                        // Fire the watcher manually on init to set up the correct pad
                         this.$nextTick(() => {
                             if (this.status === 'pending') {
-                                this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn, { penColor: '#60A5FA' });
+                                this.signaturePadIn = new SignaturePad(this.$refs.signaturePadIn, {
+                                    penColor: '#60A5FA'
+                                });
                             } else if (this.status === 'in_progress') {
-                                this.signaturePadOut = new SignaturePad(this.$refs.signaturePadOut, { penColor: '#60A5FA' });
+                                this.signaturePadOut = new SignaturePad(this.$refs.signaturePadOut, {
+                                    penColor: '#60A5FA'
+                                });
                             }
                         });
                     },
@@ -180,35 +191,49 @@
                         }
                         this.loading = true;
                         const signatureData = this.signaturePadIn.toDataURL('image/png');
+
                         try {
                             const response = await fetch(`/shifts/${this.shiftId}/clock-in`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json', // Explicitly ask for JSON
                                 },
                                 body: JSON.stringify({
                                     signature: signatureData
                                 })
                             });
-                           
-                            if (!response.ok) {
+
+                            // Check if the response content type is actually JSON
+                            const contentType = response.headers.get("content-type");
+                            if (contentType && contentType.indexOf("application/json") !== -1) {
+                                // It's JSON, proceed as normal
                                 const data = await response.json();
-                                throw new Error(data.message || 'An error occurred.');
+                                if (!response.ok) {
+                                    throw new Error(data.message || 'An error occurred during clock-in.');
+                                }
+                                this.visitId = data.data.id;
+                                this.clockInTimeDisplay = new Date().toLocaleTimeString([], {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                });
+                                this.status = 'in_progress';
+                            } else {
+                                // *** OUR NEW DEBUGGING CODE IS HERE ***
+                                // It's not JSON, so let's see what it is.
+                                const textResponse = await response.text();
+                                console.error('Server returned non-JSON response:', textResponse);
+                                throw new Error('Server returned an unexpected response. See console for details.');
                             }
-                            
-                            const data = await response.json();
-                           
-                            // ✅ NO MORE PAGE RELOAD
-                            this.visitId = data.data.id; // Get new visit ID from the response
-                            // Set the time for display
-                            this.clockInTimeDisplay = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-                            this.status = 'in_progress'; // Switch to clock-out view
 
                         } catch (error) {
                             this.errorMessage = error.message;
+                            // Also log the full error object to the console for more details
+                            console.error(error);
                         } finally {
-                           this.loading = false;
+                            this.loading = false;
                         }
                     },
 
@@ -225,23 +250,30 @@
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json', // Explicitly ask for JSON
                                 },
-                                // ✅ STEP 3: Send notes along with the signature
                                 body: JSON.stringify({
                                     signature: signatureData,
-                                    progress_notes: this.progressNotes 
+                                    progress_notes: this.progressNotes
                                 })
                             });
-                             if (!response.ok) {
+
+                            const contentType = response.headers.get("content-type");
+                            if (contentType && contentType.indexOf("application/json") !== -1) {
                                 const data = await response.json();
-                                throw new Error(data.message || 'An error occurred.');
+                                if (!response.ok) {
+                                    throw new Error(data.message || 'An error occurred during clock-out.');
+                                }
+                                this.status = 'completed';
+                            } else {
+                                const textResponse = await response.text();
+                                console.error('Server returned non-JSON response:', textResponse);
+                                throw new Error('Server returned an unexpected response. See console for details.');
                             }
-                            const data = await response.json();
-                            // ✅ NO MORE PAGE RELOAD
-                            this.status = 'completed'; // Switch to completed view
                         } catch (error) {
                             this.errorMessage = error.message;
+                            console.error(error);
                         } finally {
                             this.loading = false;
                         }
