@@ -324,7 +324,7 @@ class InvoiceController extends Controller
                     'id' => $visit->id,
                     'date' => $visit->clock_in_time->format('M d, Y'),
                     'time_range' => $visit->clock_in_time->format('H:i') . ' - ' . $visit->clock_out_time->format('H:i'),
-                    'actual_hours' => $billingDetails['actual_hours'],
+                    'actual_hours' => abs($billingDetails['actual_hours']),
                     'hours' => $billingDetails['billable_hours'], // This will be minimum 1.0
                     'is_minimum_billing' => $billingDetails['is_minimum_billing'],
                     'hourly_rate' => number_format($shift->hourly_rate, 2),
