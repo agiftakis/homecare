@@ -13,6 +13,7 @@ use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\VisitVerificationController;
 use App\Http\Controllers\AgencySettingsController;
+use App\Http\Controllers\InvoiceController;
 
 
 /*
@@ -66,6 +67,15 @@ Route::middleware(['auth', 'timezone'])->group(function () {
 
         // ✅ NEW: Subscription Management Route - ONLY accessible to agency_admin
         Route::get('/subscription/manage', [SubscriptionController::class, 'manage'])->name('subscription.manage');
+
+        // ✅ NEW: Invoice Management Routes - ONLY accessible to agency_admin
+        Route::resource('invoices', InvoiceController::class);
+        Route::post('/invoices/generate', [InvoiceController::class, 'generate'])->name('invoices.generate');
+        Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
+        Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'sendInvoice'])->name('invoices.send');
+        
+        // ✅ NEW: API route for unbilled visits (AJAX endpoint)
+        Route::post('/api/unbilled-visits', [InvoiceController::class, 'getUnbilledVisits'])->name('api.unbilled-visits');
     });
     // ✅ --- END SECURITY FIX ---
 

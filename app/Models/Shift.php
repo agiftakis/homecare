@@ -66,9 +66,9 @@ class Shift extends Model
     }
 
     /**
-     * Get the total billable hours for this shift (from actual visit times)
+     * Get the actual hours worked (for records/display purposes)
      */
-    public function getBillableHours(): float
+    public function getActualHours(): float
     {
         if (!$this->hasCompletedVisit()) {
             return 0;
@@ -82,10 +82,59 @@ class Shift extends Model
     }
 
     /**
+     * Get the total billable hours for this shift (minimum 1 hour billing rule)
+     * Agency billing policy: Any visit under 1 hour is billed as 1 full hour
+     */
+    public function getBillableHours(): float
+    {
+        if (!$this->hasCompletedVisit()) {
+            return 0;
+        }
+
+        $actualHours = $this->getActualHours();
+        
+        // Apply 1-hour minimum billing rule
+        return max(1.0, $actualHours);
+    }
+
+    /**
      * Calculate the total billable amount for this shift
      */
     public function getBillableAmount(): float
     {
         return $this->getBillableHours() * $this->hourly_rate;
+    }
+
+    /**
+     * Check if this visit qualifies for minimum billing (under 1 hour)
+     */
+    public function isMinimumBilling(): bool
+    {
+        return $this->hasCompletedVisit() && $this->getActualHours() < 1.0;
+    }
+
+    /**
+     * Get billing details for display purposes
+     */
+    public function getBillingDetails(): array
+    {
+        if (!$this->hasCompletedVisit()) {
+            return [
+                'actual_hours' => 0,
+                'billable_hours' => 0,
+                'is_minimum_billing' => false,
+                'amount' => 0,
+            ];
+        }
+
+        $actualHours = $this->getActualHours();
+        $billableHours = $this->getBillableHours();
+
+        return [
+            'actual_hours' => $actualHours,
+            'billable_hours' => $billableHours,
+            'is_minimum_billing' => $this->isMinimumBilling(),
+            'amount' => $this->getBillableAmount(),
+        ];
     }
 }
