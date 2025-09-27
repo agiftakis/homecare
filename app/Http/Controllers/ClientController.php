@@ -115,7 +115,7 @@ class ClientController extends Controller
             return $this->handleValidationError($e->errors());
         }
 
-        // ✅ FIXED: Custom transaction handling with proper redirect
+        // ✅ MODIFIED: Success message flashing and redirect back pattern
         try {
             DB::transaction(function () use ($validated, $agencyId, $request) {
                 // 1. Create the User record FIRST to get its ID.
@@ -161,8 +161,10 @@ class ClientController extends Controller
                 session()->flash('setup_link', $setupUrl);
             });
 
-            // ✅ FIXED: Redirect to dashboard with success message
-            return redirect()->route('dashboard')->with('success', 'New Client Added Successfully!');
+            // 7. Flash success message and redirect back - Alpine.js will handle timing and dashboard redirect
+            session()->flash('success_message', 'New Client Added Successfully');
+            session()->flash('redirect_to', route('dashboard'));
+            return redirect()->back();
 
         } catch (\Exception $e) {
             Log::error('Client creation failed: ' . $e->getMessage());
@@ -229,7 +231,7 @@ class ClientController extends Controller
             return $this->handleValidationError($e->errors());
         }
 
-        return $this->handleDatabaseTransaction(function () use ($client, $validated, $request) {
+        try {
             // Update the associated user record first
             if ($client->user) {
                 $client->user->update([
@@ -261,8 +263,15 @@ class ClientController extends Controller
             }
 
             $client->update($updateData);
-            return $client;
-        }, 'Client updated successfully!', 'Failed to update client. Please check your information and try again.');
+
+            // Flash success message and redirect back - Alpine.js will handle timing and dashboard redirect
+            session()->flash('success_message', 'Client Updated Successfully');
+            session()->flash('redirect_to', route('dashboard'));
+            return redirect()->back();
+
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Failed to update client. Please check your information and try again.', 'clients_update');
+        }
     }
 
     /**

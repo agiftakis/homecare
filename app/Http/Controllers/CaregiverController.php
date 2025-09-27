@@ -89,7 +89,7 @@ class CaregiverController extends Controller
             return $this->handleValidationError($e->errors());
         }
 
-        return $this->handleDatabaseTransaction(function () use ($validated, $agencyId, $request) {
+        try {
             // 1. Create the User record FIRST to get its ID.
             $user = User::create([
                 'name' => $validated['first_name'] . ' ' . $validated['last_name'],
@@ -164,8 +164,14 @@ class CaregiverController extends Controller
             $setupUrl = route('password.setup.show', ['token' => $token]);
             session()->flash('setup_link', $setupUrl);
 
-            return $caregiver;
-        }, 'Caregiver added successfully!', 'Failed to create caregiver. Please check your information and try again.');
+            // 7. Flash success message and redirect back - Alpine.js will handle timing and dashboard redirect
+            session()->flash('success_message', 'New Caregiver Added Successfully');
+            session()->flash('redirect_to', route('dashboard'));
+            return redirect()->back();
+
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Failed to create caregiver. Please check your information and try again.', 'caregivers_store');
+        }
     }
 
     public function edit(Caregiver $caregiver)
@@ -207,7 +213,7 @@ class CaregiverController extends Controller
             return $this->handleValidationError($e->errors());
         }
 
-        return $this->handleDatabaseTransaction(function () use ($caregiver, $validated, $request) {
+        try {
             // Update the associated user record first
             if ($caregiver->user) {
                 $caregiver->user->update([
@@ -264,8 +270,15 @@ class CaregiverController extends Controller
             }
 
             $caregiver->update($updateData);
-            return $caregiver;
-        }, 'Caregiver updated successfully!', 'Failed to update caregiver. Please check your information and try again.');
+
+            // Flash success message and redirect back - Alpine.js will handle timing and dashboard redirect
+            session()->flash('success_message', 'Caregiver Updated Successfully');
+            session()->flash('redirect_to', route('dashboard'));
+            return redirect()->back();
+
+        } catch (\Exception $e) {
+            return $this->handleException($e, 'Failed to update caregiver. Please check your information and try again.', 'caregivers_update');
+        }
     }
 
     /**
