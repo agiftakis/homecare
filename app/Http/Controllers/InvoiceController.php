@@ -19,7 +19,7 @@ class InvoiceController extends Controller
     public function index()
     {
         $agency = Auth::user()->agency;
-        
+
         $invoices = Invoice::where('agency_id', $agency->id)
             ->with(['client', 'items'])
             ->orderBy('created_at', 'desc')
@@ -47,13 +47,13 @@ class InvoiceController extends Controller
     public function create()
     {
         $agency = Auth::user()->agency;
-        
+
         // Get clients with completed visits that haven't been invoiced
         $clients = Client::where('agency_id', $agency->id)
             ->whereHas('shifts.visit', function ($query) {
                 $query->whereNotNull('clock_in_time')
-                      ->whereNotNull('clock_out_time')
-                      ->whereDoesntHave('invoiceItems');
+                    ->whereNotNull('clock_out_time')
+                    ->whereDoesntHave('invoiceItems');
             })
             ->get();
 
@@ -136,7 +136,6 @@ class InvoiceController extends Controller
             session()->flash('success_message', 'Invoice Generated Successfully');
             session()->flash('redirect_to', route('invoices.show', $invoice));
             return redirect()->back();
-
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withInput()
@@ -191,8 +190,8 @@ class InvoiceController extends Controller
 
             // Find completed visits for this client in the specified period
             $visits = Visit::whereHas('shift', function ($query) use ($client) {
-                    $query->where('client_id', $client->id);
-                })
+                $query->where('client_id', $client->id);
+            })
                 ->whereNotNull('clock_in_time')
                 ->whereNotNull('clock_out_time')
                 ->whereBetween(DB::raw('DATE(clock_in_time)'), [
@@ -218,7 +217,6 @@ class InvoiceController extends Controller
 
             return redirect()->route('invoices.show', $invoice)
                 ->with('success', "Invoice {$invoice->invoice_number} created successfully with {$visits->count()} visits.");
-
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withInput()
@@ -239,6 +237,22 @@ class InvoiceController extends Controller
         $invoice->load(['client', 'items.visit', 'agency']);
 
         return view('invoices.show', compact('invoice'));
+    }
+
+    /**
+     * Download invoice as PDF (placeholder implementation).
+     */
+    public function downloadPdf(Invoice $invoice)
+    {
+        // Verify invoice belongs to user's agency
+        if ($invoice->agency_id !== Auth::user()->agency_id) {
+            abort(403);
+        }
+
+        // todo:Implement PDF generation
+        // For now, return a message indicating the feature is coming soon
+        return redirect()->route('invoices.show', $invoice)
+            ->with('info', 'PDF generation feature is coming soon. For now, you can print this page or save as PDF using your browser.');
     }
 
     /**
@@ -291,8 +305,8 @@ class InvoiceController extends Controller
         }
 
         $visits = Visit::whereHas('shift', function ($query) use ($client) {
-                $query->where('client_id', $client->id);
-            })
+            $query->where('client_id', $client->id);
+        })
             ->whereNotNull('clock_in_time')
             ->whereNotNull('clock_out_time')
             ->whereBetween(DB::raw('DATE(clock_in_time)'), [
@@ -305,7 +319,7 @@ class InvoiceController extends Controller
             ->map(function ($visit) {
                 $shift = $visit->shift;
                 $billingDetails = $shift->getBillingDetails();
-                
+
                 return [
                     'id' => $visit->id,
                     'date' => $visit->clock_in_time->format('M d, Y'),
@@ -316,8 +330,8 @@ class InvoiceController extends Controller
                     'hourly_rate' => number_format($shift->hourly_rate, 2),
                     'total' => number_format($billingDetails['amount'], 2),
                     'service_type' => $shift->service_type,
-                    'caregiver_name' => $shift->caregiver ? 
-                        $shift->caregiver->first_name . ' ' . $shift->caregiver->last_name : 
+                    'caregiver_name' => $shift->caregiver ?
+                        $shift->caregiver->first_name . ' ' . $shift->caregiver->last_name :
                         InvoiceItem::extractCaregiverName($visit->signature_path),
                 ];
             });
@@ -325,9 +339,45 @@ class InvoiceController extends Controller
         return response()->json([
             'visits' => $visits,
             'total_hours' => $visits->sum('hours'), // This will reflect billable hours (minimum 1.0 each)
-            'total_amount' => $visits->sum(function($visit) { 
-                return floatval(str_replace(',', '', $visit['total'])); 
+            'total_amount' => $visits->sum(function ($visit) {
+                return floatval(str_replace(',', '', $visit['total']));
             }),
         ]);
+    }
+
+    /**
+     * Remove the specified invoice from storage.
+     */
+    public function destroy(Invoice $invoice)
+    {
+        // Verify invoice belongs to user's agency
+        if ($invoice->agency_id !== Auth::user()->agency_id) {
+            abort(403);
+        }
+
+        // Can only delete draft invoices
+        if ($invoice->status !== 'draft') {
+            return redirect()->route('invoices.index')
+                ->with('error', 'Only draft invoices can be deleted.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Delete invoice items first
+            $invoice->items()->delete();
+
+            // Delete the invoice
+            $invoice->delete();
+
+            DB::commit();
+
+            return redirect()->route('invoices.index')
+                ->with('success', 'Invoice deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->route('invoices.index')
+                ->with('error', 'Failed to delete invoice.');
+        }
     }
 }

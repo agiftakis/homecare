@@ -67,6 +67,7 @@ class Shift extends Model
 
     /**
      * Get the actual hours worked (for records/display purposes)
+     * FIXED: Correct time difference calculation
      */
     public function getActualHours(): float
     {
@@ -75,10 +76,19 @@ class Shift extends Model
         }
 
         $visit = $this->visit;
-        $start = $visit->clock_in_time;
-        $end = $visit->clock_out_time;
+        $clockIn = $visit->clock_in_time;
+        $clockOut = $visit->clock_out_time;
 
-        return round($end->diffInMinutes($start) / 60, 2);
+        // FIXED: Ensure we have valid datetime objects and calculate correctly
+        if (!$clockIn || !$clockOut) {
+            return 0;
+        }
+
+        // Calculate the difference in minutes, then convert to hours
+        $diffInMinutes = $clockOut->diffInMinutes($clockIn);
+        
+        // Convert to hours and round to 2 decimal places
+        return round($diffInMinutes / 60, 2);
     }
 
     /**

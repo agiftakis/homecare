@@ -156,6 +156,17 @@
                                                         Edit
                                                     </a>
                                                 @endif
+                                                @if($invoice->status === 'draft')
+                                                    <form action="{{ route('invoices.destroy', $invoice) }}" method="POST" class="inline ml-2">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" 
+                                                                onclick="return confirm('Are you sure you want to delete this invoice?')"
+                                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                                                            Delete
+                                                        </button>
+                                                    </form>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>

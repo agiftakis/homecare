@@ -29,6 +29,11 @@
                                 {{ __('Caregivers') }}
                             </x-nav-link>
 
+                            {{-- ✅ NEW: Invoice Management Link --}}
+                            <x-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
+                                {{ __('Invoices') }}
+                            </x-nav-link>
+
                             {{-- ✅ SETTINGS PAGE: Add link to the new agency settings page --}}
                             <x-nav-link :href="route('settings.edit')" :active="request()->routeIs('settings.*')">
                                 {{ __('Settings') }}
@@ -159,6 +164,11 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('caregivers.index')" :active="request()->routeIs('caregivers.*')">
                         {{ __('Caregivers') }}
+                    </x-responsive-nav-link>
+
+                    {{-- ✅ NEW: Responsive Invoice Management Link --}}
+                    <x-responsive-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
+                        {{ __('Invoices') }}
                     </x-responsive-nav-link>
 
                     {{-- ✅ SETTINGS PAGE: Add responsive link to the new agency settings page --}}

@@ -51,14 +51,18 @@ class InvoiceItem extends Model
 
     /**
      * Calculate hours worked from start and end times.
+     * FIXED: Ensure positive values always
      */
     public static function calculateHours($startTime, $endTime): float
     {
         $start = \Carbon\Carbon::parse($startTime);
         $end = \Carbon\Carbon::parse($endTime);
         
+        // Calculate the difference in minutes (always positive)
+        $diffInMinutes = $end->diffInMinutes($start);
+        
         // Convert to hours with 2 decimal places
-        return round($end->diffInMinutes($start) / 60, 2);
+        return round($diffInMinutes / 60, 2);
     }
 
     /**
@@ -86,6 +90,7 @@ class InvoiceItem extends Model
 
     /**
      * Create an invoice item from a visit.
+     * FIXED: Now uses the Shift model's billing logic with 1-hour minimum
      */
     public static function createFromVisit(Visit $visit, Invoice $invoice): static
     {
@@ -93,7 +98,8 @@ class InvoiceItem extends Model
         $startTime = $visit->clock_in_time;
         $endTime = $visit->clock_out_time;
         
-        $hoursWorked = static::calculateHours($startTime, $endTime);
+        // FIXED: Use the Shift model's billing logic instead of raw calculation
+        $billableHours = $shift->getBillableHours(); // This applies the 1-hour minimum rule
         $caregiverName = static::extractCaregiverName($visit->signature_path);
         
         return static::create([
@@ -104,9 +110,9 @@ class InvoiceItem extends Model
             'service_date' => $visit->clock_in_time->toDateString(),
             'start_time' => $startTime->format('H:i'),
             'end_time' => $endTime->format('H:i'),
-            'hours_worked' => $hoursWorked,
+            'hours_worked' => $billableHours, // FIXED: Now stores billable hours (minimum 1.0)
             'hourly_rate' => $shift->hourly_rate,
-            'line_total' => $hoursWorked * $shift->hourly_rate,
+            'line_total' => $billableHours * $shift->hourly_rate, // FIXED: Uses billable hours for calculation
             'caregiver_name' => $caregiverName,
         ]);
     }
