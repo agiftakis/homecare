@@ -81,13 +81,6 @@
         .totals .amount {
             text-align: right;
         }
-        .totals .grand-total .amount, .totals .grand-total .label {
-            font-size: 14px;
-            font-weight: bold;
-            color: #000;
-            border-top: 2px solid #333;
-            padding-top: 10px;
-        }
         .notes {
             margin-top: 40px;
             border-top: 1px solid #ddd;
@@ -168,9 +161,10 @@
                     <td class="amount">${{ number_format($invoice->tax_amount, 2) }}</td>
                 </tr>
                 @endif
-                <tr class="grand-total">
-                    <td class="label">Total:</td>
-                    <td class="amount">${{ number_format($invoice->total_amount, 2) }}</td>
+                {{-- ✅ FIX: Switched from a CSS class to a more reliable inline style for the top border --}}
+                <tr>
+                    <td class="label" style="border-top: 2px solid #333; padding-top: 10px; font-weight: bold; font-size: 14px; color: #000;">Total:</td>
+                    <td class="amount" style="border-top: 2px solid #333; padding-top: 10px; font-weight: bold; font-size: 14px; color: #000;">${{ number_format($invoice->total_amount, 2) }}</td>
                 </tr>
             </table>
         </div>
