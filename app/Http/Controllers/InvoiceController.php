@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use PDF; // ✅ ADDED: Import the PDF Facade
+use Barryvdh\DomPDF\Facade\Pdf as PDF; 
 
 class InvoiceController extends Controller
 {
