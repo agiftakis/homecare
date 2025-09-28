@@ -213,8 +213,6 @@ class InvoiceController extends Controller
 
             // Create invoice items from visits
             foreach ($visits as $visit) {
-                // This would also need to be updated if the store() method is used with a custom rate
-                // For now, it will use the default rate from the shift.
                 InvoiceItem::createFromVisit($visit, $invoice, $visit->shift->hourly_rate);
             }
 
@@ -245,6 +243,73 @@ class InvoiceController extends Controller
         $invoice->load(['client', 'items.visit', 'agency']);
 
         return view('invoices.show', compact('invoice'));
+    }
+
+    /**
+     * ✅ NEW: Show the form for editing the specified invoice.
+     */
+    public function edit(Invoice $invoice)
+    {
+        // Verify invoice belongs to user's agency
+        if ($invoice->agency_id !== Auth::user()->agency_id) {
+            abort(403);
+        }
+
+        // Only allow editing of draft invoices
+        if ($invoice->status !== 'draft') {
+            return redirect()->route('invoices.show', $invoice)
+                ->with('error', 'Only draft invoices can be edited.');
+        }
+
+        return view('invoices.edit', compact('invoice'));
+    }
+
+    /**
+     * ✅ UPDATED: Update the specified invoice in storage, now with hourly rate.
+     */
+    public function update(Request $request, Invoice $invoice)
+    {
+        // Verify invoice belongs to user's agency
+        if ($invoice->agency_id !== Auth::user()->agency_id) {
+            abort(403);
+        }
+
+        // Only allow editing of draft invoices
+        if ($invoice->status !== 'draft') {
+            return redirect()->route('invoices.show', $invoice)
+                ->with('error', 'This invoice cannot be edited as it is no longer a draft.');
+        }
+
+        $validated = $request->validate([
+            'invoice_date' => 'required|date',
+            'due_date' => 'required|date|after_or_equal:invoice_date',
+            'hourly_rate' => 'required|numeric|min:0',
+            'tax_rate' => 'nullable|numeric|min:0|max:100',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+        
+        DB::transaction(function () use ($invoice, $validated) {
+            // Update the main invoice details
+            $invoice->update([
+                'invoice_date' => $validated['invoice_date'],
+                'due_date' => $validated['due_date'],
+                'tax_rate' => ($validated['tax_rate'] ?: 0) / 100,
+                'notes' => $validated['notes'],
+            ]);
+
+            // Loop through each item, update the rate, and recalculate the line total
+            foreach ($invoice->items as $item) {
+                $item->hourly_rate = $validated['hourly_rate'];
+                $item->line_total = $item->hours_worked * $validated['hourly_rate'];
+                $item->save();
+            }
+
+            // Recalculate the invoice's grand totals based on the updated items
+            $invoice->calculateTotals();
+        });
+        
+        return redirect()->route('invoices.show', $invoice)
+            ->with('success_message', 'Invoice updated successfully.');
     }
 
     /**
@@ -316,9 +381,9 @@ class InvoiceController extends Controller
         if ($invoice->agency_id !== Auth::user()->agency_id) {
             abort(403);
         }
-
+        
         // TODO: Implement actual email sending logic here
-
+        
         return redirect()->route('invoices.show', $invoice)
             ->with('info', 'Emailing invoices is a feature coming soon.');
     }
