@@ -16,6 +16,31 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 md:p-8 text-gray-100 dark:text-gray-100">
                     
+                    <!-- Add this style block at the top of your form section -->
+                    <style>
+                        input[type="date"]::-webkit-calendar-picker-indicator {
+                            filter: invert(1);
+                        }
+                        input[type="date"]::-moz-calendar-picker-indicator {
+                            filter: invert(1);
+                        }
+                        input[type="date"]:focus::-webkit-calendar-picker-indicator {
+                            filter: invert(1) brightness(2);
+                        }
+                        /* For Safari & Chromium-based browsers */
+                        input[type="date"]::-webkit-input-placeholder {
+                            color: white;
+                        }
+                        /* For Firefox */
+                        input[type="date"]::-webkit-calendar-picker-indicator,
+                        input[type="date"]::-moz-calendar-picker-indicator {
+                            background: transparent;
+                        }
+                        input[type="date"]:not([disabled])::-webkit-calendar-picker-indicator {
+                            opacity: 1;
+                        }
+                    </style>
+                    
                     <form action="{{ route('invoices.update', $invoice) }}" method="POST">
                         @csrf
                         @method('PATCH')
