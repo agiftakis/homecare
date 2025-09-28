@@ -251,7 +251,6 @@
                                     @php
                                         $visit = $item->visit;
                                         $shift = $visit ? $visit->shift : null;
-                                        // ✅ FIX: Use abs() to ensure actual hours are never negative.
                                         $actualHours = $shift ? abs($shift->getActualHours()) : 0;
                                         $isMinimumBilling = $shift ? $shift->isMinimumBilling() : false;
                                     @endphp
@@ -339,11 +338,9 @@
                             <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Update Status:</h4>
                             <div class="flex space-x-3">
                                 @if ($invoice->status === 'draft')
-                                    <form action="{{ route('invoices.update', $invoice) }}" method="POST"
+                                    <form action="{{ route('invoices.markAsSent', $invoice) }}" method="POST"
                                         class="inline">
                                         @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="status" value="sent">
                                         <button type="submit"
                                             class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
                                             Mark as Sent
@@ -352,11 +349,9 @@
                                 @endif
 
                                 @if (in_array($invoice->status, ['draft', 'sent']))
-                                    <form action="{{ route('invoices.update', $invoice) }}" method="POST"
+                                    <form action="{{ route('invoices.markAsPaid', $invoice) }}" method="POST"
                                         class="inline">
                                         @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="status" value="paid">
                                         <button type="submit"
                                             class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
                                             Mark as Paid

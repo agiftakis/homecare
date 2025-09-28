@@ -259,34 +259,63 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Update the specified invoice status.
+     * Mark the specified invoice as sent.
      */
-    public function updateStatus(Request $request, Invoice $invoice)
+    public function markAsSent(Invoice $invoice)
     {
-        $request->validate([
-            'status' => 'required|in:draft,sent,paid,cancelled'
-        ]);
-
         // Verify invoice belongs to user's agency
         if ($invoice->agency_id !== Auth::user()->agency_id) {
             abort(403);
         }
 
-        $oldStatus = $invoice->status;
-        $newStatus = $request->status;
-
-        // Handle status-specific logic
-        if ($newStatus === 'sent' && $oldStatus !== 'sent') {
-            $invoice->markAsSent();
-        } elseif ($newStatus === 'paid' && $oldStatus !== 'paid') {
-            $invoice->markAsPaid();
-        } else {
-            $invoice->update(['status' => $newStatus]);
+        if ($invoice->status === 'draft') {
+            $invoice->status = 'sent';
+            $invoice->sent_at = now();
+            $invoice->save();
+            return redirect()->route('invoices.show', $invoice)->with('success_message', 'Invoice marked as sent.');
         }
 
-        $statusDisplay = ucfirst($newStatus);
+        return redirect()->route('invoices.show', $invoice)->with('error', 'Only draft invoices can be marked as sent.');
+    }
+
+    /**
+     * Mark the specified invoice as paid.
+     */
+    public function markAsPaid(Invoice $invoice)
+    {
+        // Verify invoice belongs to user's agency
+        if ($invoice->agency_id !== Auth::user()->agency_id) {
+            abort(403);
+        }
+
+        if (in_array($invoice->status, ['draft', 'sent'])) {
+            $invoice->status = 'paid';
+            $invoice->paid_at = now();
+            // If it was a draft, mark it as sent too
+            if (is_null($invoice->sent_at)) {
+                $invoice->sent_at = now();
+            }
+            $invoice->save();
+            return redirect()->route('invoices.show', $invoice)->with('success_message', 'Invoice marked as paid.');
+        }
+
+        return redirect()->route('invoices.show', $invoice)->with('error', 'This invoice cannot be marked as paid.');
+    }
+
+    /**
+     * Email the invoice to the client (placeholder).
+     */
+    public function sendInvoice(Invoice $invoice)
+    {
+        // Verify invoice belongs to user's agency
+        if ($invoice->agency_id !== Auth::user()->agency_id) {
+            abort(403);
+        }
+        
+        // TODO: Implement actual email sending logic here
+        
         return redirect()->route('invoices.show', $invoice)
-            ->with('success', "Invoice status updated to {$statusDisplay}.");
+            ->with('info', 'Emailing invoices is a feature coming soon.');
     }
 
     /**

@@ -72,7 +72,11 @@ Route::middleware(['auth', 'timezone'])->group(function () {
         Route::resource('invoices', InvoiceController::class);
         Route::post('/invoices/generate', [InvoiceController::class, 'generate'])->name('invoices.generate');
         Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
-        Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'sendInvoice'])->name('invoices.send');
+        Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'sendInvoice'])->name('invoices.send'); // PRESERVED ROUTE FOR EMAILING
+
+        // ✅ NEW: Routes for updating invoice status
+        Route::post('/invoices/{invoice}/mark-as-sent', [InvoiceController::class, 'markAsSent'])->name('invoices.markAsSent');
+        Route::post('/invoices/{invoice}/mark-as-paid', [InvoiceController::class, 'markAsPaid'])->name('invoices.markAsPaid');
         
         // ✅ NEW: API route for unbilled visits (AJAX endpoint)
         Route::post('/api/unbilled-visits', [InvoiceController::class, 'getUnbilledVisits'])->name('api.unbilled-visits');
