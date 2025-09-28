@@ -65,12 +65,14 @@ class InvoiceController extends Controller
      */
     public function generate(Request $request)
     {
+        // ✅ UPDATED: Added validation for hourly_rate
         $request->validate([
             'client_id' => 'required|exists:clients,id',
             'period_start' => 'required|date',
             'period_end' => 'required|date|after_or_equal:period_start',
             'invoice_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:invoice_date',
+            'hourly_rate' => 'required|numeric|min:0',
             'tax_rate' => 'nullable|numeric|min:0|max:100',
             'visit_ids' => 'required|array|min:1',
             'visit_ids.*' => 'exists:visits,id',
@@ -124,7 +126,8 @@ class InvoiceController extends Controller
 
             // Create invoice items from selected visits
             foreach ($visits as $visit) {
-                InvoiceItem::createFromVisit($visit, $invoice);
+                // ✅ UPDATED: Pass the custom hourly rate to the model method
+                InvoiceItem::createFromVisit($visit, $invoice, $request->hourly_rate);
             }
 
             // Calculate totals
@@ -210,7 +213,9 @@ class InvoiceController extends Controller
 
             // Create invoice items from visits
             foreach ($visits as $visit) {
-                InvoiceItem::createFromVisit($visit, $invoice);
+                // This would also need to be updated if the store() method is used with a custom rate
+                // For now, it will use the default rate from the shift.
+                InvoiceItem::createFromVisit($visit, $invoice, $visit->shift->hourly_rate);
             }
 
             // Calculate totals
@@ -311,9 +316,9 @@ class InvoiceController extends Controller
         if ($invoice->agency_id !== Auth::user()->agency_id) {
             abort(403);
         }
-        
+
         // TODO: Implement actual email sending logic here
-        
+
         return redirect()->route('invoices.show', $invoice)
             ->with('info', 'Emailing invoices is a feature coming soon.');
     }

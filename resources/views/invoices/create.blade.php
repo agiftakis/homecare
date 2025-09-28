@@ -5,7 +5,7 @@
                 {{ __('Generate Invoice') }}
             </h2>
             <a href="{{ route('invoices.index') }}" 
-               class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
                 Back to Invoices
             </a>
         </div>
@@ -16,7 +16,6 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     
-                    <!-- Billing Policy Notice -->
                     <div class="mb-6 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
                         <div class="flex">
                             <svg class="w-5 h-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -31,7 +30,6 @@
                     <form action="{{ route('invoices.generate') }}" method="POST" x-data="invoiceGenerator()">
                         @csrf
                         
-                        <!-- Client Selection -->
                         <div class="mb-6">
                             <label for="client_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Select Client *
@@ -50,7 +48,6 @@
                             @enderror
                         </div>
 
-                        <!-- Date Range Selection -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
                                 <label for="period_start" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -79,7 +76,6 @@
                             </div>
                         </div>
 
-                        <!-- Invoice Details -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
                                 <label for="invoice_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -106,20 +102,31 @@
                             </div>
                         </div>
 
-                        <!-- Tax Rate -->
-                        <div class="mb-6">
-                            <label for="tax_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Tax Rate (%)
-                            </label>
-                            <input type="number" name="tax_rate" id="tax_rate" step="0.01" min="0" max="100"
-                                   value="0" x-model="taxRate"
-                                   class="w-full md:w-1/3 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('tax_rate')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                            @enderror
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label for="hourly_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Hourly Rate ($) *
+                                </label>
+                                <input type="number" name="hourly_rate" id="hourly_rate" step="0.01" min="0" required
+                                       value="25.00" x-model="hourlyRate"
+                                       class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                @error('hourly_rate')
+                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="tax_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Tax Rate (%)
+                                </label>
+                                <input type="number" name="tax_rate" id="tax_rate" step="0.01" min="0" max="100"
+                                       value="0" x-model="taxRate"
+                                       class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                @error('tax_rate')
+                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
 
-                        <!-- Unbilled Visits Section -->
                         <div class="mb-6" x-show="unbilledVisits.length > 0" style="display: none;">
                             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
                                 Unbilled Visits for Selected Period
@@ -197,15 +204,14 @@
                                                         (min. 1hr)
                                                     </span>
                                                 </td>
-                                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100" x-text="'$' + visit.hourly_rate"></td>
-                                                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100" x-text="'$' + visit.total"></td>
+                                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100" x-text="'$' + parseFloat(hourlyRate).toFixed(2)"></td>
+                                                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100" x-text="'$' + (visit.hours * hourlyRate).toFixed(2)"></td>
                                             </tr>
                                         </template>
                                     </tbody>
                                 </table>
                             </div>
 
-                            <!-- Invoice Total Preview -->
                             <div class="mt-6 bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                     <div>
@@ -224,7 +230,6 @@
                             </div>
                         </div>
 
-                        <!-- No Visits Message -->
                         <div x-show="showNoVisitsMessage" style="display: none;" 
                              class="mb-6 bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
                             <div class="flex">
@@ -237,7 +242,6 @@
                             </div>
                         </div>
 
-                        <!-- Notes -->
                         <div class="mb-6">
                             <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Invoice Notes (Optional)
@@ -250,7 +254,6 @@
                             @enderror
                         </div>
 
-                        <!-- Action Buttons -->
                         <div class="flex justify-end space-x-3">
                             <a href="{{ route('invoices.index') }}" 
                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-200">
@@ -277,14 +280,16 @@
                 periodStart: '',
                 periodEnd: '',
                 taxRate: 0,
+                hourlyRate: 25.00, // ✅ NEW: Added hourlyRate property
                 unbilledVisits: [],
                 selectedVisits: [],
                 showNoVisitsMessage: false,
                 
+                // ✅ UPDATED: Calculates subtotal based on the new hourlyRate
                 get subtotal() {
                     return this.selectedVisits.reduce((total, visitId) => {
                         const visit = this.unbilledVisits.find(v => v.id == visitId);
-                        return total + (visit ? parseFloat(visit.total.replace(',', '')) : 0);
+                        return total + (visit ? (visit.hours * this.hourlyRate) : 0);
                     }, 0);
                 },
                 

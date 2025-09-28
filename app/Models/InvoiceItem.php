@@ -90,15 +90,15 @@ class InvoiceItem extends Model
 
     /**
      * Create an invoice item from a visit.
-     * FIXED: Now uses the Shift model's billing logic with 1-hour minimum
+     * ✅ UPDATED: Now accepts a custom hourly rate.
      */
-    public static function createFromVisit(Visit $visit, Invoice $invoice): static
+    public static function createFromVisit(Visit $visit, Invoice $invoice, float $hourlyRate): static
     {
         $shift = $visit->shift;
         $startTime = $visit->clock_in_time;
         $endTime = $visit->clock_out_time;
         
-        // FIXED: Use the Shift model's billing logic instead of raw calculation
+        // Use the Shift model's billing logic for hours
         $billableHours = $shift->getBillableHours(); // This applies the 1-hour minimum rule
         $caregiverName = static::extractCaregiverName($visit->signature_path);
         
@@ -110,9 +110,9 @@ class InvoiceItem extends Model
             'service_date' => $visit->clock_in_time->toDateString(),
             'start_time' => $startTime->format('H:i'),
             'end_time' => $endTime->format('H:i'),
-            'hours_worked' => $billableHours, // FIXED: Now stores billable hours (minimum 1.0)
-            'hourly_rate' => $shift->hourly_rate,
-            'line_total' => $billableHours * $shift->hourly_rate, // FIXED: Uses billable hours for calculation
+            'hours_worked' => $billableHours,
+            'hourly_rate' => $hourlyRate, // ✅ USE the custom rate from the form
+            'line_total' => $billableHours * $hourlyRate, // ✅ CALCULATE using the custom rate
             'caregiver_name' => $caregiverName,
         ]);
     }
