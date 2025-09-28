@@ -171,7 +171,7 @@ return [
          */
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class, // This is often a duplicate, the one above is the important one.
+        
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
@@ -189,7 +189,7 @@ return [
     */
 
     'aliases' => Illuminate\Support\Facades\Facade::defaultAliases()->merge([
-        // 'Example' => App\Facades\Example::class,
+        'PDF' => Barryvdh\DomPDF\Facade\Pdf::class, 
     ])->toArray(),
 
 ];
