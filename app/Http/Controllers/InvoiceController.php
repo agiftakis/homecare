@@ -308,8 +308,12 @@ class InvoiceController extends Controller
             $invoice->calculateTotals();
         });
         
-        return redirect()->route('invoices.show', $invoice)
-            ->with('success_message', 'Invoice updated successfully.');
+        // ✅ FINAL REDIRECT FIX: Add the 'redirect_to' session flash
+        $destinationUrl = route('invoices.show', $invoice);
+
+        return redirect($destinationUrl)
+            ->with('success_message', 'Invoice updated successfully.')
+            ->with('redirect_to', $destinationUrl);
     }
 
     /**
