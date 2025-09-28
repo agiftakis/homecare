@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use PDF; // ✅ ADDED: Import the PDF Facade
 
 class InvoiceController extends Controller
 {
@@ -317,7 +318,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Download invoice as PDF (placeholder implementation).
+     * ✅ UPDATED: Download invoice as PDF.
      */
     public function downloadPdf(Invoice $invoice)
     {
@@ -326,10 +327,14 @@ class InvoiceController extends Controller
             abort(403);
         }
 
-        // todo:Implement PDF generation
-        // For now, return a message indicating the feature is coming soon
-        return redirect()->route('invoices.show', $invoice)
-            ->with('info', 'PDF generation feature is coming soon. For now, you can print this page or save as PDF using your browser.');
+        // Define a filename
+        $filename = 'invoice-' . $invoice->invoice_number . '.pdf';
+
+        // Load the PDF view and pass the invoice data
+        $pdf = PDF::loadView('invoices.pdf.invoice', compact('invoice'));
+
+        // Download the PDF file
+        return $pdf->download($filename);
     }
 
     /**
