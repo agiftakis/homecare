@@ -132,10 +132,13 @@ class InvoiceController extends Controller
 
             DB::commit();
 
-            // Flash success message and redirect
-            session()->flash('success_message', 'Invoice Generated Successfully');
-            session()->flash('redirect_to', route('invoices.show', $invoice));
-            return redirect()->back();
+            // ✅ CORRECT FIX: Tell the success banner to "redirect" to the page we are already on.
+            // This satisfies the banner's logic without navigating the user away from the new invoice.
+            $destinationUrl = route('invoices.show', $invoice);
+
+            return redirect($destinationUrl)
+                ->with('success_message', 'Invoice Generated Successfully')
+                ->with('redirect_to', $destinationUrl);
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withInput()

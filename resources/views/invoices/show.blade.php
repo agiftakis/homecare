@@ -25,7 +25,6 @@
 
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
-            <!-- Invoice Status Banner -->
             <div class="mb-6">
                 @switch($invoice->status)
                     @case('paid')
@@ -92,14 +91,11 @@
                 @endswitch
             </div>
 
-            <!-- Invoice Content -->
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-8 text-gray-900 dark:text-gray-100">
 
-                    <!-- Invoice Header -->
                     <div class="border-b border-gray-200 dark:border-gray-600 pb-6 mb-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Agency Information -->
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">From:</h3>
                                 <div class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
@@ -115,7 +111,6 @@
                                 </div>
                             </div>
 
-                            <!-- Client Information -->
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Bill To:</h3>
                                 <div class="text-sm text-gray-600 dark:text-gray-300 space-y-1">
@@ -130,7 +125,6 @@
                         </div>
                     </div>
 
-                    <!-- Invoice Details -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <div>
                             <dl class="space-y-2">
@@ -199,7 +193,6 @@
                         </div>
                     </div>
 
-                    <!-- Billing Policy Notice -->
                     <div
                         class="mb-6 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
                         <div class="flex">
@@ -215,7 +208,6 @@
                         </div>
                     </div>
 
-                    <!-- Invoice Items Table -->
                     <div class="overflow-x-auto mb-8">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
                             <thead class="bg-gray-50 dark:bg-gray-700">
@@ -259,7 +251,8 @@
                                     @php
                                         $visit = $item->visit;
                                         $shift = $visit ? $visit->shift : null;
-                                        $actualHours = $shift ? $shift->getActualHours() : 0;
+                                        // ✅ FIX: Use abs() to ensure actual hours are never negative.
+                                        $actualHours = $shift ? abs($shift->getActualHours()) : 0;
                                         $isMinimumBilling = $shift ? $shift->isMinimumBilling() : false;
                                     @endphp
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -306,7 +299,6 @@
                         </table>
                     </div>
 
-                    <!-- Invoice Totals -->
                     <div class="border-t border-gray-200 dark:border-gray-600 pt-6">
                         <div class="flex justify-end">
                             <div class="w-full max-w-sm space-y-2">
@@ -335,7 +327,6 @@
                         </div>
                     </div>
 
-                    <!-- Invoice Notes -->
                     @if ($invoice->notes)
                         <div class="mt-8 border-t border-gray-200 dark:border-gray-600 pt-6">
                             <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Notes:</h4>
@@ -343,7 +334,6 @@
                         </div>
                     @endif
 
-                    <!-- Status Update Actions (for non-paid invoices) -->
                     @if ($invoice->status !== 'paid')
                         <div class="mt-8 border-t border-gray-200 dark:border-gray-600 pt-6">
                             <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Update Status:</h4>
