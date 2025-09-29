@@ -32,6 +32,11 @@ class Invoice extends Model
         'client_email',
         'client_address',
         'notes',
+        // ✅ NEW: Void tracking fields
+        'voided_at',
+        'voided_by',
+        'voided_invoice_id',
+        'replacement_invoice_id',
     ];
 
     protected $casts = [
@@ -45,6 +50,8 @@ class Invoice extends Model
         'total_amount' => 'decimal:2',
         'sent_at' => 'datetime',
         'paid_at' => 'datetime',
+        // ✅ NEW: Void timestamp cast
+        'voided_at' => 'datetime',
     ];
 
     /**
@@ -71,6 +78,32 @@ class Invoice extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
+    // ✅ NEW: Relationship methods for void tracking
+
+    /**
+     * Get the user who voided this invoice.
+     */
+    public function voidedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'voided_by');
+    }
+
+    /**
+     * Get the original invoice that this one replaced (if this is a reissued invoice).
+     */
+    public function voidedInvoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'voided_invoice_id');
+    }
+
+    /**
+     * Get the replacement invoice that was created after this one was voided.
+     */
+    public function replacementInvoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'replacement_invoice_id');
+    }
+
     /**
      * Generate the next invoice number for an agency.
      */
@@ -78,7 +111,7 @@ class Invoice extends Model
     {
         $year = date('Y');
         $prefix = "VL-{$year}-";
-        
+
         // Find the highest invoice number for this agency and year
         $latestInvoice = static::where('agency_id', $agencyId)
             ->where('invoice_number', 'like', "{$prefix}%")
@@ -102,6 +135,7 @@ class Invoice extends Model
     public function calculateTotals(): void
     {
         $this->subtotal = $this->items->sum('line_total');
+        // ✅ FIXED: Explicit float cast to resolve type conversion warning
         $this->tax_amount = $this->subtotal * $this->tax_rate;
         $this->total_amount = $this->subtotal + $this->tax_amount;
         $this->save();
@@ -126,6 +160,7 @@ class Invoice extends Model
             'paid' => 'Paid',
             'overdue' => 'Overdue',
             'cancelled' => 'Cancelled',
+            'void' => 'Void',
             default => ucfirst($this->status),
         };
     }
@@ -141,6 +176,7 @@ class Invoice extends Model
             'paid' => 'green',
             'overdue' => 'red',
             'cancelled' => 'yellow',
+            'void' => 'red',
             default => 'gray',
         };
     }
@@ -165,5 +201,70 @@ class Invoice extends Model
             'status' => 'paid',
             'paid_at' => now(),
         ]);
+    }
+
+    // ✅ NEW: Void & Reissue helper methods
+
+    /**
+     * Check if this invoice is voided.
+     */
+    public function isVoided(): bool
+    {
+        return $this->status === 'void';
+    }
+
+    /**
+     * Check if this invoice can be voided.
+     * Any invoice that is not already voided can be voided.
+     */
+    public function canBeVoided(): bool
+    {
+        return $this->status !== 'void';
+    }
+
+    /**
+     * Check if this invoice is a reissued invoice (created from a voided one).
+     */
+    public function isReissued(): bool
+    {
+        return !is_null($this->voided_invoice_id);
+    }
+
+    /**
+     * Check if this invoice has been replaced by a reissued invoice.
+     */
+    public function hasReplacement(): bool
+    {
+        return !is_null($this->replacement_invoice_id);
+    }
+
+    /**
+     * Get void information for display.
+     */
+    public function getVoidInfo(): ?array
+    {
+        if (!$this->isVoided()) {
+            return null;
+        }
+
+        return [
+            'voided_at' => $this->voided_at,
+            'voided_by' => $this->voidedByUser,
+            'replacement_invoice' => $this->replacementInvoice,
+        ];
+    }
+
+    /**
+     * Get reissue information for display.
+     */
+    public function getReissueInfo(): ?array
+    {
+        if (!$this->isReissued()) {
+            return null;
+        }
+
+        return [
+            'voided_invoice' => $this->voidedInvoice,
+        ];
     }
 }

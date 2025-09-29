@@ -398,6 +398,119 @@ class InvoiceController extends Controller
     }
 
     /**
+     * ✅ NEW: Void an invoice (can be voided regardless of status).
+     */
+    public function voidInvoice(Invoice $invoice)
+    {
+        // Verify invoice belongs to user's agency
+        if ($invoice->agency_id !== Auth::user()->agency_id) {
+            abort(403);
+        }
+
+        // Check if invoice can be voided
+        if (!$invoice->canBeVoided()) {
+            return redirect()->route('invoices.show', $invoice)
+                ->with('error', 'This invoice is already voided.');
+        }
+
+        // Void the invoice
+        $invoice->update([
+            'status' => 'void',
+            'voided_at' => now(),
+            'voided_by' => Auth::id(),
+        ]);
+
+        return redirect()->route('invoices.show', $invoice)
+            ->with('success_message', "Invoice {$invoice->invoice_number} has been voided.");
+    }
+
+    /**
+     * ✅ NEW: Reissue an invoice - void the original and create a corrected copy.
+     */
+    public function reissueInvoice(Invoice $originalInvoice)
+    {
+        // Verify invoice belongs to user's agency
+        if ($originalInvoice->agency_id !== Auth::user()->agency_id) {
+            abort(403);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // If the invoice isn't already voided, void it first
+            if (!$originalInvoice->isVoided()) {
+                $originalInvoice->update([
+                    'status' => 'void',
+                    'voided_at' => now(),
+                    'voided_by' => Auth::id(),
+                ]);
+            }
+
+            // Load the original invoice with all its items
+            $originalInvoice->load(['items.visit', 'client']);
+
+            // Create a new invoice copying all data from the original
+            $newInvoice = Invoice::create([
+                'agency_id' => $originalInvoice->agency_id,
+                'client_id' => $originalInvoice->client_id,
+                'invoice_number' => Invoice::generateInvoiceNumber($originalInvoice->agency_id),
+                'invoice_date' => now()->toDateString(), // Use today's date for the new invoice
+                'period_start' => $originalInvoice->period_start,
+                'period_end' => $originalInvoice->period_end,
+                'due_date' => now()->addDays(30)->toDateString(), // New due date (30 days from now)
+                'subtotal' => 0,
+                'tax_rate' => $originalInvoice->tax_rate,
+                'tax_amount' => 0,
+                'total_amount' => 0,
+                'status' => 'draft', // New invoice starts as draft so admin can edit
+                'client_name' => $originalInvoice->client_name,
+                'client_email' => $originalInvoice->client_email,
+                'client_address' => $originalInvoice->client_address,
+                'notes' => $originalInvoice->notes . "\n\n[Reissued from voided invoice {$originalInvoice->invoice_number}]",
+                'voided_invoice_id' => $originalInvoice->id, // Link to the original
+            ]);
+
+            // Copy all invoice items from the original
+            foreach ($originalInvoice->items as $originalItem) {
+                InvoiceItem::create([
+                    'invoice_id' => $newInvoice->id,
+                    'visit_id' => $originalItem->visit_id,
+                    'service_description' => $originalItem->service_description,
+                    'service_type' => $originalItem->service_type,
+                    'service_date' => $originalItem->service_date,
+                    'start_time' => $originalItem->start_time,
+                    'end_time' => $originalItem->end_time,
+                    'hours_worked' => $originalItem->hours_worked,
+                    'hourly_rate' => $originalItem->hourly_rate,
+                    'line_total' => $originalItem->line_total,
+                    'caregiver_name' => $originalItem->caregiver_name,
+                ]);
+            }
+
+            // Calculate totals for the new invoice
+            $newInvoice->calculateTotals();
+
+            // Update the original invoice with the replacement link
+            $originalInvoice->update([
+                'replacement_invoice_id' => $newInvoice->id,
+            ]);
+
+            DB::commit();
+
+            // Redirect to the new invoice
+            $destinationUrl = route('invoices.show', $newInvoice);
+
+            return redirect($destinationUrl)
+                ->with('success_message', "Invoice {$originalInvoice->invoice_number} has been voided. New invoice {$newInvoice->invoice_number} created as draft for editing.")
+                ->with('redirect_to', $destinationUrl);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->route('invoices.show', $originalInvoice)
+                ->with('error', 'Failed to reissue invoice: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Get unbilled visits for a client within a date range (AJAX endpoint).
      */
     public function getUnbilledVisits(Request $request)
