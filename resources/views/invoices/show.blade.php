@@ -9,7 +9,7 @@
                     class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
                     Download PDF
                 </a>
-                @if ($invoice->status !== 'paid')
+                @if ($invoice->status !== 'paid' && $invoice->status !== 'void')
                     <a href="{{ route('invoices.edit', $invoice) }}"
                         class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
                         Edit Invoice
@@ -25,6 +25,53 @@
 
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
+            
+            {{-- ✅ NEW: Void Status Banner --}}
+            @if($invoice->status === 'void')
+                <div class="mb-6 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm text-red-800 dark:text-red-200">
+                                <strong>VOID</strong> - This invoice was voided on {{ $invoice->voided_at->format('M d, Y') }}
+                                @if($invoice->voidedByUser)
+                                    by {{ $invoice->voidedByUser->name }}
+                                @endif
+                            </p>
+                            @if($invoice->replacementInvoice)
+                                <p class="text-sm text-red-800 dark:text-red-200 mt-1">
+                                    Replacement Invoice: 
+                                    <a href="{{ route('invoices.show', $invoice->replacementInvoice) }}" 
+                                       class="underline font-semibold hover:text-red-600">
+                                        {{ $invoice->replacementInvoice->invoice_number }}
+                                    </a>
+                                </p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- ✅ NEW: Reissued Invoice Information Banner --}}
+            @if($invoice->isReissued() && $invoice->voidedInvoice)
+                <div class="mb-6 bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                            <strong>Reissued Invoice</strong> - This invoice replaces voided invoice 
+                            <a href="{{ route('invoices.show', $invoice->voidedInvoice) }}" 
+                               class="underline font-semibold hover:text-yellow-600">
+                                {{ $invoice->voidedInvoice->invoice_number }}
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            @endif
+
             <div class="mb-6">
                 @switch($invoice->status)
                     @case('paid')
@@ -73,6 +120,10 @@
                                 </div>
                             </div>
                         @endif
+                    @break
+
+                    @case('void')
+                        {{-- Void status already shown above, skip here --}}
                     @break
 
                     @default
@@ -179,6 +230,13 @@
                                                         Sent
                                                     </span>
                                                 @endif
+                                            @break
+
+                                            @case('void')
+                                                <span
+                                                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
+                                                    VOID
+                                                </span>
                                             @break
 
                                             @default
@@ -333,7 +391,8 @@
                         </div>
                     @endif
 
-                    @if ($invoice->status !== 'paid')
+                    {{-- ✅ UPDATED: Status update section with Void & Reissue button --}}
+                    @if ($invoice->status !== 'paid' && $invoice->status !== 'void')
                         <div class="mt-8 border-t border-gray-200 dark:border-gray-600 pt-6">
                             <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Update Status:</h4>
                             <div class="flex space-x-3">
@@ -359,6 +418,24 @@
                                     </form>
                                 @endif
                             </div>
+                        </div>
+                    @endif
+
+                    {{-- ✅ NEW: Void & Reissue Section (only for non-voided invoices) --}}
+                    @if($invoice->canBeVoided())
+                        <div class="mt-8 border-t border-gray-200 dark:border-gray-600 pt-6">
+                            <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Void & Reissue:</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Need to make corrections? Void this invoice and create a new corrected version as a draft.
+                            </p>
+                            <form action="{{ route('invoices.reissue', $invoice) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit"
+                                        onclick="return confirm('Are you sure you want to void this invoice and create a new corrected version? This action cannot be undone. The original invoice will be marked as VOID and a new draft invoice will be created with the same data for you to edit.')"
+                                        class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                                    Void & Reissue Invoice
+                                </button>
+                            </form>
                         </div>
                     @endif
                 </div>
