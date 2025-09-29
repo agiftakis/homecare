@@ -134,6 +134,11 @@
                                                         Overdue
                                                     </span>
                                                     @break
+                                                @case('void')
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
+                                                        VOID
+                                                    </span>
+                                                    @break
                                                 @default
                                                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100">
                                                         Draft
@@ -150,7 +155,7 @@
                                                    class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
                                                     PDF
                                                 </a>
-                                                @if($invoice->status !== 'paid')
+                                                @if($invoice->status !== 'paid' && $invoice->status !== 'void')
                                                     <a href="{{ route('invoices.edit', $invoice) }}" 
                                                        class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
                                                         Edit
