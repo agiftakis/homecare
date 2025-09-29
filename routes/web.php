@@ -78,6 +78,10 @@ Route::middleware(['auth', 'timezone'])->group(function () {
         Route::post('/invoices/{invoice}/mark-as-sent', [InvoiceController::class, 'markAsSent'])->name('invoices.markAsSent');
         Route::post('/invoices/{invoice}/mark-as-paid', [InvoiceController::class, 'markAsPaid'])->name('invoices.markAsPaid');
         
+        // ✅ NEW: Void & Reissue routes
+        Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'voidInvoice'])->name('invoices.void');
+        Route::post('/invoices/{invoice}/reissue', [InvoiceController::class, 'reissueInvoice'])->name('invoices.reissue');
+        
         // ✅ NEW: API route for unbilled visits (AJAX endpoint)
         Route::post('/api/unbilled-visits', [InvoiceController::class, 'getUnbilledVisits'])->name('api.unbilled-visits');
     });
