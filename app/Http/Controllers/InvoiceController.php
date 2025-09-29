@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf as PDF; 
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class InvoiceController extends Controller
 {
@@ -288,7 +288,7 @@ class InvoiceController extends Controller
             'tax_rate' => 'nullable|numeric|min:0|max:100',
             'notes' => 'nullable|string|max:1000',
         ]);
-        
+
         DB::transaction(function () use ($invoice, $validated) {
             // Update the main invoice details
             $invoice->update([
@@ -308,7 +308,7 @@ class InvoiceController extends Controller
             // Recalculate the invoice's grand totals based on the updated items
             $invoice->calculateTotals();
         });
-        
+
         // ✅ FINAL REDIRECT FIX: Add the 'redirect_to' session flash
         $destinationUrl = route('invoices.show', $invoice);
 
@@ -390,9 +390,9 @@ class InvoiceController extends Controller
         if ($invoice->agency_id !== Auth::user()->agency_id) {
             abort(403);
         }
-        
+
         // TODO: Implement actual email sending logic here
-        
+
         return redirect()->route('invoices.show', $invoice)
             ->with('info', 'Emailing invoices is a feature coming soon.');
     }
@@ -425,12 +425,13 @@ class InvoiceController extends Controller
     }
 
     /**
-     * ✅ NEW: Reissue an invoice - void the original and create a corrected copy.
+     * ✅ FIXED: Reissue an invoice - void the original and create a corrected copy.
+     * CRITICAL FIX: Changed parameter from $originalInvoice to $invoice to match route {invoice}
      */
-    public function reissueInvoice(Invoice $originalInvoice)
+    public function reissueInvoice(Invoice $invoice)
     {
         // Verify invoice belongs to user's agency
-        if ($originalInvoice->agency_id !== Auth::user()->agency_id) {
+        if ($invoice->agency_id !== Auth::user()->agency_id) {
             abort(403);
         }
 
@@ -438,8 +439,8 @@ class InvoiceController extends Controller
 
         try {
             // If the invoice isn't already voided, void it first
-            if (!$originalInvoice->isVoided()) {
-                $originalInvoice->update([
+            if (!$invoice->isVoided()) {
+                $invoice->update([
                     'status' => 'void',
                     'voided_at' => now(),
                     'voided_by' => Auth::id(),
@@ -447,31 +448,31 @@ class InvoiceController extends Controller
             }
 
             // Load the original invoice with all its items
-            $originalInvoice->load(['items.visit', 'client']);
+            $invoice->load(['items.visit', 'client']);
 
             // Create a new invoice copying all data from the original
             $newInvoice = Invoice::create([
-                'agency_id' => $originalInvoice->agency_id,
-                'client_id' => $originalInvoice->client_id,
-                'invoice_number' => Invoice::generateInvoiceNumber($originalInvoice->agency_id),
+                'agency_id' => $invoice->agency_id,
+                'client_id' => $invoice->client_id,
+                'invoice_number' => Invoice::generateInvoiceNumber($invoice->agency_id),
                 'invoice_date' => now()->toDateString(), // Use today's date for the new invoice
-                'period_start' => $originalInvoice->period_start,
-                'period_end' => $originalInvoice->period_end,
+                'period_start' => $invoice->period_start,
+                'period_end' => $invoice->period_end,
                 'due_date' => now()->addDays(30)->toDateString(), // New due date (30 days from now)
                 'subtotal' => 0,
-                'tax_rate' => $originalInvoice->tax_rate,
+                'tax_rate' => $invoice->tax_rate,
                 'tax_amount' => 0,
                 'total_amount' => 0,
                 'status' => 'draft', // New invoice starts as draft so admin can edit
-                'client_name' => $originalInvoice->client_name,
-                'client_email' => $originalInvoice->client_email,
-                'client_address' => $originalInvoice->client_address,
-                'notes' => $originalInvoice->notes . "\n\n[Reissued from voided invoice {$originalInvoice->invoice_number}]",
-                'voided_invoice_id' => $originalInvoice->id, // Link to the original
+                'client_name' => $invoice->client_name,
+                'client_email' => $invoice->client_email,
+                'client_address' => $invoice->client_address,
+                'notes' => $invoice->notes . "\n\n[Reissued from voided invoice {$invoice->invoice_number}]",
+                'voided_invoice_id' => $invoice->id, // Link to the original
             ]);
 
             // Copy all invoice items from the original
-            foreach ($originalInvoice->items as $originalItem) {
+            foreach ($invoice->items as $originalItem) {
                 InvoiceItem::create([
                     'invoice_id' => $newInvoice->id,
                     'visit_id' => $originalItem->visit_id,
@@ -491,7 +492,7 @@ class InvoiceController extends Controller
             $newInvoice->calculateTotals();
 
             // Update the original invoice with the replacement link
-            $originalInvoice->update([
+            $invoice->update([
                 'replacement_invoice_id' => $newInvoice->id,
             ]);
 
@@ -501,11 +502,11 @@ class InvoiceController extends Controller
             $destinationUrl = route('invoices.show', $newInvoice);
 
             return redirect($destinationUrl)
-                ->with('success_message', "Invoice {$originalInvoice->invoice_number} has been voided. New invoice {$newInvoice->invoice_number} created as draft for editing.")
+                ->with('success_message', "Invoice {$invoice->invoice_number} has been voided. New invoice {$newInvoice->invoice_number} created as draft for editing.")
                 ->with('redirect_to', $destinationUrl);
         } catch (\Exception $e) {
             DB::rollback();
-            return redirect()->route('invoices.show', $originalInvoice)
+            return redirect()->route('invoices.show', $invoice)
                 ->with('error', 'Failed to reissue invoice: ' . $e->getMessage());
         }
     }

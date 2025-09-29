@@ -68,20 +68,19 @@ Route::middleware(['auth', 'timezone'])->group(function () {
         // ✅ NEW: Subscription Management Route - ONLY accessible to agency_admin
         Route::get('/subscription/manage', [SubscriptionController::class, 'manage'])->name('subscription.manage');
 
-        // ✅ NEW: Invoice Management Routes - ONLY accessible to agency_admin
-        Route::resource('invoices', InvoiceController::class);
+        // ✅ CRITICAL FIX: Custom invoice routes MUST be defined BEFORE Route::resource()
+        // This ensures Laravel matches specific routes before trying generic resource routes
         Route::post('/invoices/generate', [InvoiceController::class, 'generate'])->name('invoices.generate');
         Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
         Route::post('/invoices/{invoice}/send', [InvoiceController::class, 'sendInvoice'])->name('invoices.send'); // PRESERVED ROUTE FOR EMAILING
-
-        // ✅ NEW: Routes for updating invoice status
         Route::post('/invoices/{invoice}/mark-as-sent', [InvoiceController::class, 'markAsSent'])->name('invoices.markAsSent');
         Route::post('/invoices/{invoice}/mark-as-paid', [InvoiceController::class, 'markAsPaid'])->name('invoices.markAsPaid');
-        
-        // ✅ NEW: Void & Reissue routes
         Route::post('/invoices/{invoice}/void', [InvoiceController::class, 'voidInvoice'])->name('invoices.void');
         Route::post('/invoices/{invoice}/reissue', [InvoiceController::class, 'reissueInvoice'])->name('invoices.reissue');
-        
+
+        // Resource route comes AFTER custom routes
+        Route::resource('invoices', InvoiceController::class);
+
         // ✅ NEW: API route for unbilled visits (AJAX endpoint)
         Route::post('/api/unbilled-visits', [InvoiceController::class, 'getUnbilledVisits'])->name('api.unbilled-visits');
     });
