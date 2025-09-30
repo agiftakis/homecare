@@ -77,9 +77,13 @@ class SubscriptionController extends Controller
             return redirect()->route('dashboard')->with('error', 'Agency not found.');
         }
 
+        // START: NEW CODE TO CHECK FOR LIFETIME STATUS
+        $isLifetime = $agency->isLifetimeFree();
+        // END: NEW CODE
+
         // Get the current subscription
         $subscription = $agency->subscription('default');
-        
+
         // Get subscription details
         $subscriptionData = [
             'plan' => $this->getPlanNameFromSubscription($subscription),
@@ -98,7 +102,7 @@ class SubscriptionController extends Controller
             }
         }
 
-        return view('subscription.manage', compact('subscriptionData', 'portalUrl'));
+        return view('subscription.manage', compact('subscriptionData', 'portalUrl', 'isLifetime'));
     }
 
     /**
@@ -124,10 +128,10 @@ class SubscriptionController extends Controller
         }
 
         $stripePriceId = $subscription->stripe_price;
-        
+
         return match ($stripePriceId) {
             env('STRIPE_PROFESSIONAL_PRICE_ID') => 'Professional',
-            env('STRIPE_PREMIUM_PRICE_ID') => 'Premium', 
+            env('STRIPE_PREMIUM_PRICE_ID') => 'Premium',
             env('STRIPE_ENTERPRISE_PRICE_ID') => 'Enterprise',
             env('STRIPE_BASIC_PRICE_ID') => 'Basic',
             default => 'Unknown Plan',
