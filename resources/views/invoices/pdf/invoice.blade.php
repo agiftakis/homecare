@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Invoice {{ $invoice->invoice_number }}</title>
     {{-- PHP block to securely embed the logo --}}
     @php
@@ -23,90 +24,116 @@
             --heading-color: #111827;
             --border-color: #e5e7eb;
         }
+
         body {
             font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
             font-size: 12px;
-            color: #374151; /* --text-color */
+            color: #374151;
+            /* --text-color */
         }
+
         .container {
             width: 100%;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
+
         .header-table {
             margin-bottom: 30px;
         }
+
         .header-table .logo-container {
             width: 50%;
             vertical-align: top;
         }
+
         .header-table .logo {
             max-width: 150px;
             height: auto;
         }
+
         .header-table .invoice-title-container {
             width: 50%;
             text-align: right;
             vertical-align: top;
         }
+
         .header-table h1 {
             margin: 0;
             font-size: 32px;
             font-weight: bold;
-            color: #111827; /* --heading-color */
+            color: #111827;
+            /* --heading-color */
         }
+
         .invoice-details p {
             margin: 2px 0;
             font-size: 12px;
         }
+
         .addresses-table {
             margin-bottom: 30px;
         }
+
         .addresses-table td {
             width: 50%;
             vertical-align: top;
         }
+
         .addresses-table h2 {
             font-size: 13px;
             font-weight: bold;
             margin: 0 0 5px 0;
-            color: #3490dc; /* --primary-color */
+            color: #3490dc;
+            /* --primary-color */
         }
+
         .items-table th {
-            background-color: #3490dc; /* --primary-color */
+            background-color: #3490dc;
+            /* --primary-color */
             color: #ffffff;
             font-weight: bold;
             padding: 10px 8px;
             text-align: left;
             font-size: 12px;
         }
+
         .items-table td {
-            border-bottom: 1px solid #e5e7eb; /* --border-color */
+            border-bottom: 1px solid #e5e7eb;
+            /* --border-color */
             padding: 10px 8px;
         }
+
         .items-table tbody tr:nth-child(even) {
-            background-color: #f3f4f6; /* --secondary-color */
+            background-color: #f3f4f6;
+            /* --secondary-color */
         }
+
         .items-table .text-right {
             text-align: right;
         }
-        
+
         /* START: BULLETPROOF TOTALS FIX */
         .totals-section {
             page-break-inside: avoid;
             margin-top: 20px;
         }
+
         .totals-container {
             width: 45%;
             float: right;
         }
+
         .totals-row {
             /* This "clearfix" is for the floated spans inside */
-            overflow: auto; 
+            overflow: auto;
             padding: 6px 8px;
+            margin-bottom: 8.5px;
         }
+
         .totals-row .label {
             float: left;
             text-align: right;
@@ -114,19 +141,26 @@
             color: #374151;
             width: 65%;
         }
+
         .totals-row .amount {
             float: right;
             text-align: right;
             width: 35%;
         }
+
         .totals-row.total-row {
             font-size: 16px;
             font-weight: bold;
             color: #111827;
             border-top: 2px solid #111827;
             margin-top: 5px;
+            /* Existing margin */
             padding-top: 10px;
+            /* Existing padding */
+            margin-bottom: 12px;
+            /* Add this to move the line 12px below the text */
         }
+
         /* END: BULLETPROOF TOTALS FIX */
 
         .notes-section {
@@ -135,14 +169,18 @@
             page-break-inside: avoid;
             margin-top: 40px;
             padding-top: 15px;
-            border-top: 1px solid #e5e7eb; /* --border-color */
+            border-top: 1px solid #e5e7eb;
+            /* --border-color */
         }
+
         .notes-section h3 {
             font-size: 13px;
             font-weight: bold;
-            color: #3490dc; /* --primary-color */
+            color: #3490dc;
+            /* --primary-color */
             margin-bottom: 5px;
         }
+
         .footer {
             position: fixed;
             bottom: 0;
@@ -151,18 +189,20 @@
             text-align: center;
             font-size: 10px;
             color: #9ca3af;
-            border-top: 1px solid #e5e7eb; /* --border-color */
+            border-top: 1px solid #e5e7eb;
+            /* --border-color */
             padding-top: 10px;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
-        
+
         <table class="header-table">
             <tr>
                 <td class="logo-container">
-                    @if($logoSrc)
+                    @if ($logoSrc)
                         <img src="{{ $logoSrc }}" alt="Agency Logo" class="logo">
                     @else
                         <h1>{{ $invoice->agency->name }}</h1>
@@ -192,7 +232,7 @@
                 <td>
                     <h2>Bill To:</h2>
                     <strong>{{ $invoice->client_name }}</strong><br>
-                    @if($invoice->client_address)
+                    @if ($invoice->client_address)
                         {{ $invoice->client_address }}<br>
                     @endif
                     {{ $invoice->client_email }}
@@ -230,11 +270,11 @@
                     <span class="label">Subtotal:</span>
                     <span class="amount">${{ number_format($invoice->subtotal, 2) }}</span>
                 </div>
-                @if($invoice->tax_amount > 0)
-                <div class="totals-row">
-                    <span class="label">Tax ({{ number_format($invoice->tax_rate * 100, 2) }}%):</span>
-                    <span class="amount">${{ number_format($invoice->tax_amount, 2) }}</span>
-                </div>
+                @if ($invoice->tax_amount > 0)
+                    <div class="totals-row">
+                        <span class="label">Tax ({{ number_format($invoice->tax_rate * 100, 2) }}%):</span>
+                        <span class="amount">${{ number_format($invoice->tax_amount, 2) }}</span>
+                    </div>
                 @endif
                 <div class="totals-row total-row">
                     <span class="label">Total:</span>
@@ -256,4 +296,5 @@
         </div>
     </div>
 </body>
+
 </html>
