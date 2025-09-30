@@ -12,6 +12,8 @@ use App\Services\FirebaseStorageService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Hash; // NEW: Add Hash facade
+use Illuminate\Validation\Rules\Password; // NEW: Add Password rule for better validation
 
 class SuperAdminController extends Controller
 {
@@ -335,4 +337,125 @@ class SuperAdminController extends Controller
 
         return view('superadmin.schedule.index', compact('shifts', 'pageTitle'));
     }
+
+    // START: NEW METHODS FOR SUPER ADMIN AGENCY MANAGEMENT
+
+    /**
+     * Display a listing of the agencies.
+     */
+    public function agenciesIndex()
+    {
+        $agencies = Agency::withCount('users')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('superadmin.agencies.index', compact('agencies'));
+    }
+
+    /**
+     * Show the form for creating a new agency.
+     */
+    public function agencyCreate()
+    {
+        return view('superadmin.agencies.create');
+    }
+
+    /**
+     * Store a newly created agency and its admin user in storage.
+     */
+    public function agencyStore(Request $request)
+    {
+        $validated = $request->validate([
+            // Agency details
+            'agency_name' => 'required|string|max:255',
+            'contact_email' => 'required|email|max:255|unique:agencies,contact_email',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'is_lifetime_free' => 'sometimes|boolean',
+
+            // Agency Admin user details
+            'admin_name' => 'required|string|max:255',
+            'admin_email' => 'required|email|unique:users,email|max:255',
+            'admin_password' => ['required', 'confirmed', Password::min(8)],
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Create Agency
+            $agency = Agency::create([
+                'name' => $validated['agency_name'],
+                'contact_email' => $validated['contact_email'],
+                'phone' => $validated['phone'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'is_lifetime_free' => $validated['is_lifetime_free'] ?? false,
+                'subscription_status' => ($validated['is_lifetime_free'] ?? false) ? 'active' : 'trialing',
+                'trial_ends_at' => ($validated['is_lifetime_free'] ?? false) ? null : now()->addDays(14), // Example 14-day trial
+            ]);
+
+            // Create Agency Admin User
+            $adminUser = User::create([
+                'name' => $validated['admin_name'],
+                'email' => $validated['admin_email'],
+                'password' => Hash::make($validated['admin_password']),
+                'role' => 'agency_admin',
+                'agency_id' => $agency->id,
+                'email_verified_at' => now(), // Super admins create verified users
+            ]);
+
+            // Link the admin user as the agency owner
+            $agency->user_id = $adminUser->id;
+            $agency->save();
+
+            DB::commit();
+
+            return redirect()->route('superadmin.agencies.index')
+                ->with('success', "Agency '{$agency->name}' created successfully.");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log the exception message for debugging
+            // Log::error('Agency Creation Failed: ' . $e->getMessage());
+            return back()->withInput()
+                ->with('error', 'Failed to create agency. An unexpected error occurred.');
+        }
+    }
+
+    /**
+     * Show the form for editing the specified agency.
+     */
+    public function agencyEdit(Agency $agency)
+    {
+        return view('superadmin.agencies.edit', compact('agency'));
+    }
+
+    /**
+     * Update the specified agency in storage.
+     */
+    public function agencyUpdate(Request $request, Agency $agency)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'contact_email' => ['required', 'email', 'max:255', Rule::unique('agencies')->ignore($agency->id)],
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'is_lifetime_free' => 'sometimes|boolean',
+        ]);
+
+        // Ensure the value is a boolean
+        $validated['is_lifetime_free'] = $request->has('is_lifetime_free');
+
+        // If an agency is marked as lifetime free, its status should be active.
+        if ($validated['is_lifetime_free']) {
+            $validated['subscription_status'] = 'active';
+            $validated['trial_ends_at'] = null; // No trial for lifetime free
+        }
+
+        $agency->update($validated);
+
+        return redirect()->route('superadmin.agencies.index')
+            ->with('success', "Agency '{$agency->name}' updated successfully.");
+    }
+
+    // END: NEW METHODS FOR SUPER ADMIN AGENCY MANAGEMENT
 }

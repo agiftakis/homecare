@@ -121,6 +121,13 @@ Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmi
     Route::delete('/caregivers/{caregiver}', [SuperAdminController::class, 'caregiverDestroy'])->name('caregivers.destroy');
 
     // Agency Management Routes for SuperAdmin
+    // START: NEW ROUTES FOR AGENCY MANAGEMENT
+    Route::get('/agencies', [SuperAdminController::class, 'agenciesIndex'])->name('agencies.index');
+    Route::get('/agencies/create', [SuperAdminController::class, 'agencyCreate'])->name('agencies.create');
+    Route::post('/agencies', [SuperAdminController::class, 'agencyStore'])->name('agencies.store');
+    Route::get('/agencies/{agency}/edit', [SuperAdminController::class, 'agencyEdit'])->name('agencies.edit');
+    Route::patch('/agencies/{agency}', [SuperAdminController::class, 'agencyUpdate'])->name('agencies.update');
+    // END: NEW ROUTES FOR AGENCY MANAGEMENT
     Route::delete('/agencies/{agency}', [SuperAdminController::class, 'destroyAgency'])->name('agencies.destroy');
 
     // Schedule Management Routes for SuperAdmin

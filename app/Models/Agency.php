@@ -26,6 +26,7 @@ class Agency extends Model
         'trial_ends_at',
         'subscription_ends_at',
         'user_id',
+        'is_lifetime_free', // NEW: Add new field
     ];
 
     /**
@@ -36,6 +37,7 @@ class Agency extends Model
     protected $casts = [
         'trial_ends_at' => 'datetime',
         'subscription_ends_at' => 'datetime',
+        'is_lifetime_free' => 'boolean', // NEW: Cast to boolean
     ];
 
     /**
@@ -85,4 +87,29 @@ class Agency extends Model
     {
         return $this->hasMany(Caregiver::class);
     }
+
+    // START: NEW METHODS FOR LIFETIME FREE FEATURE
+    /**
+     * Check if the agency has a lifetime free plan.
+     */
+    public function isLifetimeFree(): bool
+    {
+        return $this->is_lifetime_free === true;
+    }
+
+    /**
+     * Check if the agency has an active subscription, including lifetime free plans.
+     */
+    public function hasActiveSubscription(): bool
+    {
+        // Lifetime free agencies always count as having an active subscription.
+        if ($this->isLifetimeFree()) {
+            return true;
+        }
+
+        // Fallback for regular, paying customers.
+        // Note: The 'subscription_status' is managed by your webhook logic.
+        return in_array($this->subscription_status, ['active', 'trialing']);
+    }
+    // END: NEW METHODS FOR LIFETIME FREE FEATURE
 }
