@@ -53,11 +53,17 @@
                         @endif
                     @endif
 
-                    {{-- SuperAdmin BLOCK (No changes needed here) --}}
+                    {{-- SuperAdmin BLOCK --}}
                     @if (Auth::user()->role === 'super_admin')
                         <x-nav-link :href="route('superadmin.dashboard')" :active="request()->routeIs('superadmin.dashboard')">
                             {{ __('Admin Dashboard') }}
                         </x-nav-link>
+
+                        {{-- START: NEW LINK FOR AGENCY MANAGEMENT --}}
+                        <x-nav-link :href="route('superadmin.agencies.index')" :active="request()->routeIs('superadmin.agencies.*')">
+                            {{ __('Agency Management') }}
+                        </x-nav-link>
+                        {{-- END: NEW LINK FOR AGENCY MANAGEMENT --}}
 
                         <x-nav-link :href="route('superadmin.schedule.index')" :active="request()->routeIs('superadmin.schedule.*')">
                             {{ __('Schedule') }}
@@ -190,6 +196,13 @@
                 <x-responsive-nav-link :href="route('superadmin.dashboard')" :active="request()->routeIs('superadmin.dashboard')">
                     {{ __('Admin Dashboard') }}
                 </x-responsive-nav-link>
+                
+                {{-- START: NEW RESPONSIVE LINK FOR AGENCY MANAGEMENT --}}
+                <x-responsive-nav-link :href="route('superadmin.agencies.index')" :active="request()->routeIs('superadmin.agencies.*')">
+                    {{ __('Agency Management') }}
+                </x-responsive-nav-link>
+                {{-- END: NEW RESPONSIVE LINK FOR AGENCY MANAGEMENT --}}
+                
                 <x-responsive-nav-link :href="route('superadmin.schedule.index')" :active="request()->routeIs('superadmin.schedule.*')">
                     {{ __('Schedule') }}
                 </x-responsive-nav-link>
