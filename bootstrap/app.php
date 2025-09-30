@@ -15,9 +15,9 @@ use Illuminate\Support\Facades\Auth;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
+        channels: __DIR__ . '/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -33,10 +33,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'superadmin' => \App\Http\Middleware\CheckSuperAdmin::class,
             'agency_admin' => \App\Http\Middleware\CheckAgencyAdmin::class,
             'timezone' => \App\Http\Middleware\SetTimezone::class,
+            'subscription' => \App\Http\Middleware\CheckSubscription::class, // NEW: Register the subscription middleware
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        
+
         // Enhanced error reporting and logging
         $exceptions->reportable(function (Throwable $e) {
             // Log critical errors with context
@@ -64,7 +65,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error_code' => 'RESOURCE_NOT_FOUND'
                 ], 404);
             }
-            
+
             return response()->view('errors.404', [
                 'exception' => $e,
                 'title' => 'Page Not Found'
@@ -78,7 +79,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error_code' => 'AUTHENTICATION_REQUIRED'
                 ], 401);
             }
-            
+
             return redirect()->guest(route('login'))->with('error', 'Please log in to access this page.');
         });
 
@@ -89,7 +90,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error_code' => 'ACCESS_DENIED'
                 ], 403);
             }
-            
+
             return response()->view('errors.403', [
                 'exception' => $e,
                 'title' => 'Access Denied'
@@ -103,7 +104,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error_code' => 'RECORD_NOT_FOUND'
                 ], 404);
             }
-            
+
             return response()->view('errors.404', [
                 'exception' => $e,
                 'title' => 'Record Not Found',
@@ -119,7 +120,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error_code' => 'VALIDATION_FAILED'
                 ], 422);
             }
-            
+
             // For non-JSON requests, let Laravel handle validation errors normally
             return null;
         });
@@ -137,12 +138,10 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error_code' => 'INTERNAL_SERVER_ERROR'
                 ], 500);
             }
-            
+
             return response()->view('errors.500', [
                 'exception' => $e,
                 'title' => 'Server Error'
             ], 500);
         });
-
     })->create();
-
