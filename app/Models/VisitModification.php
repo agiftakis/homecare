@@ -54,7 +54,7 @@ class VisitModification extends Model
      */
     public function getActionDescriptionAttribute(): string
     {
-        return match($this->action) {
+        return match ($this->action) {
             'created' => 'Visit created (Clock In)',
             'clock_out' => 'Visit completed (Clock Out)',
             'note_updated' => 'Progress notes updated',
@@ -74,7 +74,7 @@ class VisitModification extends Model
 
         $descriptions = [];
         foreach ($this->changes as $field => $change) {
-            $descriptions[] = match($field) {
+            $descriptions[] = match ($field) {
                 'clock_out_time' => 'Clock out time recorded',
                 'progress_notes' => $this->formatNoteChange($change),
                 'clock_out_signature_path' => 'Clock out signature captured',

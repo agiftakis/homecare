@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB; 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -165,11 +165,10 @@ class ClientController extends Controller
             session()->flash('success_message', 'New Client Added Successfully');
             session()->flash('redirect_to', route('dashboard'));
             return redirect()->back();
-
         } catch (\Exception $e) {
             Log::error('Client creation failed: ' . $e->getMessage());
             return back()->with('error', 'Failed to create client. Please check your information and try again.')
-                      ->withInput();
+                ->withInput();
         }
     }
 
@@ -268,7 +267,6 @@ class ClientController extends Controller
             session()->flash('success_message', 'Client Updated Successfully');
             session()->flash('redirect_to', route('dashboard'));
             return redirect()->back();
-
         } catch (\Exception $e) {
             return $this->handleException($e, 'Failed to update client. Please check your information and try again.', 'clients_update');
         }
@@ -432,14 +430,14 @@ class ClientController extends Controller
     {
         // Get the subscription to determine the plan
         $subscription = $agency->subscription('default');
-        
+
         if (!$subscription || !$subscription->active()) {
             return 10; // Default to basic plan limit if no active subscription
         }
 
         // Get plan name from subscription
         $stripePriceId = $subscription->stripe_price;
-        
+
         return match ($stripePriceId) {
             env('STRIPE_PROFESSIONAL_PRICE_ID') => 30,
             env('STRIPE_PREMIUM_PRICE_ID') => 60,
@@ -459,7 +457,7 @@ class ClientController extends Controller
         }
 
         $limitCheck = $this->checkClientLimit();
-        
+
         return response()->json([
             'allowed' => $limitCheck['allowed'],
             'message' => $limitCheck['message']

@@ -231,6 +231,62 @@
                                 </div>
                                 <p class="mt-3 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                                     {{ $visit->progress_notes }}</p>
+
+                                {{-- ✅ NEW: Audit Trail Section --}}
+                                @if ($visit->modifications && $visit->modifications->count() > 0)
+                                    <div x-data="{ showHistory: false }"
+                                        class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+                                        <button @click="showHistory = !showHistory"
+                                            class="flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                class="h-4 w-4 mr-1 transition-transform"
+                                                :class="{ 'rotate-90': showHistory }" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 5l7 7-7 7" />
+                                            </svg>
+                                            <span x-text="showHistory ? 'Hide History' : 'View History'"></span>
+                                            <span class="ml-1 text-xs">({{ $visit->modifications->count() }}
+                                                {{ $visit->modifications->count() === 1 ? 'change' : 'changes' }})</span>
+                                        </button>
+
+                                        <div x-show="showHistory" x-collapse class="mt-3 space-y-2">
+                                            @foreach ($visit->modifications as $modification)
+                                                <div
+                                                    class="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600">
+                                                    <div class="flex items-start justify-between">
+                                                        <div class="flex-1">
+                                                            <p
+                                                                class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                                {{ $modification->action_description }}
+                                                            </p>
+                                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                                by
+                                                                {{ $modification->modifier->name ?? 'Unknown User' }}
+                                                                •
+                                                                {{ $modification->modified_at->setTimezone(Auth::user()->agency->timezone)->format('M d, Y g:i A') }}
+                                                            </p>
+                                                            @if ($modification->changes_description)
+                                                                <p
+                                                                    class="text-xs text-gray-600 dark:text-gray-300 mt-2">
+                                                                    {{ $modification->changes_description }}
+                                                                </p>
+                                                            @endif
+                                                        </div>
+                                                        <span
+                                                            class="ml-2 px-2 py-1 text-xs rounded-full 
+                                                            {{ $modification->action === 'created' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}
+                                                            {{ $modification->action === 'clock_out' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                                                            {{ $modification->action === 'note_updated' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                                                            {{ $modification->action === 'note_deleted' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : '' }}">
+                                                            {{ ucfirst($modification->action) }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                         @empty
                             <div class="text-center py-8">
