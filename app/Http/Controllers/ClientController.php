@@ -180,14 +180,20 @@ class ClientController extends Controller
             // Fetch all visits for this client that have progress notes.
             // Order them by the most recent first.
             // Eager load the caregiver, including those who might have been soft-deleted.
+            // ✅ UPDATED: Added eager loading for modifications and modifier
             $visitsWithNotes = Visit::whereHas('shift', function ($query) use ($client) {
                 $query->where('client_id', $client->id);
             })
                 ->whereNotNull('progress_notes')
                 ->where('progress_notes', '!=', '')
-                ->with(['shift.caregiver' => function ($query) {
-                    $query->withTrashed(); // Get caregiver's name even if they are soft-deleted
-                }])
+                ->with([
+                    'shift.caregiver' => function ($query) {
+                        $query->withTrashed(); // Get caregiver's name even if they are soft-deleted
+                    },
+                    'modifications.modifier' => function ($query) {
+                        $query->withTrashed(); // Get modifier's name even if they are soft-deleted
+                    }
+                ])
                 ->orderBy('clock_out_time', 'desc')
                 ->get();
 
