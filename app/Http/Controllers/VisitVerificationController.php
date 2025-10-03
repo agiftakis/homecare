@@ -142,6 +142,9 @@ class VisitVerificationController extends Controller
                     'signature_path' => $documentInfo['firebase_path'],
                 ]);
 
+                // ✅ NEW: Log the visit creation in the audit trail
+                $visit->logModification('created');
+
                 // Update the shift status to 'in_progress'
                 $shift->update(['status' => 'in_progress']);
 
@@ -244,12 +247,34 @@ class VisitVerificationController extends Controller
                     unlink($tempFilePath);
                 }
 
+                // ✅ NEW: Capture old values before update for audit trail
+                $changes = [
+                    'clock_out_time' => [
+                        'from' => null,
+                        'to' => now()->toDateTimeString()
+                    ],
+                    'clock_out_signature_path' => [
+                        'from' => null,
+                        'to' => 'captured'
+                    ]
+                ];
+
+                if ($request->input('progress_notes')) {
+                    $changes['progress_notes'] = [
+                        'from' => $visit->progress_notes,
+                        'to' => $request->input('progress_notes')
+                    ];
+                }
+
                 // Update the visit record with clock-out data and notes
                 $visit->update([
                     'progress_notes' => $request->input('progress_notes'),
                     'clock_out_time' => now(),
                     'clock_out_signature_path' => $documentInfo['firebase_path'],
                 ]);
+
+                // ✅ NEW: Log the clock-out in the audit trail
+                $visit->logModification('clock_out', $changes);
 
                 // Update the shift status to 'completed'
                 $visit->shift->update(['status' => 'completed']);

@@ -352,8 +352,19 @@ class ClientController extends Controller
         }
 
         return $this->handleDatabaseTransaction(function () use ($visit, $validated) {
+            // ✅ NEW: Capture old value before update for audit trail
+            $oldNotes = $visit->progress_notes;
+
             $visit->update([
                 'progress_notes' => $validated['progress_notes'],
+            ]);
+
+            // ✅ NEW: Log the modification in the audit trail
+            $visit->logModification('note_updated', [
+                'progress_notes' => [
+                    'from' => $oldNotes,
+                    'to' => $validated['progress_notes']
+                ]
             ]);
 
             return $visit;
@@ -368,8 +379,20 @@ class ClientController extends Controller
         $this->authorizeWithError('delete', $visit->shift->client, 'You do not have permission to delete notes for this client.');
 
         return $this->handleDatabaseTransaction(function () use ($visit) {
+            // ✅ NEW: Capture old value before deletion for audit trail
+            $oldNotes = $visit->progress_notes;
+
             // We don't delete the visit, just the notes associated with it.
             $visit->update(['progress_notes' => null]);
+
+            // ✅ NEW: Log the modification in the audit trail
+            $visit->logModification('note_deleted', [
+                'progress_notes' => [
+                    'from' => $oldNotes,
+                    'to' => null
+                ]
+            ]);
+
             return $visit;
         }, 'Care note deleted successfully.', 'Failed to delete care note. Please try again.');
     }
