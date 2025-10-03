@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Visit extends Model
 {
@@ -75,5 +76,28 @@ class Visit extends Model
     public function getCaregiverFullNameAttribute(): string
     {
         return trim($this->caregiver_first_name . ' ' . $this->caregiver_last_name);
+    }
+
+    /**
+     * ✅ NEW: Get all modifications/audit trail for this visit.
+     */
+    public function modifications()
+    {
+        return $this->hasMany(VisitModification::class)->orderBy('modified_at', 'desc');
+    }
+
+    /**
+     * ✅ NEW: Log a modification to this visit.
+     */
+    public function logModification(string $action, ?array $changes = null, ?string $reason = null): void
+    {
+        VisitModification::create([
+            'visit_id' => $this->id,
+            'modified_by' => Auth::id(),
+            'action' => $action,
+            'changes' => $changes,
+            'reason' => $reason,
+            'modified_at' => now(),
+        ]);
     }
 }
