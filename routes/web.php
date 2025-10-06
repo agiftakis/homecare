@@ -14,6 +14,7 @@ use App\Http\Controllers\PasswordSetupController;
 use App\Http\Controllers\VisitVerificationController;
 use App\Http\Controllers\AgencySettingsController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\ReportController;
 
 
 /*
@@ -60,6 +61,12 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
         // ✅ SETTINGS PAGE: Add the new routes for the agency settings page.
         Route::get('/settings', [AgencySettingsController::class, 'edit'])->name('settings.edit');
         Route::patch('/settings', [AgencySettingsController::class, 'update'])->name('settings.update');
+
+        // ✅ NEW: Reporting Routes
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/operational', [ReportController::class, 'operationalDashboard'])->name('operational');
+            Route::get('/revenue', [ReportController::class, 'revenueDashboard'])->name('revenue');
+        });
 
         // ✅ FIXED: Routes for managing caregiver notes - corrected URL structure
         Route::patch('/clients/notes/{visit}', [ClientController::class, 'updateNote'])->name('clients.notes.update');
