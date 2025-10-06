@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 
 class ReportingService
 {
@@ -88,14 +89,42 @@ class ReportingService
         $overdueBalance = Invoice::query()
             ->where('agency_id', $agencyId)
             ->where('status', 'sent')
-            ->where('due_date', '<', now()) // Check if the due date is in the past
+            ->where('due_date', '<', now())
             ->whereBetween('sent_at', [$startDate->startOfDay(), $endDate->endOfDay()])
             ->sum('total_amount');
+
+        // --- 4. Prepare Data for Revenue Trend Chart ---
+        $dailyRevenue = Invoice::query()
+            ->where('agency_id', $agencyId)
+            ->where('status', 'paid')
+            ->whereBetween('paid_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->select(
+                DB::raw('DATE(paid_at) as date'),
+                DB::raw('SUM(total_amount) as daily_total')
+            )
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->pluck('daily_total', 'date'); // Creates an associative array: ['YYYY-MM-DD' => total]
+
+        $period = CarbonPeriod::create($startDate, $endDate);
+        $chartLabels = [];
+        $chartData = [];
+
+        foreach ($period as $date) {
+            $formattedDate = $date->format('Y-m-d');
+            $chartLabels[] = $date->format('M j'); // Format for display, e.g., "Oct 6"
+            $chartData[] = $dailyRevenue[$formattedDate] ?? 0; // Use the day's revenue, or 0 if none
+        }
 
         return [
             'total_revenue' => number_format($totalRevenue, 2),
             'outstanding_balance' => number_format($outstandingBalance, 2),
             'overdue_balance' => number_format($overdueBalance, 2),
+            'revenue_chart_data' => [
+                'labels' => $chartLabels,
+                'data' => $chartData,
+            ],
         ];
     }
 }
