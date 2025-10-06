@@ -58,15 +58,39 @@ class ReportController extends Controller
      * Display the simplified revenue dashboard.
      *
      * @param Request $request
+     * @param ReportingService $reportingService
      * @return \Illuminate\View\View
      */
-    public function revenueDashboard(Request $request)
+    public function revenueDashboard(Request $request, ReportingService $reportingService)
     {
-        // We will add the logic to fetch revenue data here in a future step.
+        // --- Date Range Handling ---
+        $defaultEndDate = Carbon::now();
+        $defaultStartDate = Carbon::now()->subDays(29);
+
+        try {
+            $startDate = $request->has('start_date') && !empty($request->input('start_date'))
+                ? Carbon::parse($request->input('start_date'))
+                : $defaultStartDate;
+            
+            $endDate = $request->has('end_date') && !empty($request->input('end_date'))
+                ? Carbon::parse($request->input('end_date'))
+                : $defaultEndDate;
+        } catch (\Exception $e) {
+            $startDate = $defaultStartDate;
+            $endDate = $defaultEndDate;
+        }
+
+        // --- Data Fetching ---
+        $metrics = $reportingService->getRevenueMetrics($startDate, $endDate);
+
         $agency = Auth::user()->agency;
 
+        // Pass all necessary data to the view.
         return view('reports.revenue.dashboard', [
-            'agency' => $agency
+            'agency' => $agency,
+            'metrics' => $metrics,
+            'startDate' => $startDate->toDateString(),
+            'endDate' => $endDate->toDateString(),
         ]);
     }
 }
