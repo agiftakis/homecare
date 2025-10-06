@@ -34,6 +34,31 @@
                                 {{ __('Invoices') }}
                             </x-nav-link>
 
+                            {{-- START: NEW Reports Dropdown --}}
+                            <div class="hidden sm:flex sm:items-center sm:ms-6">
+                                <x-dropdown align="left" width="48">
+                                    <x-slot name="trigger">
+                                        <button class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('reports.*') ? 'border-indigo-400 dark:border-indigo-600 text-gray-900 dark:text-gray-100' : 'border-transparent text-gray-500 dark:text-gray-400' }} text-sm font-medium leading-5 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 focus:outline-none focus:text-gray-700 dark:focus:text-gray-300 focus:border-gray-300 dark:focus:border-gray-700 transition duration-150 ease-in-out">
+                                            <div>Reports</div>
+                                            <div class="ms-1">
+                                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </button>
+                                    </x-slot>
+                                    <x-slot name="content">
+                                        <x-dropdown-link :href="route('reports.operational')" :active="request()->routeIs('reports.operational')">
+                                            {{ __('Operational') }}
+                                        </x-dropdown-link>
+                                        <x-dropdown-link :href="route('reports.revenue')" :active="request()->routeIs('reports.revenue')">
+                                            {{ __('Revenue') }}
+                                        </x-dropdown-link>
+                                    </x-slot>
+                                </x-dropdown>
+                            </div>
+                            {{-- END: NEW Reports Dropdown --}}
+
                             {{-- ✅ SETTINGS PAGE: Add link to the new agency settings page --}}
                             <x-nav-link :href="route('settings.edit')" :active="request()->routeIs('settings.*')">
                                 {{ __('Settings') }}
@@ -176,6 +201,15 @@
                     <x-responsive-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
                         {{ __('Invoices') }}
                     </x-responsive-nav-link>
+                    
+                    {{-- START: NEW Responsive Reports Links --}}
+                    <x-responsive-nav-link :href="route('reports.operational')" :active="request()->routeIs('reports.operational')">
+                        {{ __('Operational Report') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('reports.revenue')" :active="request()->routeIs('reports.revenue')">
+                        {{ __('Revenue Report') }}
+                    </x-responsive-nav-link>
+                    {{-- END: NEW Responsive Reports Links --}}
 
                     {{-- ✅ SETTINGS PAGE: Add responsive link to the new agency settings page --}}
                     <x-responsive-nav-link :href="route('settings.edit')" :active="request()->routeIs('settings.*')">
