@@ -58,7 +58,7 @@ class ReportingService
 
         return [
             'total_hours_worked' => $totalHoursWorked,
-            'caregiver_performance' => $caregiverPerformance, // Add the new data to the return array
+            'caregiver_performance' => $caregiverPerformance,
         ];
     }
 }
