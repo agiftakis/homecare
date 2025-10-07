@@ -27,17 +27,23 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6">
-                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 tracking-wider uppercase">
-                        Total Caregiver Hours
-                    </h3>
-                    <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
-                        {{ $metrics['total_hours_worked'] }}
-                    </p>
+            {{-- ✅ RESPONSIVE FIX: Using a flex-wrap layout for robustness --}}
+            <div class="flex flex-wrap -mx-3">
+                <!-- Total Hours Worked Card -->
+                <div class="w-full md:w-1/3 px-3 mb-6 md:mb-0">
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 h-full">
+                        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 tracking-wider uppercase">
+                            Total Caregiver Hours
+                        </h3>
+                        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
+                            {{ $metrics['total_hours_worked'] }}
+                        </p>
+                    </div>
                 </div>
 
-                </div>
+                <!-- Future metric cards will go here, e.g., in another md:w-1/3 div -->
+                
+            </div>
 
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
