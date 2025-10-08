@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\ReportingService;
 use Carbon\Carbon;
+use League\Csv\Writer;
+use Illuminate\Support\Facades\Response;
 
 class ReportController extends Controller
 {
@@ -91,6 +93,79 @@ class ReportController extends Controller
             'metrics' => $metrics,
             'startDate' => $startDate->toDateString(),
             'endDate' => $endDate->toDateString(),
+        ]);
+    }
+
+    /**
+     * Export operational report data to CSV.
+     *
+     * @param Request $request
+     * @param ReportingService $reportingService
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function exportOperationalReport(Request $request, ReportingService $reportingService)
+    {
+        // --- Date Range Handling (same as dashboard) ---
+        $defaultEndDate = Carbon::now();
+        $defaultStartDate = Carbon::now()->subDays(29);
+
+        try {
+            $startDate = $request->has('start_date') && !empty($request->input('start_date'))
+                ? Carbon::parse($request->input('start_date'))
+                : $defaultStartDate;
+            
+            $endDate = $request->has('end_date') && !empty($request->input('end_date'))
+                ? Carbon::parse($request->input('end_date'))
+                : $defaultEndDate;
+        } catch (\Exception $e) {
+            $startDate = $defaultStartDate;
+            $endDate = $defaultEndDate;
+        }
+
+        // --- Data Fetching ---
+        $metrics = $reportingService->getOperationalMetrics($startDate, $endDate);
+        $agency = Auth::user()->agency;
+
+        // --- CSV Generation using league/csv ---
+        // Create a CSV writer that outputs to memory
+        $csv = Writer::createFromString('');
+
+        // Insert the header row
+        $csv->insertOne([
+            'Caregiver Name',
+            'Total Hours Worked',
+            'Total Visits Completed',
+            'Average Hours per Visit'
+        ]);
+
+        // Insert each caregiver's performance data
+        foreach ($metrics['caregiverPerformance'] as $performance) {
+            $avgHours = $performance->total_visits > 0 
+                ? round($performance->total_hours / $performance->total_visits, 2) 
+                : 0;
+
+            $csv->insertOne([
+                $performance->caregiver_name,
+                number_format($performance->total_hours, 2),
+                $performance->total_visits,
+                number_format($avgHours, 2)
+            ]);
+        }
+
+        // Generate filename with agency name and date range
+        $filename = sprintf(
+            '%s_Operational_Report_%s_to_%s.csv',
+            str_replace(' ', '_', $agency->name),
+            $startDate->format('Y-m-d'),
+            $endDate->format('Y-m-d')
+        );
+
+        // Return the CSV as a download response
+        return Response::streamDownload(function() use ($csv) {
+            echo $csv->toString();
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 }

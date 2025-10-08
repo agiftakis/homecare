@@ -66,6 +66,8 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/operational', [ReportController::class, 'operationalDashboard'])->name('operational');
             Route::get('/revenue', [ReportController::class, 'revenueDashboard'])->name('revenue');
+            // ✅ NEW: Export route for operational report
+            Route::get('/operational/export', [ReportController::class, 'exportOperationalReport'])->name('operational.export');
         });
 
         // ✅ FIXED: Routes for managing caregiver notes - corrected URL structure
@@ -138,7 +140,7 @@ Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmi
     Route::delete('/agencies/{agency}', [SuperAdminController::class, 'destroyAgency'])->name('agencies.destroy');
 
     // Schedule Management Routes for SuperAdmin
-    Route::get('/schedule', [SuperAdminController::class, 'scheduleIndex'])->name('schedule.index');
+    Route::get('/schedule', [SuperAdminController::class, 'scheduleIndex'])->name('superadmin.schedule.index');
 });
 
 require __DIR__ . '/auth.php';
