@@ -4,15 +4,26 @@
             {{ __('Operational Dashboard') }}
         </h2>
     </x-slot>
-
-    {{-- ✅ NEW: Custom CSS to make calendar icon white in dark mode --}}
+    {{-- ✅ FIXED: Custom CSS using prefers-color-scheme media query --}}
     <style>
-        /* Make the calendar picker icon white in dark mode */
-        .dark input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-            cursor: pointer;
+        /* Make the calendar picker icon white in dark mode using media query */
+        @media (prefers-color-scheme: dark) {
+            input[type="date"]::-webkit-calendar-picker-indicator {
+                filter: invert(1) !important;
+                cursor: pointer;
+                opacity: 1 !important;
+            }
+
+            /* For Firefox */
+            input[type="date"]::-moz-calendar-picker-indicator {
+                filter: invert(1) !important;
+                cursor: pointer;
+                opacity: 1 !important;
+            }
         }
     </style>
+
+
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
