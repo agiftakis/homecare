@@ -31,7 +31,7 @@ class ReportController extends Controller
             $startDate = $request->has('start_date') && !empty($request->input('start_date'))
                 ? Carbon::parse($request->input('start_date'))
                 : $defaultStartDate;
-            
+
             $endDate = $request->has('end_date') && !empty($request->input('end_date'))
                 ? Carbon::parse($request->input('end_date'))
                 : $defaultEndDate;
@@ -73,7 +73,7 @@ class ReportController extends Controller
             $startDate = $request->has('start_date') && !empty($request->input('start_date'))
                 ? Carbon::parse($request->input('start_date'))
                 : $defaultStartDate;
-            
+
             $endDate = $request->has('end_date') && !empty($request->input('end_date'))
                 ? Carbon::parse($request->input('end_date'))
                 : $defaultEndDate;
@@ -113,7 +113,7 @@ class ReportController extends Controller
             $startDate = $request->has('start_date') && !empty($request->input('start_date'))
                 ? Carbon::parse($request->input('start_date'))
                 : $defaultStartDate;
-            
+
             $endDate = $request->has('end_date') && !empty($request->input('end_date'))
                 ? Carbon::parse($request->input('end_date'))
                 : $defaultEndDate;
@@ -138,14 +138,15 @@ class ReportController extends Controller
             'Average Hours per Visit'
         ]);
 
-        // Insert each caregiver's performance data
-        foreach ($metrics['caregiverPerformance'] as $performance) {
-            $avgHours = $performance->total_visits > 0 
-                ? round($performance->total_hours / $performance->total_visits, 2) 
+        // ✅ FIXED: Changed 'caregiverPerformance' to 'caregiver_performance' (with underscore)
+        // ✅ FIXED: Changed field names to match the database structure (first_name, last_name)
+        foreach ($metrics['caregiver_performance'] as $performance) {
+            $avgHours = $performance->total_visits > 0
+                ? round($performance->total_hours / $performance->total_visits, 2)
                 : 0;
 
             $csv->insertOne([
-                $performance->caregiver_name,
+                $performance->first_name . ' ' . $performance->last_name,
                 number_format($performance->total_hours, 2),
                 $performance->total_visits,
                 number_format($avgHours, 2)
@@ -161,7 +162,7 @@ class ReportController extends Controller
         );
 
         // Return the CSV as a download response
-        return Response::streamDownload(function() use ($csv) {
+        return Response::streamDownload(function () use ($csv) {
             echo $csv->toString();
         }, $filename, [
             'Content-Type' => 'text/csv',
