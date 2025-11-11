@@ -39,6 +39,24 @@
                                     <x-input-error :messages="$errors->get('address')" class="mt-2" />
                                 </div>
                             </div>
+
+                            {{-- ✅ NEW: Timezone Selection --}}
+                            <div class="mt-6">
+                                <x-input-label for="timezone" value="Timezone *" />
+                                <p class="text-sm text-red-600 dark:text-red-400 mb-2">
+                                    <strong>Important:</strong> Please select the primary timezone for this agency's area of operation. This is critical for accurate visit verification and clock-in/clock-out functionality.
+                                </p>
+                                <select id="timezone" name="timezone" class="block mt-1 w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
+                                    <option value="" disabled selected>Select timezone</option>
+                                    @foreach ($northAmericaTimezones as $timezone)
+                                        <option value="{{ $timezone }}" {{ old('timezone') == $timezone ? 'selected' : '' }}>
+                                            {{ $timezone }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
+                            </div>
+
                             <div class="mt-6">
                                 <label for="is_lifetime_free" class="flex items-center">
                                     <input id="is_lifetime_free" name="is_lifetime_free" type="checkbox" value="1" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" {{ old('is_lifetime_free') ? 'checked' : '' }}>

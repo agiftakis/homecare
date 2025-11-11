@@ -12,8 +12,9 @@ use App\Services\FirebaseStorageService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Hash; // NEW: Add Hash facade
-use Illuminate\Validation\Rules\Password; // NEW: Add Password rule for better validation
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
+use DateTimeZone; // ✅ NEW: Add DateTimeZone for timezone logic
 
 class SuperAdminController extends Controller
 {
@@ -357,7 +358,13 @@ class SuperAdminController extends Controller
      */
     public function agencyCreate()
     {
-        return view('superadmin.agencies.create');
+        // ✅ NEW: Generate North America timezone list for the dropdown
+        $allTimezones = DateTimeZone::listIdentifiers();
+        $northAmericaTimezones = array_filter($allTimezones, function ($timezone) {
+            return strpos($timezone, 'America/') === 0;
+        });
+
+        return view('superadmin.agencies.create', compact('northAmericaTimezones'));
     }
 
     /**
@@ -365,6 +372,12 @@ class SuperAdminController extends Controller
      */
     public function agencyStore(Request $request)
     {
+        // ✅ NEW: Generate North America timezone list for validation
+        $allTimezones = DateTimeZone::listIdentifiers();
+        $northAmericaTimezones = array_filter($allTimezones, function ($timezone) {
+            return strpos($timezone, 'America/') === 0;
+        });
+
         $validated = $request->validate([
             // Agency details
             'agency_name' => 'required|string|max:255',
@@ -372,6 +385,7 @@ class SuperAdminController extends Controller
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
             'is_lifetime_free' => 'sometimes|boolean',
+            'timezone' => ['required', 'string', Rule::in($northAmericaTimezones)], // ✅ NEW: Timezone validation
 
             // Agency Admin user details
             'admin_name' => 'required|string|max:255',
@@ -389,6 +403,7 @@ class SuperAdminController extends Controller
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'is_lifetime_free' => $validated['is_lifetime_free'] ?? false,
+                'timezone' => $validated['timezone'], // ✅ NEW: Save timezone
             ]);
 
             // Create Agency Admin User
