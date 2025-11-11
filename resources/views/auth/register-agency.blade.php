@@ -4,12 +4,13 @@
 
         <h2 class="text-2xl font-bold text-center text-gray-800 dark:text-gray-200 mb-6">Create Your Agency Account</h2>
 
-        <input type="hidden" name="plan" value="{{ $plan }}">
-        <div class="mb-4 text-center">
+        {{-- ✅ REMOVED: No longer need plan parameter or display --}}
+        {{-- <input type="hidden" name="plan" value="{{ $plan }}"> --}}
+        {{-- <div class="mb-4 text-center">
             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300">
                 You've selected the <span class="font-bold mx-1">{{ ucfirst($plan) }}</span> Plan
             </span>
-        </div>
+        </div> --}}
 
         <div>
             <x-input-label for="agency_name" :value="__('Agency Name')" />
@@ -35,6 +36,7 @@
             </select>
             <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
         </div>
+        
         <div class="mt-4">
             <x-input-label for="name" :value="__('Your Name')" />
             <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autocomplete="name" />
