@@ -83,6 +83,11 @@
                         </x-nav-link>
                         {{-- END: NEW LINK FOR AGENCY MANAGEMENT --}}
 
+                        {{-- ✅ RESTORED: Schedule link for SuperAdmin --}}
+                        <x-nav-link :href="route('superadmin.schedule.index')" :active="request()->routeIs('superadmin.schedule.*')">
+                            {{ __('Schedule') }}
+                        </x-nav-link>
+
                         <!-- SuperAdmin Profile Management Dropdown -->
                         <div class="hidden sm:flex sm:items-center sm:ms-10">
                             <x-dropdown align="left" width="48">
@@ -220,6 +225,11 @@
                     {{ __('Agency Management') }}
                 </x-responsive-nav-link>
                 {{-- END: NEW RESPONSIVE LINK FOR AGENCY MANAGEMENT --}}
+                
+                {{-- ✅ RESTORED: Schedule link for SuperAdmin (responsive) --}}
+                <x-responsive-nav-link :href="route('superadmin.schedule.index')" :active="request()->routeIs('superadmin.schedule.*')">
+                    {{ __('Schedule') }}
+                </x-responsive-nav-link>
                 
                 <x-responsive-nav-link :href="route('superadmin.clients.index')" :active="request()->routeIs('superadmin.clients.*')">
                     {{ __('View All Clients') }}
