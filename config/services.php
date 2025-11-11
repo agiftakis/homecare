@@ -31,4 +31,15 @@ return [
         ],
     ],
 
+    // ✅ NEW: Add QuickBooks configuration
+    // This reads the .env variables and makes them available
+    // via config('services.quickbooks.client_id'), as planned in your project summary.
+    'quickbooks' => [
+        'client_id' => env('QUICKBOOKS_CLIENT_ID'),
+        'client_secret' => env('QUICKBOOKS_CLIENT_SECRET'),
+        'redirect_uri' => env('QUICKBOOKS_REDIRECT_URI'),
+        'environment' => env('QUICKBOOKS_ENVIRONMENT', 'sandbox'),
+        'base_url' => env('QUICKBOOKS_BASE_URL', 'httpsG://sandbox-quickbooks.api.intuit.com'),
+    ],
+
 ];
