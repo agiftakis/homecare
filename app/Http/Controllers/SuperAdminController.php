@@ -237,14 +237,14 @@ class SuperAdminController extends Controller
 
     /**
      * Completely delete an agency and all associated data.
-     * This method should only be called for agencies with inactive subscriptions.
+     * This method should only be called for agencies with inactive status.
      */
     public function destroyAgency(Agency $agency)
     {
-        // Safety check: Only allow deletion of agencies with inactive subscriptions
-        if ($agency->subscribed('default')) {
+        // Safety check: Only allow deletion of agencies that are NOT activated (not lifetime free)
+        if ($agency->is_lifetime_free) {
             return redirect()->route('superadmin.dashboard')
-                ->with('error', 'Cannot delete agency with active subscription. Please cancel subscription first.');
+                ->with('error', 'Cannot delete activated agency. Please deactivate the agency first by unchecking "Lifetime Free" in the edit form.');
         }
 
         try {
@@ -389,8 +389,6 @@ class SuperAdminController extends Controller
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'is_lifetime_free' => $validated['is_lifetime_free'] ?? false,
-                'subscription_status' => ($validated['is_lifetime_free'] ?? false) ? 'active' : 'trialing',
-                'trial_ends_at' => ($validated['is_lifetime_free'] ?? false) ? null : now()->addDays(14), // Example 14-day trial
             ]);
 
             // Create Agency Admin User
@@ -444,12 +442,6 @@ class SuperAdminController extends Controller
 
         // Ensure the value is a boolean
         $validated['is_lifetime_free'] = $request->has('is_lifetime_free');
-
-        // If an agency is marked as lifetime free, its status should be active.
-        if ($validated['is_lifetime_free']) {
-            $validated['subscription_status'] = 'active';
-            $validated['trial_ends_at'] = null; // No trial for lifetime free
-        }
 
         $agency->update($validated);
 
