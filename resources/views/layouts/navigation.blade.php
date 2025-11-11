@@ -69,13 +69,6 @@
                         <x-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.index')">
                             {{ __('Schedule') }}
                         </x-nav-link>
-
-                        {{-- ✅ NEW: Manage Subscription link - ONLY visible to agency_admin --}}
-                        @if (Auth::user()->role === 'agency_admin')
-                            <x-nav-link :href="route('subscription.manage')" :active="request()->routeIs('subscription.manage')">
-                                {{ __('Manage Subscription') }}
-                            </x-nav-link>
-                        @endif
                     @endif
 
                     {{-- SuperAdmin BLOCK --}}
@@ -89,10 +82,6 @@
                             {{ __('Agency Management') }}
                         </x-nav-link>
                         {{-- END: NEW LINK FOR AGENCY MANAGEMENT --}}
-
-                        <x-nav-link :href="route('superadmin.schedule.index')" :active="request()->routeIs('superadmin.schedule.*')">
-                            {{ __('Schedule') }}
-                        </x-nav-link>
 
                         <!-- SuperAdmin Profile Management Dropdown -->
                         <div class="hidden sm:flex sm:items-center sm:ms-10">
@@ -215,11 +204,6 @@
                     <x-responsive-nav-link :href="route('settings.edit')" :active="request()->routeIs('settings.*')">
                         {{ __('Settings') }}
                     </x-responsive-nav-link>
-
-                    {{-- ✅ NEW: Responsive Manage Subscription link --}}
-                    <x-responsive-nav-link :href="route('subscription.manage')" :active="request()->routeIs('subscription.manage')">
-                        {{ __('Manage Subscription') }}
-                    </x-responsive-nav-link>
                 @endif
 
                 <x-responsive-nav-link :href="route('schedule.index')" :active="request()->routeIs('schedule.*')">
@@ -237,9 +221,6 @@
                 </x-responsive-nav-link>
                 {{-- END: NEW RESPONSIVE LINK FOR AGENCY MANAGEMENT --}}
                 
-                <x-responsive-nav-link :href="route('superadmin.schedule.index')" :active="request()->routeIs('superadmin.schedule.*')">
-                    {{ __('Schedule') }}
-                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('superadmin.clients.index')" :active="request()->routeIs('superadmin.clients.*')">
                     {{ __('View All Clients') }}
                 </x-responsive-nav-link>

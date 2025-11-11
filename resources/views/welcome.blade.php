@@ -24,8 +24,6 @@
             </a>
             <!-- Desktop Menu -->
             <div class="hidden md:flex items-center space-x-6">
-                <a href="{{ route('pricing') }}"
-                    class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition duration-300">Pricing</a>
                 <a href="{{ route('login') }}"
                     class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition duration-300">Log
                     In</a>
@@ -54,7 +52,6 @@
                 class="md:hidden fixed top-0 left-0 w-full h-screen bg-gray-900 bg-opacity-95 z-50 flex flex-col items-center justify-center"
                 style="display: none;">
                 <button @click="open = false" class="absolute top-6 right-6 text-white text-4xl">&times;</button>
-                <a href="{{ route('pricing') }}" class="text-3xl text-white py-4">Pricing</a>
                 <a href="{{ route('login') }}" class="text-3xl text-white py-4">Log In</a>
                 <a href="{{ route('agency.register') }}"
                     class="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-8 rounded-lg text-2xl transition duration-300">Get

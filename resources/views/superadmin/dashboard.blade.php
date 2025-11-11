@@ -53,7 +53,7 @@
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Agency Name</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Owner</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Subscription</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Clients/Caregivers/Schedules</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Registered On</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
@@ -69,10 +69,10 @@
                                             <span class="text-xs text-gray-400" x-text="agency.owner ? agency.owner.email : ''"></span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <template x-if="agency.is_subscribed">
+                                            <template x-if="agency.is_activated">
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
                                             </template>
-                                            <template x-if="!agency.is_subscribed">
+                                            <template x-if="!agency.is_activated">
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactive</span>
                                             </template>
                                         </td>
@@ -85,12 +85,12 @@
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300" x-text="new Date(agency.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })"></td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <template x-if="!agency.is_subscribed">
+                                            <template x-if="!agency.is_activated">
                                                 <button type="button" @click.prevent="$dispatch('open-modal', `confirm-agency-deletion-${agency.id}`)" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
                                                     Delete Agency
                                                 </button>
                                             </template>
-                                            <template x-if="agency.is_subscribed">
+                                            <template x-if="agency.is_activated">
                                                 <span class="text-gray-400 dark:text-gray-500">Active - Protected</span>
                                             </template>
                                         </td>
@@ -114,7 +114,7 @@
     </div>
 
     @foreach ($agencies as $agency)
-        @if (!$agency->subscribed('default'))
+        @if (!$agency->is_lifetime_free)
             <x-modal name="confirm-agency-deletion-{{ $agency->id }}" focusable>
                 <form method="post" action="{{ route('superadmin.agencies.destroy', $agency) }}" class="p-6">
                     @csrf
@@ -154,8 +154,8 @@
             return {
                 searchTerm: '',
                 agencies: @json($agencies->map(function($agency) {
-                    // We manually add is_subscribed because Cashier methods aren't available client-side
-                    $agency->is_subscribed = $agency->subscribed('default');
+                    // Use the new is_lifetime_free field instead of Cashier's subscribed() method
+                    $agency->is_activated = $agency->is_lifetime_free;
                     return $agency;
                 })),
                 get filteredAgencies() {
