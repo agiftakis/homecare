@@ -54,13 +54,8 @@ class ClientController extends Controller
     public function create()
     {
         try {
-            // ✅ NEW: Client Limit Check - Block access if limit reached
-            if (Auth::user()->role === 'agency_admin') {
-                $limitCheck = $this->checkClientLimit();
-                if (!$limitCheck['allowed']) {
-                    return redirect()->route('clients.index')->with('error', $limitCheck['message']);
-                }
-            }
+            // ✅ REMOVED: Client Limit Check
+            // We no longer check for client limits.
 
             $agencies = [];
             if (Auth::user()->role === 'super_admin') {
@@ -74,16 +69,8 @@ class ClientController extends Controller
 
     public function store(Request $request)
     {
-        // ✅ NEW: Client Limit Check - Block creation if limit reached
-        if (Auth::user()->role === 'agency_admin') {
-            $limitCheck = $this->checkClientLimit();
-            if (!$limitCheck['allowed']) {
-                if ($request->expectsJson() || $request->wantsJson()) {
-                    return response()->json(['error' => $limitCheck['message']], 403);
-                }
-                return back()->with('error', $limitCheck['message']);
-            }
-        }
+        // ✅ REMOVED: Client Limit Check
+        // We no longer check for client limits before creation.
 
         $validationRules = [
             'first_name' => 'required|string|max:255',
@@ -337,6 +324,7 @@ class ClientController extends Controller
     }
 
     // ✅ ENHANCED METHODS FOR MANAGING NOTES
+    // These methods are PRESERVED as they are core functionality.
 
     /**
      * Update a specific progress note.
@@ -401,72 +389,11 @@ class ClientController extends Controller
         }, 'Care note deleted successfully.', 'Failed to delete care note. Please try again.');
     }
 
-    /**
-     * ✅ NEW: Check if the agency has reached their client limit based on subscription plan
-     */
-    private function checkClientLimit()
-    {
-        $user = Auth::user();
-        $agency = $user->agency;
+    // --- ALL CLIENT LIMIT METHODS HAVE BEEN REMOVED ---
+    // ---------------------------------------------------
+    // private function checkClientLimit() { ... } // REMOVED
+    // private function getClientLimitForPlan($agency) { ... } // REMOVED
+    // public function checkLimit() { ... } // REMOVED
+    // ---------------------------------------------------
 
-        if (!$agency) {
-            return ['allowed' => false, 'message' => 'Agency not found.'];
-        }
-
-        // ✅ FIXED: Get current client count for this agency using query builder
-        $currentClientCount = Client::where('agency_id', $agency->id)->count();
-
-        // Get client limit based on subscription plan
-        $clientLimit = $this->getClientLimitForPlan($agency);
-
-        if ($currentClientCount >= $clientLimit) {
-            return [
-                'allowed' => false,
-                'message' => "You have reached your client limit of {$clientLimit} clients with your current subscription plan. Please upgrade your subscription to add more clients."
-            ];
-        }
-
-        return ['allowed' => true, 'message' => ''];
-    }
-
-    /**
-     * ✅ NEW: Get client limit based on agency's subscription plan
-     */
-    private function getClientLimitForPlan($agency)
-    {
-        // Get the subscription to determine the plan
-        $subscription = $agency->subscription('default');
-
-        if (!$subscription || !$subscription->active()) {
-            return 10; // Default to basic plan limit if no active subscription
-        }
-
-        // Get plan name from subscription
-        $stripePriceId = $subscription->stripe_price;
-
-        return match ($stripePriceId) {
-            env('STRIPE_PROFESSIONAL_PRICE_ID') => 30,
-            env('STRIPE_PREMIUM_PRICE_ID') => 60,
-            env('STRIPE_ENTERPRISE_PRICE_ID') => 350,
-            env('STRIPE_BASIC_PRICE_ID') => 10,
-            default => 10, // Default to basic plan limit
-        };
-    }
-
-    /**
-     * ✅ NEW: AJAX endpoint to check client limit (for frontend validation)
-     */
-    public function checkLimit()
-    {
-        if (Auth::user()->role !== 'agency_admin') {
-            return response()->json(['allowed' => true]);
-        }
-
-        $limitCheck = $this->checkClientLimit();
-
-        return response()->json([
-            'allowed' => $limitCheck['allowed'],
-            'message' => $limitCheck['message']
-        ]);
-    }
 }
