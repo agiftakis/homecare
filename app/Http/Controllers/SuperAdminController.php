@@ -242,11 +242,11 @@ class SuperAdminController extends Controller
      */
     public function destroyAgency(Agency $agency)
     {
-        // Safety check: Only allow deletion of agencies that are NOT activated (not lifetime free)
-        if ($agency->is_lifetime_free) {
-            return redirect()->route('superadmin.dashboard')
-                ->with('error', 'Cannot delete activated agency. Please deactivate the agency first by unchecking "Lifetime Free" in the edit form.');
-        }
+        // ✅ REMOVED: Safety check - Super admin can now delete ANY agency
+        // if ($agency->is_lifetime_free) {
+        //     return redirect()->route('superadmin.dashboard')
+        //         ->with('error', 'Cannot delete activated agency. Please deactivate the agency first by unchecking "Lifetime Free" in the edit form.');
+        // }
 
         try {
             DB::transaction(function () use ($agency) {
@@ -308,10 +308,10 @@ class SuperAdminController extends Controller
                 $agency->delete();
             });
 
-            return redirect()->route('superadmin.dashboard')
+            return redirect()->route('superadmin.agencies.index')
                 ->with('success', 'Agency and all associated data have been permanently deleted.');
         } catch (\Exception $e) {
-            return redirect()->route('superadmin.dashboard')
+            return redirect()->route('superadmin.agencies.index')
                 ->with('error', 'An error occurred while deleting the agency. Please try again.');
         }
     }
@@ -424,7 +424,6 @@ class SuperAdminController extends Controller
 
             return redirect()->route('superadmin.agencies.index')
                 ->with('success', "Agency '{$agency->name}' created successfully.");
-
         } catch (\Exception $e) {
             DB::rollBack();
             // Log the exception message for debugging
