@@ -20,7 +20,8 @@ class AgencyRegistrationController extends Controller
      */
     public function create(Request $request)
     {
-        $plan = $request->query('plan', 'basic');
+        // ✅ REMOVED: No longer need plan parameter since Stripe is gone
+        // $plan = $request->query('plan', 'basic');
 
         // ✅ REQUIREMENT: Filter timezones for North America only.
         $allTimezones = DateTimeZone::listIdentifiers();
@@ -29,7 +30,7 @@ class AgencyRegistrationController extends Controller
         });
 
         // Pass the filtered list to the view.
-        return view('auth.register-agency', compact('plan', 'northAmericaTimezones'));
+        return view('auth.register-agency', compact('northAmericaTimezones'));
     }
 
     /**
@@ -48,7 +49,8 @@ class AgencyRegistrationController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'plan' => 'required|in:basic,professional,premium,enterprise',
+            // ✅ REMOVED: No longer validating 'plan' since Stripe is removed
+            // 'plan' => 'required|in:basic,professional,premium,enterprise',
             // ✅ REQUIREMENT: Validate that the selected timezone is in our North America list.
             'timezone' => ['required', 'string', Rule::in($northAmericaTimezones)],
         ]);
@@ -67,16 +69,19 @@ class AgencyRegistrationController extends Controller
                 $agency = Agency::create([
                     'name' => $validated['agency_name'],
                     'contact_email' => $validated['email'],
-                    'subscription_plan' => $validated['plan'],
+                    // ✅ REMOVED: No longer saving subscription_plan (field doesn't exist)
+                    // 'subscription_plan' => $validated['plan'],
                     'user_id' => $user->id,
                     'timezone' => $validated['timezone'],
+                    'is_lifetime_free' => false, // ✅ NEW: Default to false, super admin can change later
                 ]);
 
                 // Now, link the user back to the agency.
                 $user->agency_id = $agency->id;
                 $user->save();
 
-                $agency->createAsStripeCustomer();
+                // ✅ REMOVED: No longer creating Stripe customer
+                // $agency->createAsStripeCustomer();
 
                 // Login the new user
                 Auth::login($user);
@@ -87,7 +92,7 @@ class AgencyRegistrationController extends Controller
             return back()->withInput()->with('error', 'There was a critical error during registration. Please try again.');
         }
 
-        // Redirect to the subscription page to collect payment details
-        return redirect()->route('subscription.create', ['plan' => $validated['plan']]);
+        // ✅ CHANGED: Redirect to dashboard instead of subscription page
+        return redirect()->route('dashboard')->with('success', 'Your agency has been registered successfully! A super admin will review and activate your account.');
     }
 }
