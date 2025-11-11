@@ -5,7 +5,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CaregiverController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ScheduleController;
-use App\Http\Controllers\PricingController;
+// use App\Http\Controllers\PricingController; // Removed as no longer needed
 use App\Http\Controllers\AgencyRegistrationController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DashboardController;
@@ -28,7 +28,7 @@ Route::get('/', function () {
 })->name('welcome');
 
 // Publicly accessible routes
-Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
+// Route::get('/pricing', [PricingController::class, 'index'])->name('pricing'); // Removed Stripe route
 Route::get('/register-agency', [AgencyRegistrationController::class, 'create'])->name('agency.register');
 Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store');
 
@@ -36,7 +36,7 @@ Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])-
 Route::get('/setup-password/{token}', [PasswordSetupController::class, 'show'])->name('password.setup.show');
 Route::post('/setup-password', [PasswordSetupController::class, 'store'])->name('password.setup.store');
 
-// ✅ FINAL FIX: Add the 'subscription' middleware to the main authenticated group.
+// ✅ UPDATED: Main authenticated group, still protected by our modified 'subscription' middleware.
 // Authenticated Routes
 Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -49,7 +49,7 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
     // Routes that are ONLY accessible to Agency Admins.
     // The 'agency_admin' middleware we created now protects this group.
     Route::middleware('agency_admin')->group(function () {
-        Route::get('/clients/check-limit', [ClientController::class, 'checkLimit'])->name('clients.checkLimit');
+        // Route::get('/clients/check-limit', [ClientController::class, 'checkLimit'])->name('clients.checkLimit'); // Removed client limit route
         Route::resource('clients', ClientController::class);
 
         Route::resource('caregivers', CaregiverController::class);
@@ -74,8 +74,7 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
         Route::patch('/clients/notes/{visit}', [ClientController::class, 'updateNote'])->name('clients.notes.update');
         Route::delete('/clients/notes/{visit}', [ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
 
-        // ✅ NEW: Subscription Management Route - ONLY accessible to agency_admin
-        Route::get('/subscription/manage', [SubscriptionController::class, 'manage'])->name('subscription.manage');
+        // Route::get('/subscription/manage', [SubscriptionController::class, 'manage'])->name('subscription.manage'); // Removed Stripe route
 
         // ✅ CRITICAL FIX: Custom invoice routes MUST be defined BEFORE Route::resource()
         // This ensures Laravel matches specific routes before trying generic resource routes
@@ -103,13 +102,20 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
     Route::resource('shifts', ScheduleController::class)->only(['store', 'show', 'update', 'destroy']);
 
     // Subscription Routes
-    Route::get('/subscription', [SubscriptionController::class, 'create'])->name('subscription.create');
-    Route::post('/subscription', [SubscriptionController::class, 'store'])->name('subscription.store');
+    // Route::get('/subscription', [SubscriptionController::class, 'create'])->name('subscription.create'); // Removed Stripe route
+    // Route::post('/subscription', [SubscriptionController::class, 'store'])->name('subscription.store'); // Removed Stripe route
 
     // Visit Verification Routes
     Route::get('/shifts/{shift}/verify', [VisitVerificationController::class, 'show'])->name('visits.show');
     Route::post('/shifts/{shift}/clock-in', [VisitVerificationController::class, 'clockIn'])->name('visits.clockin');
     Route::post('/visits/{visit}/clock-out', [VisitVerificationController::class, 'clockOut'])->name('visits.clockout');
+});
+
+// ✅ NEW: Route for locked-out agencies.
+// This route MUST be outside the 'subscription' middleware group to avoid a redirect loop.
+// It still requires 'auth' because only logged-in (but non-activated) users can see it.
+Route::middleware(['auth', 'timezone'])->group(function () {
+    Route::get('/subscription/required', [SubscriptionController::class, 'required'])->name('subscription.required');
 });
 
 
