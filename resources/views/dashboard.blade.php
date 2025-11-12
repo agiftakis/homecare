@@ -169,18 +169,12 @@
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6">
                     <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Quick Actions</h3>
                     <div class="flex flex-wrap gap-4">
-                        {{-- ✅ NEW: Client limit check for Add New Client button --}}
-                        @if (Auth::user()->role === 'agency_admin')
-                            <button id="addClientBtn"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">
-                                + Add New Client
-                            </button>
-                        @else
-                            <a href="{{ route('clients.create') }}"
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">
-                                + Add New Client
-                            </a>
-                        @endif
+                        
+                        {{-- ✅ CLEANUP: Simplified button. Removed all client limit logic. --}}
+                        <a href="{{ route('clients.create') }}"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                            + Add New Client
+                        </a>
 
                         <a href="{{ route('caregivers.create') }}"
                             class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg transition">
@@ -247,167 +241,9 @@
                 </div>
             @endif
 
-            {{-- ============================================= --}}
-            {{-- ============== CAREGIVER VIEW =============== --}}
-            {{-- This entire section is only for caregivers --}}
-            {{-- ============================================= --}}
-            @if (Auth::user()->role === 'caregiver')
-                <div class="space-y-8">
-                    {{-- Upcoming Shifts Section --}}
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Upcoming Shifts</h3>
-                        <div class="space-y-4">
-                            @forelse ($upcoming_shifts as $shift)
-                                <div class="bg-white dark:bg-gray-900/80 p-4 rounded-lg border dark:border-gray-700 shadow-sm">
-                                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                                        <div>
-                                            <p class="font-bold text-base text-gray-900 dark:text-gray-100">
-                                                {{ $shift->client->first_name }} {{ $shift->client->last_name }}
-                                            </p>
-                                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('D, M j, Y') }}
-                                            </p>
-                                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }} -
-                                                {{ \Carbon\Carbon::parse($shift->end_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }}
-                                            </p>
-                                        </div>
-                                        <div class="mt-4 sm:mt-0">
-                                            <a href="{{ route('visits.show', $shift) }}"
-                                                class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                                                Verify Visit
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            @empty
-                                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-                                    <p class="text-gray-500 dark:text-gray-400">You have no upcoming shifts.</p>
-                                </div>
-                            @endforelse
-                        </div>
-                    </div>
-
-                    {{-- Completed Shifts History Section --}}
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Completed Shift History</h3>
-                        <div class="space-y-4">
-                            @forelse ($all_past_shifts as $shift)
-                                <div class="bg-white dark:bg-gray-900/80 p-4 rounded-lg border dark:border-gray-700 opacity-80">
-                                    <div class="flex justify-between items-center">
-                                        <div>
-                                            <p class="font-bold text-base text-gray-800 dark:text-gray-200">
-                                                {{ $shift->client->first_name }} {{ $shift->client->last_name }}</p>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('D, M j, Y') }}
-                                            </p>
-                                        </div>
-                                        <div class="text-sm font-semibold text-green-600 dark:text-green-400">
-                                            <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                            Completed
-                                        </div>
-                                    </div>
-                                </div>
-                            @empty
-                                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-                                    <p class="text-gray-500 dark:text-gray-400">You have no completed shifts in your history yet.</p>
-                                </div>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-            @endif
-
         </div>
     </div>
 
-    {{-- ✅ NEW: Client Limit Modal (shared with clients/index) --}}
-    <div id="clientLimitModal" x-data="{ show: false }" x-show="show" 
-         class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" x-cloak>
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
-                x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
-                x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="show = false"></div>
+    {{-- ✅ CLEANUP: Removed entire clientLimitModal and its related script. --}}
 
-            <div x-show="show" x-transition:enter="ease-out duration-300"
-                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                x-transition:leave="ease-in duration-200"
-                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-
-                <div class="sm:flex sm:items-start">
-                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900 sm:mx-0 sm:h-10 sm:w-10">
-                        <svg class="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.854-.833-2.624 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                        </svg>
-                    </div>
-                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
-                            Client Limit Reached
-                        </h3>
-                        <div class="mt-2">
-                            <p id="limitMessage" class="text-sm text-gray-500 dark:text-gray-400">
-                                <!-- Dynamic message will be inserted here -->
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                    <a href="{{ route('subscription.manage') }}"
-                       class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
-                        Upgrade Subscription
-                    </a>
-                    <button @click="show = false" type="button"
-                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const addClientBtn = document.getElementById('addClientBtn');
-
-            // ✅ NEW: Client Limit Check Function (same as clients/index)
-            function checkClientLimit() {
-                fetch('{{ route("clients.checkLimit") }}', {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.allowed) {
-                        // Show the modal with the limit message
-                        document.getElementById('limitMessage').textContent = data.message;
-                        document.querySelector('#clientLimitModal [x-data]').__x.$data.show = true;
-                    } else {
-                        // Redirect to create page if limit not reached
-                        window.location.href = '{{ route("clients.create") }}';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error checking client limit:', error);
-                    // Fallback - redirect to create page if check fails
-                    window.location.href = '{{ route("clients.create") }}';
-                });
-            }
-
-            // ✅ NEW: Add click event listener to Add Client button for agency admins
-            if (addClientBtn) {
-                addClientBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    checkClientLimit();
-                });
-            }
-        });
-    </script>
 </x-app-layout>
