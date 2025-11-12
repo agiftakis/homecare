@@ -39,6 +39,8 @@ class AgencyWelcomeEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            // ✅ THE FIX: Tell the envelope who to send the email to.
+            to: $this->user->email,
             subject: 'Welcome to VitalLink - Your Agency Account is Ready',
         );
     }
