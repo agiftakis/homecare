@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use DateTimeZone; // ✅ NEW: Add DateTimeZone for timezone logic
 
+// ✅ NEW: Imports for sending the welcome email
+use App\Jobs\SendTransactionalEmail;
+use App\Mail\AgencyWelcomeEmail;
+use Illuminate\Support\Facades\Log;
+
 class SuperAdminController extends Controller
 {
     protected $firebaseStorageService;
@@ -422,8 +427,21 @@ class SuperAdminController extends Controller
 
             DB::commit();
 
+            // ✅ NEW: Send welcome email using the transactional email job
+            try {
+                // We use the plain-text password from the validated request
+                $mailable = new AgencyWelcomeEmail($agency, $adminUser, $validated['admin_password']);
+
+                // Dispatch the job to send via the 'gmail_1' mailer
+                SendTransactionalEmail::dispatch($mailable, 'gmail_1');
+            } catch (\Exception $e) {
+                // If email fails, don't break the whole flow.
+                // Just log the error and continue. The agency was still created.
+                Log::error("Failed to dispatch welcome email for agency {$agency->id}: " . $e->getMessage());
+            }
+
             return redirect()->route('superadmin.agencies.index')
-                ->with('success', "Agency '{$agency->name}' created successfully.");
+                ->with('success', "Agency '{$agency->name}' created successfully. Welcome email sent."); // ✅ NEW: Updated success message
         } catch (\Exception $e) {
             DB::rollBack();
             // Log the exception message for debugging
@@ -447,7 +465,7 @@ class SuperAdminController extends Controller
     public function agencyUpdate(Request $request, Agency $agency)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:225',
             'contact_email' => ['required', 'email', 'max:255', Rule::unique('agencies')->ignore($agency->id)],
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
