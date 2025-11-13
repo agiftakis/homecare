@@ -5,8 +5,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CaregiverController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ScheduleController;
-// use App\Http\Controllers\PricingController; // Removed as no longer needed
-use App\Http\Controllers\AgencyRegistrationController;
+use App\Http\Controllers\AgencyRegistrationController; // Still needed for now, leave as is
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SuperAdminController;
@@ -15,6 +14,7 @@ use App\Http\Controllers\VisitVerificationController;
 use App\Http\Controllers\AgencySettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SalesContactController; // <-- ADDED
 
 
 /*
@@ -27,10 +27,16 @@ Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
 
+// --- NEW SALES CONTACT ROUTES ---
+Route::get('/contact-us', [SalesContactController::class, 'showContactForm'])->name('sales.contact');
+Route::post('/contact-us', [SalesContactController::class, 'submitContactForm'])->name('sales.contact.submit');
+// --- END NEW SALES CONTACT ROUTES ---
+
+
 // Publicly accessible routes
 // Route::get('/pricing', [PricingController::class, 'index'])->name('pricing'); // Removed Stripe route
-Route::get('/register-agency', [AgencyRegistrationController::class, 'create'])->name('agency.register');
-Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store');
+// Route::get('/register-agency', [AgencyRegistrationController::class, 'create'])->name('agency.register'); // <-- COMMENTED OUT
+// Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store'); // <-- COMMENTED OUT
 
 //new routes for user- client or caregiver- registration password setup
 Route::get('/setup-password/{token}', [PasswordSetupController::class, 'show'])->name('password.setup.show');
