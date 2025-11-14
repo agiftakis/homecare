@@ -153,6 +153,9 @@ Route::middleware(['auth', 'superadmin'])->prefix('superadmin')->name('superadmi
 
     // Schedule Management Routes for SuperAdmin
     Route::get('/schedule', [SuperAdminController::class, 'scheduleIndex'])->name('schedule.index');
+
+    // ✅ NEW: Agency suspension toggle
+    Route::post('/agencies/{agency}/toggle-suspension', [SuperAdminController::class, 'toggleSuspension'])->name('agencies.toggleSuspension');
 });
 
 require __DIR__ . '/auth.php';

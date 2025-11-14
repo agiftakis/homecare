@@ -20,13 +20,10 @@ class Agency extends Model
         'contact_email',
         'phone',
         'address',
-        'timezone', //THE FIX: Allow timezone to be mass-assigned.
-        // 'subscription_plan', // Removed Stripe
-        // 'subscription_status', // Removed Stripe
-        // 'trial_ends_at', // Removed Stripe
-        // 'subscription_ends_at', // Removed Stripe
+        'timezone',
         'user_id',
         'is_lifetime_free', // KEPT: This is the new "on" switch
+        'suspended',
     ];
 
     /**
@@ -48,10 +45,6 @@ class Agency extends Model
         return $this->hasMany(User::class);
     }
 
-    // --- Stripe-specific methods REMOVED ---
-    // public function stripeName(): string|null { ... }
-    // public function stripeEmail(): string|null { ... }
-    // ---
 
     /**
      * Get the user that owns the agency.
