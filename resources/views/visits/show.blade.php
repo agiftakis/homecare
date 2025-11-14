@@ -31,6 +31,64 @@
                 </div>
             </div>
 
+            {{-- ✅ NEW FEATURE: Historical Progress Notes Section --}}
+            @if ($previousVisits->count() > 0 && $isShiftDateValid)
+                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg mb-6" x-data="{ open: false }">
+                    <div class="p-6">
+                        <button @click="open = !open" class="w-full flex items-center justify-between text-left">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-blue-200">
+                                    Previous Care Notes for {{ $shift->client->first_name }}
+                                </h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                    View {{ $previousVisits->count() }} previous visit note{{ $previousVisits->count() !== 1 ? 's' : '' }} from other caregivers
+                                </p>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400 transform transition-transform duration-200"
+                                :class="{ 'rotate-180': open }" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <div x-show="open" x-collapse class="mt-4 space-y-4">
+                            @foreach ($previousVisits as $previousVisit)
+                                <div
+                                    class="border-l-4 border-blue-500 dark:border-blue-400 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-r-lg">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div>
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                                {{-- Display caregiver name (preserved in visit record) --}}
+                                                @if ($previousVisit->shift && $previousVisit->shift->caregiver)
+                                                    {{ $previousVisit->shift->caregiver->first_name }}
+                                                    {{ $previousVisit->shift->caregiver->last_name }}
+                                                @elseif($previousVisit->caregiver_first_name)
+                                                    {{ $previousVisit->caregiver_first_name }}
+                                                    {{ $previousVisit->caregiver_last_name }}
+                                                @else
+                                                    Unknown Caregiver
+                                                @endif
+                                            </p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                {{ \Carbon\Carbon::parse($previousVisit->clock_out_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('M j, Y @ g:i A') }}
+                                            </p>
+                                        </div>
+                                        <span
+                                            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                            Completed
+                                        </span>
+                                    </div>
+                                    <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                        {{ $previousVisit->progress_notes }}
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- ✅ DATE VALIDATION: Show warning if shift date hasn't arrived yet --}}
             @if (!$isShiftDateValid)
                 <div

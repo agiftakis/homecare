@@ -49,7 +49,21 @@ class VisitVerificationController extends Controller
             // Find the existing visit record for this shift, if one exists.
             $visit = Visit::where('shift_id', $shift->id)->first();
 
-            return view('visits.show', compact('shift', 'visit', 'isShiftDateValid'));
+            // ✅ NEW FEATURE: Fetch previous completed visits for this client (with progress notes)
+            // This allows the caregiver to see historical care notes from other caregivers
+            $previousVisits = Visit::whereHas('shift', function ($query) use ($shift) {
+                    $query->where('client_id', $shift->client_id)
+                          ->where('status', 'completed');
+                })
+                ->where('shift_id', '!=', $shift->id) // Exclude current shift
+                ->whereNotNull('progress_notes') // Only visits with notes
+                ->whereNotNull('clock_out_time') // Only completed visits
+                ->with(['shift.caregiver']) // Eager load caregiver info
+                ->orderBy('clock_out_time', 'desc') // Most recent first
+                ->limit(10) // Limit to last 10 visits to avoid overwhelming the UI
+                ->get();
+
+            return view('visits.show', compact('shift', 'visit', 'isShiftDateValid', 'previousVisits'));
         } catch (\Exception $e) {
             return $this->handleException($e, 'Unable to load visit verification page.', 'visit_verification_show');
         }
@@ -140,6 +154,8 @@ class VisitVerificationController extends Controller
                     'agency_id' => $shift->agency_id, // Important for multi-tenancy
                     'clock_in_time' => now(),
                     'signature_path' => $documentInfo['firebase_path'],
+                    'caregiver_first_name' => $shift->caregiver->first_name, // ✅ Preserve caregiver name
+                    'caregiver_last_name' => $shift->caregiver->last_name,   // ✅ Preserve caregiver name
                 ]);
 
                 // ✅ NEW: Log the visit creation in the audit trail
