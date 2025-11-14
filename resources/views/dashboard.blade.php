@@ -147,6 +147,130 @@
             @endif
 
             {{-- ============================================= --}}
+            {{-- ============== CAREGIVER VIEW ============== --}}
+            {{-- ✅ NEW SECTION: Display caregiver shifts --}}
+            {{-- ============================================= --}}
+            @if (Auth::user()->role === 'caregiver')
+                <div class="space-y-8">
+                    {{-- Upcoming Shifts Section --}}
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Upcoming Shifts</h3>
+                        <div class="space-y-4">
+                            @forelse ($upcoming_shifts as $shift)
+                                <div class="bg-white dark:bg-gray-900/80 p-4 rounded-lg border dark:border-gray-700 shadow-sm">
+                                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                                        <div>
+                                            <p class="font-bold text-base text-gray-900 dark:text-gray-100">
+                                                @if($shift->client)
+                                                    Client: {{ $shift->client->first_name }} {{ $shift->client->last_name }}
+                                                @else
+                                                    Client: N/A
+                                                @endif
+                                            </p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('D, M j, Y') }}
+                                            </p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }} -
+                                                {{ \Carbon\Carbon::parse($shift->end_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }}
+                                            </p>
+                                            @if($shift->client && $shift->client->address)
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                                    <span class="font-medium">Location:</span> {{ $shift->client->address }}
+                                                </p>
+                                            @endif
+                                            @if($shift->notes)
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                                    <span class="font-medium">Notes:</span> {{ $shift->notes }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                        <div class="mt-4 sm:mt-0 flex flex-col items-end space-y-2">
+                                            @if($shift->status === 'in_progress')
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                    In Progress
+                                                </span>
+                                                <a href="{{ route('visits.show', $shift->id) }}"
+                                                    class="inline-flex items-center px-4 py-2 bg-yellow-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-500 focus:bg-yellow-700 active:bg-yellow-900 transition">
+                                                    Clock Out
+                                                </a>
+                                            @elseif($shift->status === 'scheduled' || $shift->status === 'pending')
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                    Scheduled
+                                                </span>
+                                                <a href="{{ route('visits.show', $shift->id) }}"
+                                                    class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 focus:bg-blue-700 active:bg-blue-900 transition">
+                                                    Clock In
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                                    <p class="text-gray-500 dark:text-gray-400">You have no upcoming shifts scheduled.</p>
+                                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Check back later or contact your coordinator for your schedule.</p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    {{-- Recent Completed Shifts Section --}}
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Recent Completed Shifts</h3>
+                        <div class="space-y-4">
+                            @forelse ($all_past_shifts->take(5) as $shift)
+                                <div class="bg-white dark:bg-gray-900/80 p-4 rounded-lg border dark:border-gray-700 opacity-80">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="font-bold text-base text-gray-800 dark:text-gray-200">
+                                                @if($shift->client)
+                                                    Client: {{ $shift->client->first_name }} {{ $shift->client->last_name }}
+                                                @else
+                                                    Client: N/A
+                                                @endif
+                                            </p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                {{ \Carbon\Carbon::parse($shift->start_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('D, M j, Y') }}
+                                            </p>
+                                            @if($shift->visit)
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                    In: {{ \Carbon\Carbon::parse($shift->visit->clock_in_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }}
+                                                    @if($shift->visit->clock_out_time)
+                                                        | Out: {{ \Carbon\Carbon::parse($shift->visit->clock_out_time)->setTimezone(Auth::user()->agency?->timezone ?? 'UTC')->format('g:i A') }}
+                                                    @endif
+                                                </p>
+                                            @endif
+                                        </div>
+                                        <div class="text-sm font-semibold text-green-600 dark:text-green-400">
+                                            <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            Completed
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                                    <p class="text-gray-500 dark:text-gray-400">You have no completed shifts yet.</p>
+                                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">Your completed shifts will appear here.</p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    {{-- Quick Actions for Caregivers --}}
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Quick Actions</h3>
+                        <div class="flex flex-wrap gap-4">
+                            <a href="{{ route('schedule.index') }}"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                                View Full Schedule
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- ============================================= --}}
             {{-- ======== AGENCY ADMIN / SUPER ADMIN VIEW ======== --}}
             {{-- This entire section is hidden from caregivers and clients --}}
             {{-- ============================================= --}}
