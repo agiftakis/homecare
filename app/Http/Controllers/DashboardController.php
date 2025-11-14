@@ -71,6 +71,7 @@ class DashboardController extends Controller
                 abort(403, 'Your caregiver profile is not accessible.');
             }
 
+            // ✅ FIXED: Changed 'Completed' to 'completed' (lowercase)
             // Load clients with soft-deleted ones and filter based on deletion logic
             $allUpcomingShifts = Shift::with([
                     'client' => function ($query) {
@@ -79,7 +80,7 @@ class DashboardController extends Controller
                 ])
                 ->where('caregiver_id', $caregiver->id)
                 ->whereDate('start_time', '>=', Carbon::today())
-                ->where('status', '!=', 'Completed')
+                ->where('status', '!=', 'completed') // ✅ FIXED: lowercase
                 ->orderBy('start_time', 'asc')
                 ->get();
 
@@ -103,6 +104,7 @@ class DashboardController extends Controller
                 return false;
             });
 
+            // ✅ FIXED: Changed 'Completed' to 'completed' (lowercase)
             // Load past shifts with deleted clients for historical accuracy
             $all_past_shifts = Shift::with([
                     'client' => function ($query) {
@@ -110,7 +112,7 @@ class DashboardController extends Controller
                     }
                 ])
                 ->where('caregiver_id', $caregiver->id)
-                ->where('status', 'Completed')
+                ->where('status', 'completed') // ✅ FIXED: lowercase
                 ->orderBy('start_time', 'desc')
                 ->get();
 
