@@ -122,6 +122,11 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
 // It still requires 'auth' because only logged-in (but non-activated) users can see it.
 Route::middleware(['auth', 'timezone'])->group(function () {
     Route::get('/subscription/required', [SubscriptionController::class, 'required'])->name('subscription.required');
+    
+    // ✅ NEW: Account suspension notice route
+    Route::get('/account-suspended', function () {
+        return view('auth.suspended');
+    })->name('account.suspended');
 });
 
 
