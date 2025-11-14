@@ -177,6 +177,10 @@
                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
                                                         In Progress
                                                     </div>
+                                                    <div x-show="shift.status === 'scheduled' && !isShiftMissed(shift)"
+                                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                        Scheduled
+                                                    </div>
                                                     <div x-show="shift.status === 'pending' && !isShiftMissed(shift)"
                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                                                         Pending
@@ -204,31 +208,32 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center space-x-3 mt-2 sm:mt-0">
-                                        <div
-                                            x-show="(shift.status === 'pending' || shift.status === 'in_progress') && !isShiftMissed(shift) && !shift.client_deletion_status?.is_deleted">
-                                            <a :href="`/shifts/${shift.id}/verify`"
-                                                class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
+                                        <div class="flex items-center space-x-3 mt-2 sm:mt-0">
+                                            <div
+                                                x-show="(shift.status === 'pending' || shift.status === 'scheduled' || shift.status === 'in_progress') && !isShiftMissed(shift) && !shift.client_deletion_status?.is_deleted">
+                                                <a :href="`/shifts/${shift.id}/verify`"
+                                                    class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition duration-150 ease-in-out">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span
+                                                        x-text="(shift.status === 'pending' || shift.status === 'scheduled') ? 'Clock In' : 'Clock Out'"></span>
+                                                </a>
+                                            </div>
+                                            <div x-show="shift.status === 'completed'"
+                                                class="inline-flex items-center px-3 py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-medium rounded-md">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2"
                                                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        stroke-width="2" d="M5 13l4 4L19 7" />
                                                 </svg>
-                                                <span
-                                                    x-text="shift.status === 'pending' ? 'Clock In' : 'Clock Out'"></span>
-                                            </a>
-                                        </div>
-                                        <div x-show="shift.status === 'completed'"
-                                            class="inline-flex items-center px-3 py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-medium rounded-md">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2"
-                                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            Completed
+                                                Completed
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                             </template>
                             <div x-show="allShiftsForSelectedDay().length === 0"
                                 class="text-center p-8 text-gray-500 dark:text-gray-400">
