@@ -33,10 +33,7 @@ Route::post('/contact-us', [SalesContactController::class, 'submitContactForm'])
 // --- END NEW SALES CONTACT ROUTES ---
 
 
-// Publicly accessible routes
-// Route::get('/pricing', [PricingController::class, 'index'])->name('pricing'); // Removed Stripe route
-// Route::get('/register-agency', [AgencyRegistrationController::class, 'create'])->name('agency.register'); // <-- COMMENTED OUT
-// Route::post('/register-agency', [AgencyRegistrationController::class, 'store'])->name('agency.store'); // <-- COMMENTED OUT
+
 
 //new routes for user- client or caregiver- registration password setup
 Route::get('/setup-password/{token}', [PasswordSetupController::class, 'show'])->name('password.setup.show');
@@ -55,7 +52,7 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
     // Routes that are ONLY accessible to Agency Admins.
     // The 'agency_admin' middleware we created now protects this group.
     Route::middleware('agency_admin')->group(function () {
-        // Route::get('/clients/check-limit', [ClientController::class, 'checkLimit'])->name('clients.checkLimit'); // Removed client limit route
+
         Route::resource('clients', ClientController::class);
 
         Route::resource('caregivers', CaregiverController::class);
@@ -80,7 +77,7 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
         Route::patch('/clients/notes/{visit}', [ClientController::class, 'updateNote'])->name('clients.notes.update');
         Route::delete('/clients/notes/{visit}', [ClientController::class, 'destroyNote'])->name('clients.notes.destroy');
 
-        // Route::get('/subscription/manage', [SubscriptionController::class, 'manage'])->name('subscription.manage'); // Removed Stripe route
+
 
         // ✅ CRITICAL FIX: Custom invoice routes MUST be defined BEFORE Route::resource()
         // This ensures Laravel matches specific routes before trying generic resource routes
@@ -107,9 +104,7 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
     Route::get('/my-schedule', [ScheduleController::class, 'clientSchedule'])->name('schedule.client');
     Route::resource('shifts', ScheduleController::class)->only(['store', 'show', 'update', 'destroy']);
 
-    // Subscription Routes
-    // Route::get('/subscription', [SubscriptionController::class, 'create'])->name('subscription.create'); // Removed Stripe route
-    // Route::post('/subscription', [SubscriptionController::class, 'store'])->name('subscription.store'); // Removed Stripe route
+
 
     // Visit Verification Routes
     Route::get('/shifts/{shift}/verify', [VisitVerificationController::class, 'show'])->name('visits.show');
@@ -122,7 +117,7 @@ Route::middleware(['auth', 'timezone', 'subscription'])->group(function () {
 // It still requires 'auth' because only logged-in (but non-activated) users can see it.
 Route::middleware(['auth', 'timezone'])->group(function () {
     Route::get('/subscription/required', [SubscriptionController::class, 'required'])->name('subscription.required');
-    
+
     // ✅ NEW: Account suspension notice route
     Route::get('/account-suspended', function () {
         return view('auth.suspended');
