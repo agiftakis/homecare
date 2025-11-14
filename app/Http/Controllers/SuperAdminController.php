@@ -481,5 +481,29 @@ class SuperAdminController extends Controller
             ->with('success', "Agency '{$agency->name}' updated successfully.");
     }
 
+    /**
+     * Toggle agency suspension status
+     */
+    public function toggleSuspension(Agency $agency)
+    {
+        try {
+            $agency->suspended = !$agency->suspended;
+            $agency->save();
+
+            $status = $agency->suspended ? 'suspended' : 'activated';
+
+            return response()->json([
+                'success' => true,
+                'message' => "Agency has been {$status} successfully.",
+                'suspended' => $agency->suspended
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update agency status.'
+            ], 500);
+        }
+    }
+
     // END: NEW METHODS FOR SUPER ADMIN AGENCY MANAGEMENT
 }
