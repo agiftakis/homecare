@@ -11,7 +11,8 @@
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
-<body class="antialiased bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+{{-- MODIFIED: Added flex classes to make the body fill the screen --}}
+<body class="antialiased bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 flex flex-col min-h-screen">
 
     <header class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
         <nav x-data="{ open: false }" class="container mx-auto px-6 py-4 flex justify-between items-center">
@@ -54,7 +55,8 @@
         </nav>
     </header>
 
-    <main>
+    {{-- MODIFIED: Added flex-grow to make the main content fill available space --}}
+    <main class="flex-grow">
         <section class="relative h-[60vh] flex items-center justify-center text-center text-white overflow-hidden">
             <div class="absolute inset-0 bg-black opacity-50 z-10"></div>
             <img src="{{ asset('images/hero-background.jpg') }}" alt="Caregiver with a senior patient"
