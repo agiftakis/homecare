@@ -78,7 +78,9 @@
                 <p class="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-16">VitaLink provides the tools
                     you need to operate efficiently, stay compliant, and provide the best possible care.</p>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                {{-- Updated grid to support 4 columns on large screens --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {{-- Card 1: Intelligent Scheduling --}}
                     <div class="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-lg flex flex-col">
                         <img src="{{ asset('images/icon-schedule.png') }}" alt="Scheduling Icon"
                             class="h-16 w-16 mx-auto mb-4">
@@ -86,30 +88,48 @@
                         <p class="text-gray-600 dark:text-gray-400 flex-grow">Easily create, manage, and update shifts
                             with our intuitive calendar interface. Match the right caregiver to the right client, every
                             time.</p>
-                        <a href="#"
+                        <a href="{{ route('features.scheduling') }}"
                             class="mt-6 inline-block text-indigo-500 font-semibold hover:text-indigo-400">Learn more
                             &rarr;</a>
                     </div>
+
+                    {{-- Card 2: Centralized Client Data --}}
                     <div class="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-lg flex flex-col">
                         <img src="{{ asset('images/icon-client.png') }}" alt="Client Management Icon"
                             class="h-16 w-16 mx-auto mb-4">
                         <h3 class="text-2xl font-bold mb-2">Centralized Client Data</h3>
                         <p class="text-gray-600 dark:text-gray-400 flex-grow">Keep all client information, care plans,
                             and contact details organized and accessible in one secure location.</p>
-                        <a href="#"
+                        <a href="{{ route('features.client-data') }}"
                             class="mt-6 inline-block text-indigo-500 font-semibold hover:text-indigo-400">Learn more
                             &rarr;</a>
                     </div>
+
+                    {{-- Card 3: Seamless Communication --}}
                     <div class="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-lg flex flex-col">
                         <img src="{{ asset('images/icon-communication.png') }}" alt="Communication Icon"
                             class="h-16 w-16 mx-auto mb-4">
                         <h3 class="text-2xl font-bold mb-2">Seamless Communication</h3>
                         <p class="text-gray-600 dark:text-gray-400 flex-grow">Our platform facilitates clear and secure
                             communication between your office, caregivers, and clients.</p>
-                        <a href="#"
+                        <a href="{{ route('features.communication') }}"
                             class="mt-6 inline-block text-indigo-500 font-semibold hover:text-indigo-400">Learn more
                             &rarr;</a>
                     </div>
+
+                    {{-- Card 4: Exceptional Billing & Invoicing (NEW) --}}
+                    <div class="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-lg flex flex-col">
+                        <img src="{{ asset('images/icon-billing.png') }}" alt="Billing Icon"
+                            class="h-16 w-16 mx-auto mb-4">
+                        <h3 class="text-2xl font-bold mb-2">Exceptional Billing</h3>
+                        <p class="text-gray-600 dark:text-gray-400 flex-grow">Generate accurate invoices from
+                            completed visits, track payments, and streamline your entire billing workflow with
+                            ease.</p>
+                        <a href="{{ route('features.billing') }}"
+                            class="mt-6 inline-block text-indigo-500 font-semibold hover:text-indigo-400">Learn more
+                            &rarr;</a>
+                    </div>
+
                 </div>
             </div>
         </section>

@@ -15,7 +15,7 @@ use App\Http\Controllers\AgencySettingsController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SalesContactController; // <-- ADDED
-
+use App\Http\Controllers\FeaturePageController; // <-- NEWLY ADDED
 
 /*
 |--------------------------------------------------------------------------
@@ -32,7 +32,14 @@ Route::get('/contact-us', [SalesContactController::class, 'showContactForm'])->n
 Route::post('/contact-us', [SalesContactController::class, 'submitContactForm'])->name('sales.contact.submit');
 // --- END NEW SALES CONTACT ROUTES ---
 
-
+// --- NEW FEATURE PAGE ROUTES ---
+Route::prefix('features')->name('features.')->group(function () {
+    Route::get('/scheduling', [FeaturePageController::class, 'showScheduling'])->name('scheduling');
+    Route::get('/client-data', [FeaturePageController::class, 'showClientData'])->name('client-data');
+    Route::get('/communication', [FeaturePageController::class, 'showCommunication'])->name('communication');
+    Route::get('/billing', [FeaturePageController::class, 'showBilling'])->name('billing');
+});
+// --- END FEATURE PAGE ROUTES ---
 
 
 //new routes for user- client or caregiver- registration password setup
