@@ -14,12 +14,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
-use DateTimeZone; // ✅ NEW: Add DateTimeZone for timezone logic
+use DateTimeZone;
 
-// ✅ NEW: Imports for sending the welcome email
-use App\Jobs\SendTransactionalEmail;
+// ✅ UPDATED: Imports for sending the welcome email (Mailgun migration)
+use Illuminate\Support\Facades\Mail; // <-- ADDED for Mailgun
 use App\Mail\AgencyWelcomeEmail;
 use Illuminate\Support\Facades\Log;
+// REMOVED: use App\Jobs\SendTransactionalEmail; (No longer needed)
 
 class SuperAdminController extends Controller
 {
@@ -390,7 +391,7 @@ class SuperAdminController extends Controller
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
             'is_lifetime_free' => 'sometimes|boolean',
-            'timezone' => ['required', 'string', Rule::in($northAmericaTimezones)], // ✅ NEW: Timezone validation
+            'timezone' => ['required', 'string', Rule::in($northAmericaTimezones)],
 
             // Agency Admin user details
             'admin_name' => 'required|string|max:255',
@@ -408,7 +409,7 @@ class SuperAdminController extends Controller
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'is_lifetime_free' => $validated['is_lifetime_free'] ?? false,
-                'timezone' => $validated['timezone'], // ✅ NEW: Save timezone
+                'timezone' => $validated['timezone'],
             ]);
 
             // Create Agency Admin User
@@ -418,7 +419,7 @@ class SuperAdminController extends Controller
                 'password' => Hash::make($validated['admin_password']),
                 'role' => 'agency_admin',
                 'agency_id' => $agency->id,
-                'email_verified_at' => now(), // Super admins create verified users
+                'email_verified_at' => now(),
             ]);
 
             // Link the admin user as the agency owner
@@ -427,25 +428,22 @@ class SuperAdminController extends Controller
 
             DB::commit();
 
-            // ✅ NEW: Send welcome email using the transactional email job
+            // ✅ UPDATED: Send welcome email using Laravel Mail with Mailgun
             try {
-                // We use the plain-text password from the validated request
                 $mailable = new AgencyWelcomeEmail($agency, $adminUser, $validated['admin_password']);
 
-                // Dispatch the job to send via the 'gmail_1' mailer
-                SendTransactionalEmail::dispatch($mailable, 'gmail_1');
+                // Send via Mailgun using Laravel's queue system
+                Mail::to($adminUser->email)->queue($mailable);
             } catch (\Exception $e) {
                 // If email fails, don't break the whole flow.
                 // Just log the error and continue. The agency was still created.
-                Log::error("Failed to dispatch welcome email for agency {$agency->id}: " . $e->getMessage());
+                Log::error("Failed to send welcome email for agency {$agency->id}: " . $e->getMessage());
             }
 
             return redirect()->route('superadmin.agencies.index')
-                ->with('success', "Agency '{$agency->name}' created successfully. Welcome email sent."); // ✅ NEW: Updated success message
+                ->with('success', "Agency '{$agency->name}' created successfully. Welcome email sent.");
         } catch (\Exception $e) {
             DB::rollBack();
-            // Log the exception message for debugging
-            // Log::error('Agency Creation Failed: ' . $e->getMessage());
             return back()->withInput()
                 ->with('error', 'Failed to create agency. An unexpected error occurred.');
         }

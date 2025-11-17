@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\SendTransactionalEmail;
+use Illuminate\Support\Facades\Mail; // ✅ ADDED for Mailgun
 use App\Mail\SalesInquiryEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+// REMOVED: use App\Jobs\SendTransactionalEmail; (No longer needed)
 
 class SalesContactController extends Controller
 {
@@ -38,20 +39,17 @@ class SalesContactController extends Controller
         $adminEmail = 'vitalink.notifications1@gmail.com';
 
         try {
-            // We will create SalesInquiryEmail in the next step.
-            // This uses the SendTransactionalEmail job just like your welcome email.
+            // ✅ UPDATED: Send email using Laravel Mail with Mailgun
             $mailable = new SalesInquiryEmail($validatedData);
-            
-            // We use 'gmail_1' as that's the established mailer from your project summary.
-            SendTransactionalEmail::dispatch($mailable->to($adminEmail), 'gmail_1')
-                ->afterResponse(); // Dispatch after response for speed
 
+            // Send via Mailgun using Laravel's queue system
+            Mail::to($adminEmail)->queue($mailable);
         } catch (\Exception $e) {
             // Log the error if the email dispatch fails
             Log::error('Sales inquiry email dispatch failed: ' . $e->getMessage(), [
                 'data' => $validatedData
             ]);
-            
+
             // Optionally, you could redirect back with an error
             // But for the user, we can still say it worked and just log the error.
         }
