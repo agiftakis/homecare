@@ -46,7 +46,7 @@
                                     <input id="is_lifetime_free" name="is_lifetime_free" type="checkbox" value="1" class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" {{ old('is_lifetime_free', $agency->is_lifetime_free) ? 'checked' : '' }}>
                                     <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">Grant Lifetime Free Access</span>
                                 </label>
-                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">⚠️ Checking this box will give the agency unlimited, permanent access, bypassing all Stripe subscription requirements.</p>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">⚠️ Checking this box will give the agency unlimited and permanent access to all of Vitalink's features!</p>
                             </div>
                         </div>
 
