@@ -37,7 +37,8 @@ class SalesInquiryEmail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: 'no-reply@vitalink.com', // You can change this 'from' address
+            // ✅ FIXED: Removed hardcoded 'from' address. 
+            // It will now use MAIL_FROM_ADDRESS from your .env (the verified email).
             subject: 'New VitaLink Agency Inquiry from: ' . $this->inquiryData['agency_name'],
         );
     }
