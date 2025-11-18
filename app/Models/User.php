@@ -4,7 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Mail\PasswordResetEmail;
-use App\Services\MultiGmailEmailService;
+// REMOVED: use App\Services\MultiGmailEmailService;
+use Illuminate\Support\Facades\Mail; // ✅ ADDED: Standard Mail Facade
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -59,21 +60,18 @@ class User extends Authenticatable
      * ✅ NEW: Send the password reset notification.
      *
      * This method overrides the default Laravel password reset notification
-     * to use our custom MultiGmailEmailService.
+     * to use our custom PasswordResetEmail mailable via standard SMTP (Brevo).
      *
      * @param  string  $token
      * @return void
      */
     public function sendPasswordResetNotification($token): void
     {
-        // Instantiate our custom email service
-        $emailService = new MultiGmailEmailService();
-
         // Create a new mailable instance with the user and token
         $mailable = new PasswordResetEmail($this, $token);
 
-        // Dispatch the email using our service
-        $emailService->dispatch($mailable);
+        // ✅ UPDATED: Dispatch via standard Laravel Mail queue (uses Brevo SMTP)
+        Mail::to($this->email)->queue($mailable);
     }
 
     /**
