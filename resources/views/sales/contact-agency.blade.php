@@ -16,7 +16,7 @@
                 VitaLink offers a one-time payment for a lifetime subscription.
             </p>
             <p class="text-4xl font-bold text-gray-900 dark:text-white mt-3">
-                $987 <span class="text-lg font-medium text-gray-600 dark:text-gray-400">USD / one-time</span>
+                $1987 <span class="text-lg font-medium text-gray-600 dark:text-gray-400">USD / one-time</span>
             </p>
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
                 This includes full access to all features, all future updates, and dedicated support. No monthly fees,
