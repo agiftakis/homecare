@@ -39,7 +39,7 @@ class AgencyWelcomeEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            // ✅ THE *REAL* FIX: Pass the email as an array.
+            // We rely on the global MAIL_FROM_ADDRESS in .env (your verified sender)
             to: [$this->user->email],
             subject: 'Welcome to VitalLink - Your Agency Account is Ready',
         );
@@ -50,7 +50,6 @@ class AgencyWelcomeEmail extends Mailable
      */
     public function content(): Content
     {
-        // This line correctly points to the Blade file you already created
         return new Content(
             view: 'emails.agency-welcome',
         );
