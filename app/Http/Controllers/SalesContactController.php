@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Mail; // ✅ ADDED for Mailgun
+use Illuminate\Support\Facades\Mail; // ✅ ADDED for Brevo
 use App\Mail\SalesInquiryEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
