@@ -21,10 +21,10 @@
                 <span class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">VitaLink</span>
             </a>
             <div class="flex items-center space-x-6">
-                <a href="{{ route('welcome') }}"
+              <!--  <a href="{{ route('welcome') }}"
                     class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition duration-300">
                     &larr; Back to Home
-                </a>
+                </a> -->
             </div>
         </nav>
     </header>
