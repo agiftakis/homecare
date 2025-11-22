@@ -4,7 +4,7 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight mb-4 sm:mb-0">
                 {{ __('Clients') }}
             </h2>
-            
+
             {{-- ✅ CLEANUP: Simplified "Add New Client" button. Removed all subscription logic. --}}
             <a href="{{ route('clients.create') }}"
                 class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
@@ -102,7 +102,7 @@
                                                 Get Client Link
                                             </button>
                                         </form>
-                                    @elseif($client->user)
+                                    @elseif($client->user && $client->user->password_setup_expires_at && now()->gt($client->user->password_setup_expires_at))
                                         <form action="{{ route('clients.resendOnboarding', $client) }}" method="POST"
                                             class="inline">
                                             @csrf
@@ -113,8 +113,8 @@
                                         </form>
                                     @else
                                         <span
-                                            class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                                            Setup Required
+                                            class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                            Active Client
                                         </span>
                                     @endif
                                     <a href="{{ route('clients.edit', $client) }}"
@@ -212,7 +212,7 @@
                                                         Get Client Onboarding Link
                                                     </button>
                                                 </form>
-                                            @elseif($client->user)
+                                            @elseif($client->user && $client->user->password_setup_expires_at && now()->gt($client->user->password_setup_expires_at))
                                                 <form action="{{ route('clients.resendOnboarding', $client) }}"
                                                     method="POST" class="inline">
                                                     @csrf
@@ -223,8 +223,8 @@
                                                 </form>
                                             @else
                                                 <span
-                                                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                                                    Setup Required
+                                                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                    Active
                                                 </span>
                                             @endif
                                             <a href="{{ route('clients.edit', $client) }}"
@@ -343,7 +343,7 @@
             const noResults = document.getElementById('noResults');
             const mobileView = document.getElementById('mobileView');
             const desktopView = document.getElementById('desktopView');
-            
+
             {{-- ✅ CLEANUP: Removed addClientBtn variable and all related 'checkClientLimit' logic --}}
 
             function performSearch() {
@@ -382,7 +382,7 @@
                     noResults.classList.add('hidden');
                 }
             }
-            
+
             {{-- ✅ CLEANUP: Removed 'checkClientLimit' function --}}
 
             {{-- ✅ CLEANUP: Removed 'addClientBtn' event listener --}}
