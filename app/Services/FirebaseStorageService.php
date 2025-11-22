@@ -75,12 +75,25 @@ class FirebaseStorageService
     public function getPublicUrl(string $firebasePath): string
     {
         try {
+            echo "Attempting to get object for path: {$firebasePath}\n";
+
             $object = $this->bucket->object($firebasePath);
-            if ($object->exists()) {
-                return $object->info()['mediaLink'];
+            echo "Object created successfully\n";
+
+            $exists = $object->exists();
+            echo "Object exists: " . ($exists ? "TRUE" : "FALSE") . "\n";
+
+            if ($exists) {
+                echo "Getting info...\n";
+                $info = $object->info();
+                echo "Info retrieved, mediaLink: " . ($info['mediaLink'] ?? 'NOT FOUND') . "\n";
+                return $info['mediaLink'];
+            } else {
+                echo "Object does not exist, returning empty string\n";
             }
         } catch (\Exception $e) {
-            // TEMPORARY: Show the actual error
+            echo "EXCEPTION CAUGHT: " . $e->getMessage() . "\n";
+            echo "Exception class: " . get_class($e) . "\n";
             throw $e;
         }
         return '';
