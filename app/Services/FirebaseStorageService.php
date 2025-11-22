@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Kreait\Firebase\Factory;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 
 class FirebaseStorageService
 {
@@ -80,10 +81,15 @@ class FirebaseStorageService
                 return $object->info()['mediaLink'];
             }
         } catch (\Exception $e) {
-            // Return empty string if file doesn't exist
+            // Log the specific error so we can see why it failed
+            Log::error('Firebase getPublicUrl Failed', [
+                'path' => $firebasePath,
+                'error' => $e->getMessage()
+            ]);
         }
         return '';
     }
+
     /**
      * Delete a file from Firebase Storage using file path
      */
@@ -96,7 +102,10 @@ class FirebaseStorageService
                 return true;
             }
         } catch (\Exception $e) {
-            // Silently fail
+            Log::error('Firebase deleteFile Failed', [
+                'path' => $firebasePath,
+                'error' => $e->getMessage()
+            ]);
         }
         return false;
     }
@@ -159,6 +168,10 @@ class FirebaseStorageService
             }
         } catch (\Exception $e) {
             // Silently fail if the object doesn't exist
+            Log::error('Firebase deleteImage Failed', [
+                'url' => $url,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }
