@@ -46,7 +46,8 @@
                             <select name="client_id" id="client_id" required x-model="selectedClient"
                                 @change="loadUnbilledVisits()"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm sm:text-base py-3">
-                                <option value="">Choose a client...</option>
+                                {{-- ✅ FIXED: Added disabled selected to prevent duplicate appearance --}}
+                                <option value="" disabled selected>Choose a client...</option>
                                 @foreach ($clients as $client)
                                     <option value="{{ $client->id }}">{{ $client->first_name }}
                                         {{ $client->last_name }}</option>
