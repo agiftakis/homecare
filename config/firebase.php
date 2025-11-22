@@ -150,7 +150,10 @@ return [
                  * override it here.
                  */
 
-                'default_bucket' => env('FIREBASE_STORAGE_DEFAULT_BUCKET'),
+                /*
+                 * ✅ FIXED: Updated variable name to match your .env file
+                 */
+                'default_bucket' => env('FIREBASE_STORAGE_BUCKET'),
 
             ],
 

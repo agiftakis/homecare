@@ -19,8 +19,16 @@ class FirebaseStorageService
 
         $this->storage = $factory->createStorage();
 
-        // STEP 2: Manually specify the exact bucket name we know is correct.
-        $this->bucket = $this->storage->getBucket(env('FIREBASE_STORAGE_BUCKET'));
+        // STEP 2: Use config() instead of env() so it works when cached.
+        // This reads from the config/firebase.php file we just fixed.
+        $bucketName = config('firebase.projects.app.storage.default_bucket');
+
+        // Fallback for safety: if config is missing, try env directly (though config is preferred)
+        if (!$bucketName) {
+            $bucketName = env('FIREBASE_STORAGE_BUCKET');
+        }
+
+        $this->bucket = $this->storage->getBucket($bucketName);
     }
 
     /**
