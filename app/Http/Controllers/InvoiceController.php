@@ -49,13 +49,11 @@ class InvoiceController extends Controller
     {
         $agency = Auth::user()->agency;
 
-        // Get clients with completed visits that haven't been invoiced
+        // ✅ FIX: Get ALL clients for the agency, not just those with unbilled visits.
+        // This ensures 'Mike Chang' appears in the dropdown even if his visits are all billed or pending.
         $clients = Client::where('agency_id', $agency->id)
-            ->whereHas('shifts.visit', function ($query) {
-                $query->whereNotNull('clock_in_time')
-                    ->whereNotNull('clock_out_time')
-                    ->whereDoesntHave('invoiceItems');
-            })
+            ->orderBy('first_name')
+            ->orderBy('last_name')
             ->get();
 
         return view('invoices.create', compact('clients'));
