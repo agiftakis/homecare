@@ -35,14 +35,21 @@ class ProfileController extends Controller
     {
         return $this->handleDatabaseTransaction(function () use ($request) {
             $user = $request->user();
-            $user->fill($request->validated());
 
-            if ($user->isDirty('email')) {
-                $user->email_verified_at = null;
-            }
+            // ✅ CRITICAL FIX: Get validated data but EXPLICITLY remove password
+            // This prevents the password from being overwritten with an empty string/null
+            $validatedData = $request->validated();
+            unset($validatedData['password']);
+
+            $user->fill($validatedData);
+
+            // ✅ FIX: Commented out verification reset so you don't get locked out
+            // if ($user->isDirty('email')) {
+            //    $user->email_verified_at = null;
+            // }
 
             $user->save();
-            
+
             // ============================================
             // NEWLY ADDED: Propagate changes to Client/Caregiver records
             // ============================================
@@ -50,7 +57,7 @@ class ProfileController extends Controller
             // ============================================
             // END OF NEWLY ADDED CODE
             // ============================================
-            
+
             return $user;
         }, 'Profile updated successfully!', 'Failed to update profile. Please try again.');
     }
