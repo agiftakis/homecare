@@ -5,7 +5,7 @@ namespace App\Services;
 use Kreait\Firebase\Factory;
 use Illuminate\Http\UploadedFile;
 
-class FirebaseStorageService 
+class FirebaseStorageService
 {
     protected $storage;
     protected $bucket;
@@ -80,7 +80,8 @@ class FirebaseStorageService
                 return $object->info()['mediaLink'];
             }
         } catch (\Exception $e) {
-            // Return empty string if file doesn't exist
+            // TEMPORARY: Show the actual error
+            throw $e;
         }
         return '';
     }
